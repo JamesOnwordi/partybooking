@@ -9,7 +9,7 @@ Customers currently need to call or visit to book rooms. This manual process is 
 - Customers to view room availability and make bookings online.
 - Staff to manage bookings via an admin dashboard.
 - Reduction in phone traffic and manual entry errors.
-- Automate confirmation email process, reducing staff workload.
+- Automate the confirmation email process, reducing staff workload.
 - Optional: future support for online payments.
 
 ## ✅ Goals for MVP
@@ -40,7 +40,7 @@ Customers currently need to call or visit to book rooms. This manual process is 
 
 - **Frontend:** React / Next.js / HTML / CSS
 - **Backend:** Node.js + Express
-- **Database:** MongoDB or PostgreSQL
+- **Database:** MongoDB
 - **Authentication:** (Optional) JWT or session-based auth
 - **Hosting:** Vercel / Render / Railway
 
