@@ -1,6 +1,6 @@
 # 🎉 Party Booking
 
-A web application that allows users to easily book party rooms online — streamlining the process for both customers and staff.
+A web application that allows users to easily book party rooms online, streamlining the process for both customers and staff.
 
 ## 🚀 Project Overview
 
@@ -56,9 +56,10 @@ Customers currently need to call or visit to book rooms. This manual process is 
 | Method         | Route                         | Purpose                |
 |----------------|-------------------------------|------------------------|
 | GET            | /availability/:yyyy-mm-dd          | Get available time slots per room       |
-| POST           | admin/bookings                     | Create a new booking   |
+| GET            | /bookings                          | Create a new booking   |
 | GET            | admin/bookings                     | Get all bookings       |
 | GET            | admin/bookings/date/:yyyy-mm-dd    | Get bookings for a specific date     |
-| POST           | admin/bookings                     | Create a new booking   |
-| POST           | admin/bookings/id                  | Edit booking (id)      |
-| DELETE         | admin/bookings/id                  | Delete booking (id)    |
+| POST           | admin/bookings/:id                  | Edit booking (id)      |
+| DELETE         | admin/bookings/:id                  | Delete booking (id)    |
+
+
