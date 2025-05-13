@@ -56,9 +56,9 @@ Customers currently need to call or visit to book rooms. This manual process is 
 | Method         | Route                         | Purpose                |
 |----------------|-------------------------------|------------------------|
 | GET            | /availability/:yyyy-mm-dd          | Get available time slots per room       |
-| GET            | /bookings                          | Create a new booking   |
 | GET            | admin/bookings                     | Get all bookings       |
 | GET            | admin/bookings/date/:yyyy-mm-dd    | Get bookings for a specific date     |
+| POST           | /bookings                          | Create a new booking   |
 | POST           | admin/bookings/:id                  | Edit booking (id)      |
 | DELETE         | admin/bookings/:id                  | Delete booking (id)    |
 
