@@ -26,7 +26,7 @@ Customers currently need to call or visit to book rooms. This manual process is 
 ### Customer Side
 - View available party rooms
 - Submit booking requests with date/time
-- Receive confirmation email after booking
+- Receive a confirmation email after booking
 
 ### Admin Side
 - Secure login
@@ -56,10 +56,10 @@ Customers currently need to call or visit to book rooms. This manual process is 
 | Method         | Route                         | Purpose                |
 |----------------|-------------------------------|------------------------|
 | GET            | /availability/:yyyy-mm-dd          | Get available time slots per room       |
-| GET            | /bookings                          | Create a new booking   |
 | GET            | admin/bookings                     | Get all bookings       |
 | GET            | admin/bookings/date/:yyyy-mm-dd    | Get bookings for a specific date     |
-| POST           | admin/bookings/:id                  | Edit booking (id)      |
+| POST           | /bookings                          | Create a new booking   |
+| PATCH          | admin/bookings/:id                  | Edit booking (id)      |
 | DELETE         | admin/bookings/:id                  | Delete booking (id)    |
 
 
