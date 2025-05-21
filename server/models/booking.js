@@ -50,4 +50,4 @@ bookingSchema.virtual('customer.fullName').get(function () {
 //   return `/admin/booking/${this._id}`;
 // });
 
-module.exports = mongoose.model('Booking', bookingSchema)
+// module.exports = mongoose.model('Booking', bookingSchema)

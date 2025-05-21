@@ -8,9 +8,10 @@ const app = express()
 const port = 3000
 
 main().catch((err) => console.log(err))
+
 async function main() {
-  await mongoose.connect(process.env.MONGO_URI_DEV)
-  console.log(process.env.MONGO_URI_DEV, 'has connected succesfully ')
+  await mongoose.connect(process.env.MONGO_URI_PROD)
+  console.log('MongoDB Atlas has connected successfully')
 }
 
 app.use('/admin', adminRouter)
