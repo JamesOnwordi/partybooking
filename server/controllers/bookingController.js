@@ -18,6 +18,11 @@ exports.booking_list = asyncHandler(async (req, res, next) => {
   res.send(` list of all bookings `)
 })
 
+// // get a specific bookings
+// exports.booking_ = asyncHandler(async (req, res, next) => {
+//   res.send(` list of a specific booking ${req.params.id}`)
+// })
+
 // get specific date booking
 exports.booking_get = asyncHandler(async (req, res, next) => {
   res.send(` details for booking ${req.params.id}`)

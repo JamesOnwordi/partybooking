@@ -1,9 +1,11 @@
-const express  = require('express')
+const express = require('express')
 const router = express.Router()
 
 const booking_controller = require('../controllers/bookingController')
 
 router.get('/', booking_controller.booking_list)
+
+// router.get('/:id', booking_controller.bo)
 
 router.get('/:date', booking_controller.booking_get)
 
