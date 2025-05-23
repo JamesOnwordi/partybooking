@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 const { Schema } = mongoose
 
-const bokingSchema = new Schema(
+const bookingSchema = new Schema(
   {
     date: { type: Date, required: true },
     timeslot: {
@@ -45,9 +45,14 @@ bookingSchema.virtual('customer.fullName').get(function () {
   return ''
 })
 
+// Virtual for total capacity
+bookingSchema.virtual('capacity.total').get(function () {
+  return this.capacity.kids + this.capacity.adults
+})
+
 // Optional virtual URL
 // bookingSchema.virtual('url').get(function () {
 //   return `/admin/booking/${this._id}`;
 // });
 
-// module.exports = mongoose.model('Booking', bookingSchema)
+module.exports = mongoose.model('Booking', bookingSchema)

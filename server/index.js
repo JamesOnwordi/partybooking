@@ -14,10 +14,16 @@ async function main() {
   console.log('MongoDB Atlas has connected successfully')
 }
 
+app.use(express.json())
+app.use(cors())
+
 app.use('/admin', adminRouter)
 app.use('/', bookingsRouter)
 
-app.use(cors())
+app.use((err, req, res, next) => {
+  console.error('🔥 Error:', err.message)
+  res.status(500).json({ error: err.message })
+})
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`)
