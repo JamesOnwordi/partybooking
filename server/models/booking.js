@@ -26,10 +26,15 @@ const bookingSchema = new Schema(
       gender: { type: String, enum: ['Male', 'Female'] },
       turning: { type: Number }
     },
-    capacity: {
-      kids: { type: Number, default: 8 },
-      adults: { type: Number, default: 8 }
+    reservation: {
+      kids: { type: Number },
+      adults: { type: Number },
+      rooms: {
+      type: Number,
+      enum: [1,2]
+    }
     },
+    
     addons: [{ type: String }]
   },
   {
