@@ -1,6 +1,5 @@
-const mongoose = require('mongoose')
-
-const { Schema } = mongoose
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
 const bookingSchema = new Schema(
   {
@@ -18,46 +17,68 @@ const bookingSchema = new Schema(
     customer: {
       first_name: { type: String, required: true, maxLength: 100 },
       last_name: { type: String, required: true, maxLength: 100 },
-      phone: { type: String, required: true },
-      email: { type: String, required: true }
+      phone: {
+        type: String,
+        required: true,
+        match: [/^\+?\d{10,15}$/, 'Please enter a valid phone number']
+      },
+      email: {
+        type: String,
+        required: true,
+        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
+      }
     },
     celebrant: {
       name: { type: String },
       gender: { type: String, enum: ['Male', 'Female'] },
-      turning: { type: Number }
+      ageTurning: { type: Number }
     },
     reservation: {
-      kids: { type: Number },
-      adults: { type: Number },
-      rooms: {
-      type: Number,
-      enum: [1,2]
-    }
+      kids: { type: Number, default: 0 },
+      adults: { type: Number, default: 0 },
+      noOfRooms: {
+        type: Number,
+        enum: [1, 2],
+        required: true
+      }
     },
-    
     addons: [{ type: String }]
   },
   {
     timestamps: true
   }
-)
+);
 
-// Virtual for customer's full name
-bookingSchema.virtual('customer.fullName').get(function () {
-  if (this.customer && this.customer.first_name && this.customer.last_name) {
-    return `${this.customer.first_name} ${this.customer.last_name}`
+// Virtual: Customer full name
+bookingSchema.virtual('customerFullName').get(function () {
+  if (this.customer?.first_name && this.customer?.last_name) {
+    return `${this.customer.first_name} ${this.customer.last_name}`;
   }
-  return ''
-})
+  return '';
+});
 
-// Virtual for total capacity
-bookingSchema.virtual('capacity.total').get(function () {
-  return this.capacity.kids + this.capacity.adults
-})
+// Virtual: Total guests (kids + adults)
+bookingSchema.virtual('reservation.totalGuests').get(function () {
+  return (this.reservation.kids || 0) + (this.reservation.adults || 0);
+});
 
-// Optional virtual URL
-// bookingSchema.virtual('url').get(function () {
-//   return `/admin/booking/${this._id}`;
-// });
+// Pre-save hook: Default kids if not set, and validate capacity
+bookingSchema.pre('save', function (next) {
+  const totalCapacity = this.reservation.noOfRoom === 2 ? 16 : 8;
 
-module.exports = mongoose.model('Booking', bookingSchema)
+  // Set default kids if not provided
+  if (this.reservation.kids == null && this.reservation.adults == null) {
+    this.reservation.kids = totalCapacity;
+    this.reservation.adults = 0;
+  }
+
+  const totalGuests = (this.reservation.kids || 0) + (this.reservation.adults || 0);
+  if (totalGuests > totalCapacity) {
+    return next(new Error('Total guests exceed the allowed capacity for selected room count.'));
+  }
+
+  next();
+});
+
+module.exports = mongoose.model('Booking', bookingSchema);
+
