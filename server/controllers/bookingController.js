@@ -1,17 +1,30 @@
+const { raw } = require('express')
 const Bookings = require('../models/booking')
 const asyncHandler = require('express-async-handler')
 
 // customer accessible routes
 // get available timeslots
-exports.booking_available = asyncHandler(async (req, res, next) => {
+exports.timeslots_available = asyncHandler(async (req, res, next) => {
   try {
-    const booking = await Bookings.find({ date: '2025-06-15' })
+    const bookings = await Bookings.find(
+      { date: req.params.date },
+      'reservation.noOfRooms timeslot'
+    ).exec()
+    timeslots = ['12PM', '2PM', '4PM', '6PM']
+    bookedTimeslot = {}
+    bookings.map((booking) => {
+      console.log(booking)
+      if (bookedTimeslot[booking.bookedTimeslot]) {
+        bookedTimeslot[booking.bookedTimeslot] += booking.reservation.noOfRooms
+      } else {
+        bookedTimeslot[booking.bookedTimeslot] = booking.reservation.noOfRooms
+      }
+    })
     res.status(201).json({
       message: '',
-      booking
+      bookedTimeslot
     })
     console.log(` list of available timeslot for ${req.params.date} `)
-    res.send(` list of available timeslot for ${req.params.date} `)
   } catch (error) {
     console.error(' Error finding date')
     res.status(400).json({ error: error.message })
@@ -21,11 +34,13 @@ exports.booking_available = asyncHandler(async (req, res, next) => {
 // create a new booking
 exports.booking_create = asyncHandler(async (req, res, next) => {
   try {
-    const booking = await Bookings.create(req.body)
-    res.status(201).json({
-      message: 'Booking Created Succesfully',
-      booking
-    })
+    if (bookingAvailable) {
+      const booking = await Bookings.create(req.body)
+      res.status(201).json({
+        message: 'Booking Created Succesfully',
+        booking
+      })
+    }
   } catch (error) {
     console.error('Booking creation error:', error.message)
     res.status(400).json({ error: error.message })
@@ -54,7 +69,16 @@ exports.booking_list = asyncHandler(async (req, res, next) => {
 
 // get specific date booking
 exports.booking_get = asyncHandler(async (req, res, next) => {
-  res.send(` details for booking ${req.params.id}`)
+  try {
+    const booking = await Bookings.find({ date: req.params.id })
+    res.status(201).json({
+      message: `List of all ${req.params.id} bookings`,
+      booking
+    })
+  } catch (error) {
+    console.error("couldn't get booking", error.message)
+    res.status(400).json({ error: error.message })
+  }
 })
 
 // edit a booking
@@ -66,3 +90,5 @@ exports.booking_edit = asyncHandler(async (req, res, next) => {
 exports.booking_delete = asyncHandler(async (req, res, next) => {
   res.send(` deleted booking ${req.params.id}`)
 })
+
+const bookingAvailable = () => {}
