@@ -10,9 +10,8 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       { date: req.params.date },
       'reservation.noOfRooms timeslot'
     ).exec()
-    timeslots = ['12PM', '2PM', '4PM', '6PM']
-    bookedTimeslot = {}
-    bookings.map((booking) => {
+     const timeslots = ['12PM', '2PM', '4PM', '6PM']
+     const bookedTimeslot = bookings.map((booking) => {
       console.log(booking)
       if (bookedTimeslot[booking.bookedTimeslot]) {
         bookedTimeslot[booking.bookedTimeslot] += booking.reservation.noOfRooms
@@ -21,7 +20,7 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       }
     })
     res.status(201).json({
-      message: '',
+      message: ' List of available timeslots',
       bookedTimeslot
     })
     console.log(` list of available timeslot for ${req.params.date} `)
