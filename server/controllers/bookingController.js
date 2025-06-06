@@ -21,14 +21,15 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + noOfRooms
     })
 
-    const availableRooms = {}
+    const timeslotAvailability = {}
     TIMESLOTS.forEach((slot) => {
-      availableRooms[slot] = MAX_ROOMS_PER_TIMESLOT - (roomsBooked[slot] || 0)
+      timeslotAvailability[slot] =
+        MAX_ROOMS_PER_TIMESLOT - (roomsBooked[slot] || 0)
     })
 
     res.status(200).json({
       message: `List of available timeslots for ${req.params.date}`,
-      availableRooms
+      timeslotAvailability
     })
 
     console.log(`List of available timeslots for ${req.params.date}`)
