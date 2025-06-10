@@ -52,30 +52,44 @@ export default function CalendarPage() {
       const availability = availableTimeslot[timeslot] ?? 0
       const isSelected = selectedTimeslot === timeslot
 
-      let baseClass = 'w-full text-center p-2 rounded-md transition-all text-sm'
+      let baseClass = ' text-center p-2 rounded-md ring-1 ring-gray-300 border-solid border-purple-400 transition-all text-sm'
+      let availabilityIndicator = ''
       let stateClass = ''
+      let message = 'no room available'
 
       if (availability === 0) {
-        stateClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
+        stateClass = 'text-gray-400  cursor-not-allowed'
+        availabilityIndicator = 'bg-gray-100'
       } else if (availability === 1) {
         stateClass =
-          'text-yellow-800 bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
+          'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
+        availabilityIndicator = 'bg-yellow-100'
+          message = '1 room available '
       } else if (availability === 2) {
         stateClass =
-          'text-green-800 bg-green-100 hover:bg-green-200 cursor-pointer'
+          'text-green-800 hover:bg-green-200 cursor-pointer'
+          availabilityIndicator = 'bg-green-100 '
+          message = '2 rooms available'
       }
 
-      const selectedClass = isSelected ? 'ring-2 ring-red-300' : ''
+      const selectedClass = isSelected ? 'ring-2 bg-purple-300' : ''
 
       return (
+        <div className='flex'>
+        
         <button
           key={timeslot}
-          className={`${baseClass} ${stateClass} ${selectedClass}`}
+          className={`${baseClass} ${stateClass} ${selectedClass} w-32  `}
           disabled={availability === 0}
           onClick={() => handleSelectedTimeslot(timeslot)}
         >
           {TIMESLOTS[timeslot]}
         </button>
+
+        <p className=' w-36 text-left p-2 rounded-md text-sm text-gray-500'>
+          {message}
+        </p>
+        </div>
       )
     })
   }
@@ -88,42 +102,37 @@ export default function CalendarPage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Calendar */}
-        <div className="bg-white shadow-md rounded-md p-4 w-full lg:w-1/3">
+        <div className=" p-4 w-full lg:w-1/3">
           <h2 className="text-lg text-center font-semibold mb-4">
             Choose a Date
           </h2>
+          <div className='flex justify-center'>
           <Calendar
+
             onChange={handleDateChange}
-            minDate={new Date()}
+            minDate={new Date(new Date().setDate(new Date().getDate() + 2))}
+            maxDate={new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)}
             value={date}
             className="react-calendar"
           />
-        </div>
-
-        {/* Timeslots */}
-        <div className="bg-white shadow-md rounded-md p-4 w-full lg:w-1/3">
-          <h2 className="text-lg text-center font-semibold mb-4">
-            Select a Timeslot
-          </h2>
-          <div className="flex flex-col gap-3">{renderTimeslots()}</div>
-          <div className="text-sm text-gray-600 mb-4 text-center">
-            <p>
-              <span className="inline-block w-3 h-3 bg-green-200 rounded-full mr-2 border border-green-400"></span>
-              2 rooms available
-            </p>
-            <p>
-              <span className="inline-block w-3 h-3 bg-yellow-200 rounded-full mr-2 border border-yellow-400"></span>
-              1 room left
-            </p>
-            <p>
-              <span className="inline-block w-3 h-3 bg-gray-200 rounded-full mr-2 border border-gray-400"></span>
-              Unavailable
-            </p>
+         
           </div>
         </div>
 
+        {/* Timeslots */}
+        <div className="bgwhite shadow-d flex flex-col justify-center rounded-md p-4 w-full lg:w-1/3">
+        
+          <h2 className="text-lg text-enter font-semibold mb-4">
+            Select a Timeslot
+          </h2>
+          <div className="flex ites-center  flex-col gap-3">{renderTimeslots()}</div>
+          <div></div>
+
+          
+        </div>
+
         {/* Info Panel */}
-        <div className="bg-white shadow-md rounded-md p-4 w-full lg:w-1/3">
+        <div className=" p-4 w-full lg:w-1/3">
           <h2 className="text-lg font-semibold mb-2">Booking Info</h2>
           {selectedTimeslot ? (
             <p className="text-gray-800">
@@ -134,12 +143,19 @@ export default function CalendarPage() {
             <p className="text-gray-500">Select a timeslot to see details.</p>
           )}
           <p className="mt-4 text-sm text-gray-600">
-            Selected date: <strong>{date.toISOString().slice(0, 10)}</strong>
+            Selected date: <strong>{date.toDateString()}</strong>
           </p>
           <p className="text-sm text-gray-600">
             Selected timeslot:{' '}
             <strong>{selectedTimeslot ?? 'None selected'}</strong>
           </p>
+          {selectedTimeslot && <a href='/booking/form'>
+          
+            <button class="h-5 mt-12 w-5 text-xl" >
+            Book
+          </button>
+          </a>}
+          
         </div>
       </div>
     </div>
