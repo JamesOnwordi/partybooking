@@ -10,6 +10,7 @@ export default function CalendarPage() {
   const [date, setDate] = useState(new Date())
   const [availableTimeslot, setAvailableTimeslot] = useState({})
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
+  const [selectedPackage, setSelectedPackage] = useState(null)
 
   const TIMESLOTS = {
     '12PM': '12PM - 1:30PM',
@@ -17,9 +18,14 @@ export default function CalendarPage() {
     '4PM': '4PM - 5:30PM',
     '6PM': '6PM - 7:30PM'
   }
+  const PACKAGES = ['Solar', 'Galaxy']
 
   const handleSelectedTimeslot = (timeslot) => {
     setSelectedTimeslot(timeslot)
+  }
+
+  const handleSelectedPackage = (partyPackage) => {
+    setSelectedPackage(partyPackage)
   }
 
   const handleDateChange = async (newDate) => {
@@ -94,6 +100,41 @@ export default function CalendarPage() {
     })
   }
 
+  const renderPackages = () =>{
+      
+    return (
+      PACKAGES.map((partyPackage)=>{
+      const selectionAllowed = selectedTimeslot
+      const isSelected = selectedPackage == partyPackage
+      let baseClass = ' text-center p-2 rounded-md ring-1 ring-gray-300 border-solid border-purple-400 transition-all text-sm'
+      let stateClass = ''
+      const selectedClass = isSelected ? 'ring-2 bg-purple-300' : ''
+      
+      if(selectionAllowed){
+         stateClass= 'text-green-800 cursor-pointer' 
+      }
+      else{
+        stateClass= 'text-gray-400 cursor-not-allowed' 
+      }
+       return(
+        <div className='flex'>
+      
+        <button
+          key={partyPackage}
+          className={`${baseClass} ${stateClass} ${selectedClass} w-32  `}
+          disabled={!selectedTimeslot}
+          onClick={() => handleSelectedPackage(partyPackage)}
+        >
+          {partyPackage}
+        </button>
+        </div>
+       ) 
+      })
+        
+      )
+
+  }
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-pink-600 mb-8">
@@ -120,15 +161,19 @@ export default function CalendarPage() {
         </div>
 
         {/* Timeslots */}
-        <div className="bgwhite shadow-d flex flex-col justify-center rounded-md p-4 w-full lg:w-1/3">
-        
+        <div className="w-1/ flex flex-col justify-center rounded-md p-4  lg:w-1/">
           <h2 className="text-lg text-enter font-semibold mb-4">
             Select a Timeslot
           </h2>
           <div className="flex ites-center  flex-col gap-3">{renderTimeslots()}</div>
-          <div></div>
+        </div>
 
-          
+        {/* Package */}
+        <div className="w-1/  flex flex-col justify-center rounded-md p-4 w- lg:w-1/6">
+          <h2 className='text-lg font-semibold mb-4'>
+            Select a Package
+          </h2>
+          <div className='flex flex-col gap-3'>{renderPackages()}</div>
         </div>
 
         {/* Info Panel */}
@@ -149,7 +194,7 @@ export default function CalendarPage() {
             Selected timeslot:{' '}
             <strong>{selectedTimeslot ?? 'None selected'}</strong>
           </p>
-          {selectedTimeslot && <a href='/booking/form'>
+          {selectedPackage && <a href='/booking/form'>
           
             <button class="h-5 mt-12 w-5 text-xl" >
             Book
