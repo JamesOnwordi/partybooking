@@ -3,6 +3,7 @@
 import axios from 'axios'
 import Calendar from 'react-calendar'
 import { useState } from 'react'
+import { calculatePrice, getAvailability } from '@/utils/bookingUtils'
 import Link from 'next/link'
 import 'react-calendar/dist/Calendar.css'
 
@@ -44,60 +45,51 @@ export default function CalendarPage() {
     const choosenDate = newDate.toISOString().slice(0, 10)
     setDate(newDate)
     setSelectedDate(choosenDate)
-    // setSelectedTimeslot(null)
-    // setSelectedPackage(null)
 
-    try {
-      const res = await axios.get(`http://localhost:4000/${choosenDate}`)
-      const timeslotData = res.data?.timeslotAvailability
-      setAvailableTimeslot(typeof timeslotData === 'object' ? timeslotData : {})
-    } catch (err) {
-      console.error('Failed to fetch timeslots:', err)
-      setAvailableTimeslot({})
-    }
+    setAvailableTimeslot( await getAvailability(newDate))
   }
 
-  const calculatePrice = () => {
-    if (!selectedPackage || !selectedTimeslot || !date) return null
+  // const calculatePrice = () => {
+  //   if (!selectedPackage || !selectedTimeslot || !date) return null
 
-    const day = date.getDay()
-    const cleaningFee = selectedRoom === ROOMS[0]?40:60
-    const taxRate = 0.05
+  //   const day = date.getDay()
+  //   const cleaningFee = selectedRoom === ROOMS[0]?40:60
+  //   const taxRate = 0.05
 
-    if (selectedPackage === 'Solar') {
+  //   if (selectedPackage === 'Solar') {
 
-      let basePrice = 0
-      selectedRoom === ROOMS[1]?
-         (basePrice = (day >= 1 && day <= 4) ? (295*1.7) : (395*1.7))
-         : (basePrice = (day >= 1 && day <= 4) ? 295 : 395)
+  //     let basePrice = 0
+  //     selectedRoom === ROOMS[1]?
+  //        (basePrice = (day >= 1 && day <= 4) ? (295*1.7) : (395*1.7))
+  //        : (basePrice = (day >= 1 && day <= 4) ? 295 : 395)
 
-      const priceWithoutTax = basePrice + cleaningFee
-      const tax = priceWithoutTax * taxRate
-      const total = priceWithoutTax + tax
+  //     const priceWithoutTax = basePrice + cleaningFee
+  //     const tax = priceWithoutTax * taxRate
+  //     const total = priceWithoutTax + tax
 
-      return {
-        base: basePrice,
-        tax,
-        cleaning: cleaningFee,
-        total
-      }
-    }
+  //     return {
+  //       base: basePrice,
+  //       tax,
+  //       cleaning: cleaningFee,
+  //       total
+  //     }
+  //   }
 
-    if (selectedPackage === 'Galaxy') {
-      let basePrice = ([ROOMS[0],null].includes(selectedRoom))?495:(495 * 1.7)
+  //   if (selectedPackage === 'Galaxy') {
+  //     let basePrice = ([ROOMS[0],null].includes(selectedRoom))?495:(495 * 1.7)
       
-      const tax = basePrice * taxRate
-      const total = basePrice + tax
-      return {
-        base: basePrice,
-        tax,
-        cleaning: 0,
-        total
-      }
-    }
+  //     const tax = basePrice * taxRate
+  //     const total = basePrice + tax
+  //     return {
+  //       base: basePrice,
+  //       tax,
+  //       cleaning: 0,
+  //       total
+  //     }
+  //   }
 
-    return null
-  }
+  //   return null
+  // }
 
   const renderTimeslots = () => {
     return Object.keys(TIMESLOTS).map((timeslot) => {
@@ -243,7 +235,8 @@ export default function CalendarPage() {
             <div className="mt-4 text-sm text-gray-600">
               <h3 className="font-semibold mb-1">Price Details:</h3>
               {(() => {
-                const pricing = calculatePrice()
+                console.log(date, selectedPackage, selectedRoom )
+                const pricing = calculatePrice({date, selectedPackage, selectedRoom} )
                 return pricing ? (
                   <div className="space-y-1">
                     <p>Base price: <strong>${pricing.base.toFixed(2)}</strong></p>
@@ -267,7 +260,7 @@ export default function CalendarPage() {
             <Link href={{
               pathname :  "/booking/form",
               query: {
-                selectedDate,
+                date,
                 selectedTimeslot,
                 selectedPackage,
                 selectedRoom

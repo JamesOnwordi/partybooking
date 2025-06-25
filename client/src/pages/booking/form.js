@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/router'
 import { use, useEffect, useState } from 'react'
+import { getAvailability } from '@/utils/bookingUtils'
 
 
 export default function Form() {
@@ -10,10 +11,7 @@ export default function Form() {
   const router = useRouter()
   const {selectedDate, selectedTimeslot, selectedPackage,selectedRoom} = router.query
 
-  useEffect(()=>{
-
-  })
-  useEffect(()=>{
+  useEffect(async ()=>{
     if(selectedPackage)
       setValue('partyPackage', selectedPackage)
     if(selectedDate)
@@ -23,6 +21,14 @@ export default function Form() {
     if(selectedRoom)
       setValue('partyRoom', selectedRoom)
   },[selectedDate, selectedTimeslot, selectedPackage,selectedRoom])
+
+  const timeslotList = ()=>{
+     const timeslots = getAvailability(new Date(selectedDate))
+     return Object.keys(timeslots).map((timeslot)=>{
+      console.log(timeslot)
+      return <p></p>
+    })
+  }
 
   const onSubmit = (data) => {
     console.log('Form Data:', data)
@@ -68,8 +74,7 @@ export default function Form() {
             className="w-full p-2 border rounded-md"
           >
             <option value="">Select a Timeslot</option>
-            <option value="Solar">Solar</option>
-            <option value="Galaxy">Galaxy</option>
+            {timeslotList}
           </select>
         </div>
         <div>

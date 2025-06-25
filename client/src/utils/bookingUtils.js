@@ -1,5 +1,6 @@
 // utils/bookingUtils.js
 
+import axios from 'axios'
 export const ROOMS = ['Single', 'Combined']
 export const TIMESLOTS = {
   '12PM': '12PM - 1:30PM',
@@ -12,6 +13,7 @@ export const DEFAULT_KIDS = 8
 export const DEFAULT_ADULTS = 8
 
 export function calculatePrice({ date, selectedPackage, selectedRoom }) {
+console.log(date,selectedPackage,selectedRoom )
   if (!selectedPackage || !selectedRoom || !date) return null
 
   const day = new Date(date).getDay()
@@ -39,3 +41,16 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
 
   return null
 }
+
+export async function getAvailability (date) {
+    const choosenDate = date.toISOString().slice(0, 10)
+    try {
+      const res = await axios.get(`http://localhost:4000/${choosenDate}`)
+      const timeslotData = res.data?.timeslotAvailability
+      console.log(timeslotData)
+      return (typeof timeslotData === 'object' ? timeslotData : {})
+    } catch (err) {
+      console.error('Failed to fetch timeslots:', err)
+      return ({})
+    }
+  }
