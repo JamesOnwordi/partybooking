@@ -2,6 +2,9 @@
 
 import axios from 'axios'
 export const ROOMS = ['Single', 'Combined']
+export const PACKAGES = ['Solar', 'Galaxy']
+export const CAPACITY = [8, 16]
+export const MAX_CAPACITY = [20, 40]
 export const TIMESLOTS = {
   '12PM': '12PM - 1:30PM',
   '2PM': '2PM - 3:30PM',
@@ -43,14 +46,20 @@ console.log(date,selectedPackage,selectedRoom )
 }
 
 export async function getAvailability (date) {
+  // console.log(choosenDate)
+    if (!(date instanceof Date) || isNaN(date)) return {}
     const choosenDate = date.toISOString().slice(0, 10)
+
     try {
-      const res = await axios.get(`http://localhost:4000/${choosenDate}`)
-      const timeslotData = res.data?.timeslotAvailability
-      console.log(timeslotData)
-      return (typeof timeslotData === 'object' ? timeslotData : {})
-    } catch (err) {
-      console.error('Failed to fetch timeslots:', err)
-      return ({})
-    }
+    const res = await axios.get(`http://localhost:4000/${choosenDate}`)
+    const timeslotData = res.data?.timeslotAvailability
+
+    console.log('Fetched timeslot data:', timeslotData)
+
+    // Ensure timeslotData is an object
+    return typeof timeslotData === 'object' && timeslotData !== null ? timeslotData : {}
+  } catch (err) {
+    console.error('Failed to fetch timeslots:', err.message)
+    return {}
+  }
   }

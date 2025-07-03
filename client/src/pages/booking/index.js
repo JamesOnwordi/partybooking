@@ -1,178 +1,140 @@
 'use client'
 
-import axios from 'axios'
 import Calendar from 'react-calendar'
-import { useState } from 'react'
-import { calculatePrice, getAvailability } from '@/utils/bookingUtils'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { DateTime } from 'luxon'
+import { calculatePrice, getAvailability, TIMESLOTS, PACKAGES, ROOMS } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
 
 export default function CalendarPage() {
   const [date, setDate] = useState(new Date())
-  const [selectedDate, setSelectedDate]=useState()
+  const [selectedDate, setSelectedDate] = useState()
   const [availableTimeslot, setAvailableTimeslot] = useState({})
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
-  const [selectedRoom,setSelectedRoom] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(null)
 
-  const TIMESLOTS = {
-    '12PM': '12PM - 1:30PM',
-    '2PM': '2PM - 3:30PM',
-    '4PM': '4PM - 5:30PM',
-    '6PM': '6PM - 7:30PM'
-  }
+  // Restore saved state
+  useEffect(() => {
+    const saved = localStorage.getItem('initialBooking')
+    if (!saved) return
 
-  const PACKAGES = ['Solar', 'Galaxy']
+    const parsed = JSON.parse(saved)
+    if (parsed.selectedDate) {
+    console.log(saved)
+      const restoredDate = DateTime.fromISO('2025-07-12', { zone: 'America/Denver' }).toJSDate()
+      console.log('Restored date:', restoredDate, selectedDate)
+      setDate(restoredDate)
+      setSelectedDate(parsed.selectedDate)
+      getAvailability(restoredDate).then(setAvailableTimeslot)
+    }
+    setSelectedTimeslot(parsed.selectedTimeslot ?? null)
+    setSelectedPackage(parsed.selectedPackage ?? null)
+    setSelectedRoom(parsed.selectedRoom ?? null)
+  }, [])
 
-  const ROOMS = ['Single', 'Combined']
+  // Save state to localStorage on change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        'initialBooking',
+        JSON.stringify({
+          date: date.toISOString(),
+          // Ensure we save the actual date string
+          selectedDate: date.toISOString().slice(0, 10),
+          // Save the selected values
+          // This ensures we save the date in YYYY-MM-DD format
+          // and not the Date object itself   
+          selectedDate,
+          selectedTimeslot,
+          selectedPackage,
+          selectedRoom,
+        })
+      )
+    }
+    console.log(date.toISOString(), selectedDate, selectedTimeslot, selectedPackage, selectedRoom)
+  }, [selectedDate, selectedTimeslot, selectedPackage, selectedRoom])
 
-  const handleSelectedTimeslot = (timeslot) => {
-    setSelectedTimeslot(timeslot)
-    // setSelectedPackage(null)
-    // setSelectedRoom(null)
-  }
-
-  const handleSelectedPackage = (partyPackage) => {
-    setSelectedPackage(partyPackage)
-    //
-  }
-
-  const handleSelectedselectedRoom = (room) =>{
-    setSelectedRoom(room)
-  }
-
+  // Handle calendar date change
   const handleDateChange = async (newDate) => {
-    const choosenDate = newDate.toISOString().slice(0, 10)
+    const chosenDate = newDate.toISOString().slice(0, 10)
     setDate(newDate)
-    setSelectedDate(choosenDate)
-
-    setAvailableTimeslot( await getAvailability(newDate))
+    setSelectedDate(chosenDate)
+    const availability = await getAvailability(newDate)
+    setAvailableTimeslot(availability)
+    // Reset selections for the new date
+    setSelectedTimeslot(null)
+    setSelectedPackage(null)
+    setSelectedRoom(null)
   }
 
-  // const calculatePrice = () => {
-  //   if (!selectedPackage || !selectedTimeslot || !date) return null
+  const handleBookNow = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        'initialBooking',
+        JSON.stringify({
+          selectedDate,
+          selectedTimeslot,
+          selectedPackage,
+          selectedRoom,
+        })
+      )
+    }
+    window.location.href = '/booking/form'
+  }
 
-  //   const day = date.getDay()
-  //   const cleaningFee = selectedRoom === ROOMS[0]?40:60
-  //   const taxRate = 0.05
+  const renderButtonGroup = (items, selected, handler, disabled, labelMap = {}) =>
+    items.map((item) => {
+      const isSelected = selected === item
+      const baseClass =
+        disabled ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-green-800 hover:bg-green-100 cursor-pointer'
+      const selectedClass = isSelected ? 'ring-2 ring-purple-800 bg-green-200' : ''
 
-  //   if (selectedPackage === 'Solar') {
+      return (
+        <div key={item} className="flex items-center gap-2">
+          <button
+            className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${baseClass} ${selectedClass}`}
+            disabled={disabled}
+            onClick={() => handler(item)}
+          >
+            {labelMap[item] ?? item}
+          </button>
+        </div>
+      )
+    })
 
-  //     let basePrice = 0
-  //     selectedRoom === ROOMS[1]?
-  //        (basePrice = (day >= 1 && day <= 4) ? (295*1.7) : (395*1.7))
-  //        : (basePrice = (day >= 1 && day <= 4) ? 295 : 395)
+  const renderTimeslots = () =>
+    Object.keys(TIMESLOTS).map((slot) => {
+      const availability = availableTimeslot[slot] ?? 0
+      const disabled = availability === 0
+      const selected = selectedTimeslot === slot
 
-  //     const priceWithoutTax = basePrice + cleaningFee
-  //     const tax = priceWithoutTax * taxRate
-  //     const total = priceWithoutTax + tax
-
-  //     return {
-  //       base: basePrice,
-  //       tax,
-  //       cleaning: cleaningFee,
-  //       total
-  //     }
-  //   }
-
-  //   if (selectedPackage === 'Galaxy') {
-  //     let basePrice = ([ROOMS[0],null].includes(selectedRoom))?495:(495 * 1.7)
-      
-  //     const tax = basePrice * taxRate
-  //     const total = basePrice + tax
-  //     return {
-  //       base: basePrice,
-  //       tax,
-  //       cleaning: 0,
-  //       total
-  //     }
-  //   }
-
-  //   return null
-  // }
-
-  const renderTimeslots = () => {
-    return Object.keys(TIMESLOTS).map((timeslot) => {
-      const availability = availableTimeslot[timeslot] ?? 0
-      const isSelected = selectedTimeslot === timeslot
-
-      let stateClass = ''
+      let stateClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
       let message = 'No room available'
 
-      if (availability === 0) {
-        stateClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
-      } else if (availability === 1) {
+      if (availability === 1) {
         stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
         message = '1 room available'
       } else if (availability >= 2) {
-        stateClass = 'text-green-800  hover:bg-green-200 cursor-pointer'
+        stateClass = 'text-green-800 hover:bg-green-200 cursor-pointer'
         message = '2 rooms available'
       }
 
-      const selectedClass = isSelected ? 'ring-2 ring-purple-900 bg-green-200' : ''
+      const selectedClass = selected ? 'ring-2 ring-purple-900 bg-green-200' : ''
 
       return (
-        <div key={timeslot} className="flex items-center gap-2">
+        <div key={slot} className="flex items-center gap-2">
           <button
             className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
-            disabled={availability === 0}
-            onClick={() => handleSelectedTimeslot(timeslot)}
+            disabled={disabled}
+            onClick={() => setSelectedTimeslot(slot)}
           >
-            {TIMESLOTS[timeslot]}
+            {TIMESLOTS[slot]}
           </button>
           <p className="text-sm text-gray-500 w-36">{message}</p>
         </div>
       )
     })
-  }
-
-  const renderPackages = () => {
-    return PACKAGES.map((partyPackage) => {
-      const isSelected = selectedPackage === partyPackage
-      const isDisabled = !selectedTimeslot
-
-      const stateClass = isDisabled
-        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-        : 'text-green-800 hover:bg-green-100 cursor-pointer'
-
-      const selectedClass = isSelected ? 'ring-2 ring-purple-800 bg-green-200' : ''
-
-      return (
-        <div key={partyPackage} className="flex items-center gap-2">
-          <button
-            className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
-            disabled={isDisabled}
-            onClick={() => handleSelectedPackage(partyPackage)}
-          >
-            {partyPackage}
-          </button>
-        </div>
-      )
-    })
-  }
-
-  const renderRooms = () => {
-    return ROOMS.map((room)=>{
-      
-      const isDisabled = !selectedPackage
-      const isSelected = selectedRoom === room
-      const stateClass = isDisabled ? 'text-gray-400 bg-gray-100 cursor-not-allowed':'text-green-800 hover:bg-green-100 cursor-pointer'
-      const selectedClass = isSelected? 'ring-2 ring-purple-800 bg-green-200': ''
-
-      return(
-        <div key={room} className='flex items-center gap-2'>
-          <button
-          className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
-          disabled = {isDisabled}
-          onClick = {() => handleSelectedselectedRoom(room)}
-          >
-          
-          {room}
-          </button>
-        </div>
-      )
-    })
-  }
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -199,30 +161,39 @@ export default function CalendarPage() {
           <div className="flex flex-col gap-3">{renderTimeslots()}</div>
         </div>
 
-        {/* Packages */}
+        {/* Package & Room */}
         <div className="w-full lg:w-1/6 p-4">
           <h2 className="text-lg font-semibold mb-4">Package</h2>
-          <div className="flex flex-col gap-3">{renderPackages()}</div>
-          <div className='text-lg font-semibold mt-4 mb-4'> Room </div>
-          <div className="flex flex-col gap-3">{renderRooms()}</div>
-           
+          <div className="flex flex-col gap-3">
+            {renderButtonGroup(PACKAGES, selectedPackage, setSelectedPackage, !selectedTimeslot)}
+          </div>
+
+          <div className="text-lg font-semibold mt-4 mb-4">Room</div>
+          <div className="flex flex-col gap-3">
+            {renderButtonGroup(ROOMS, selectedRoom, setSelectedRoom, !selectedPackage)}
+          </div>
         </div>
 
-        {/* Info Panel */}
+        {/* Info + Price + Book Now */}
         <div className="p-4 w-full lg:w-1/3">
           <h2 className="text-lg font-semibold mb-2">Booking Info</h2>
           {selectedTimeslot ? (
             <p className="text-gray-800">
-              Number of Rooms: <strong>{(selectedRoom === ROOMS[0])?1:(selectedRoom ===ROOMS[1])?2:'Select a Room'}</strong>
+              Number of Rooms:{' '}
+              <strong>
+                {selectedRoom === ROOMS[0] ? 1 : selectedRoom === ROOMS[1] ? 2 : 'Select a Room'}
+              </strong>
             </p>
           ) : (
             <p className="text-gray-500">Select a timeslot to see details.</p>
           )}
+
           <p className="mt-4 text-sm text-gray-600">
             Selected date: <strong>{date.toDateString()}</strong>
           </p>
           <p className="text-sm text-gray-600">
-            Selected timeslot: <strong>{TIMESLOTS[selectedTimeslot] ?? 'None selected'}</strong>
+            Selected timeslot:{' '}
+            <strong>{TIMESLOTS[selectedTimeslot] ?? 'None selected'}</strong>
           </p>
           <p className="text-sm text-gray-600">
             Selected package: <strong>{selectedPackage ?? 'None selected'}</strong>
@@ -235,18 +206,12 @@ export default function CalendarPage() {
             <div className="mt-4 text-sm text-gray-600">
               <h3 className="font-semibold mb-1">Price Details:</h3>
               {(() => {
-                console.log(date, selectedPackage, selectedRoom )
-                const pricing = calculatePrice({date, selectedPackage, selectedRoom} )
+                const pricing = calculatePrice({ date, selectedPackage, selectedRoom })
                 return pricing ? (
                   <div className="space-y-1">
                     <p>Base price: <strong>${pricing.base.toFixed(2)}</strong></p>
-                    
-                    {pricing.cleaning > 0 && (
-                      <p>Cleaning fee: <strong>${pricing.cleaning.toFixed(2)}</strong></p>
-                    )}
-                    {pricing.tax > 0 && (
-                      <p>Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong></p>
-                    )}
+                    {pricing.cleaning > 0 && <p>Cleaning fee: <strong>${pricing.cleaning.toFixed(2)}</strong></p>}
+                    {pricing.tax > 0 && <p>Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong></p>}
                     <p className="mt-1">
                       Total: <strong className="text-purple-700">${pricing.total.toFixed(2)}</strong>
                     </p>
@@ -257,24 +222,26 @@ export default function CalendarPage() {
           )}
 
           {selectedRoom ? (
-            <Link href={{
-              pathname :  "/booking/form",
-              query: {
-                date,
-                selectedTimeslot,
-                selectedPackage,
-                selectedRoom
-              }
-              }}>
-              <button className="mt-6 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
-                Book Now
-              </button>
-            </Link>
-          ):
-              <button disabled={true} className="mt-6 cursor-not-allowed px-4 py-2 bg-gray-300 text-white w-fit rounded  transition">
-                {(date.getDate() === new Date().getDate())?'Please Select a Date':!selectedTimeslot?'Please Select a Timeslot':!selectedPackage?'Please Select a Package':!selectedRoom?'Please Select a Room':''}
-              </button>
-            }
+            <button
+              onClick={handleBookNow}
+              className="mt-6 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+            >
+              Book Now
+            </button>
+          ) : (
+            <button
+              disabled
+              className="mt-6 cursor-not-allowed px-4 py-2 bg-gray-300 text-white rounded transition"
+            >
+              {!selectedDate
+                ? 'Please Select a Date'
+                : !selectedTimeslot
+                ? 'Please Select a Timeslot'
+                : !selectedPackage
+                ? 'Please Select a Package'
+                : 'Please Select a Room'}
+            </button>
+          )}
         </div>
       </div>
     </div>
