@@ -11,7 +11,7 @@ export default function CalendarPage() {
   const [availableTimeslot, setAvailableTimeslot] = useState({})
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
-  const [selectedRoom,setSelectedRoom] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(null)
 
   const TIMESLOTS = {
     '12PM': '12PM - 1:30PM',
@@ -35,7 +35,7 @@ export default function CalendarPage() {
     //
   }
 
-  const handleSelectedselectedRoom = (room) =>{
+  const handleSelectedselectedRoom = (room) => {
     setSelectedRoom(room)
   }
 
@@ -59,15 +59,14 @@ export default function CalendarPage() {
     if (!selectedPackage || !selectedTimeslot || !date) return null
 
     const day = date.getDay()
-    const cleaningFee = selectedRoom === ROOMS[0]?40:60
+    const cleaningFee = selectedRoom === ROOMS[0] ? 40 : 60
     const taxRate = 0.05
 
     if (selectedPackage === 'Solar') {
-
       let basePrice = 0
-      selectedRoom === ROOMS[1]?
-         (basePrice = (day >= 1 && day <= 4) ? (295*1.7) : (395*1.7))
-         : (basePrice = (day >= 1 && day <= 4) ? 295 : 395)
+      selectedRoom === ROOMS[1]
+        ? (basePrice = day >= 1 && day <= 4 ? 295 * 1.7 : 395 * 1.7)
+        : (basePrice = day >= 1 && day <= 4 ? 295 : 395)
 
       const priceWithoutTax = basePrice + cleaningFee
       const tax = priceWithoutTax * taxRate
@@ -82,8 +81,8 @@ export default function CalendarPage() {
     }
 
     if (selectedPackage === 'Galaxy') {
-      let basePrice = ([ROOMS[0],null].includes(selectedRoom))?495:(495 * 1.7)
-      
+      let basePrice = [ROOMS[0], null].includes(selectedRoom) ? 495 : 495 * 1.7
+
       const tax = basePrice * taxRate
       const total = basePrice + tax
       return {
@@ -102,9 +101,6 @@ export default function CalendarPage() {
       const availability = availableTimeslot[timeslot] ?? 0
       const isSelected = selectedTimeslot === timeslot
 
-      let baseClass =
-        ' text-center p-2 rounded-md ring-1 ring-gray-300 border-solid border-purple-400 transition-all text-sm'
-      let availabilityIndicator = ''
       let stateClass = ''
       let message = 'No room available'
 
@@ -112,35 +108,17 @@ export default function CalendarPage() {
         stateClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
       } else if (availability === 1) {
         stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
-        availabilityIndicator = 'bg-yellow-100'
-        message = '1 room available '
-      } else if (availability === 2) {
-        stateClass = 'text-green-800 hover:bg-green-200 cursor-pointer'
-        availabilityIndicator = 'bg-green-100 '
-        message = '2 rooms available'
-        stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
         message = '1 room available'
       } else if (availability >= 2) {
         stateClass = 'text-green-800  hover:bg-green-200 cursor-pointer'
         message = '2 rooms available'
       }
 
-      const selectedClass = isSelected ? 'ring-2 ring-purple-900 bg-green-200' : ''
+      const selectedClass = isSelected
+        ? 'ring-2 ring-purple-900 bg-green-200'
+        : ''
 
       return (
-        <div className="flex">
-          <button
-            key={timeslot}
-            className={`${baseClass} ${stateClass} ${selectedClass} w-32  `}
-            disabled={availability === 0}
-            onClick={() => handleSelectedTimeslot(timeslot)}
-          >
-            {TIMESLOTS[timeslot]}
-          </button>
-
-          <p className=" w-36 text-left p-2 rounded-md text-sm text-gray-500">
-            {message}
-          </p>
         <div key={timeslot} className="flex items-center gap-2">
           <button
             className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
@@ -164,7 +142,9 @@ export default function CalendarPage() {
         ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
         : 'text-green-800 hover:bg-green-100 cursor-pointer'
 
-      const selectedClass = isSelected ? 'ring-2 ring-purple-800 bg-green-200' : ''
+      const selectedClass = isSelected
+        ? 'ring-2 ring-purple-800 bg-green-200'
+        : ''
 
       return (
         <div key={partyPackage} className="flex items-center gap-2">
@@ -181,22 +161,24 @@ export default function CalendarPage() {
   }
 
   const renderRooms = () => {
-    return ROOMS.map((room)=>{
-      
+    return ROOMS.map((room) => {
       const isDisabled = !selectedPackage
       const isSelected = selectedRoom === room
-      const stateClass = isDisabled ? 'text-gray-400 bg-gray-100 cursor-not-allowed':'text-green-800 hover:bg-green-100 cursor-pointer'
-      const selectedClass = isSelected? 'ring-2 ring-purple-800 bg-green-200': ''
+      const stateClass = isDisabled
+        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+        : 'text-green-800 hover:bg-green-100 cursor-pointer'
+      const selectedClass = isSelected
+        ? 'ring-2 ring-purple-800 bg-green-200'
+        : ''
 
-      return(
-        <div key={room} className='flex items-center gap-2'>
+      return (
+        <div key={room} className="flex items-center gap-2">
           <button
-          className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
-          disabled = {isDisabled}
-          onClick = {() => handleSelectedselectedRoom(room)}
+            className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
+            disabled={isDisabled}
+            onClick={() => handleSelectedselectedRoom(room)}
           >
-          
-          {room}
+            {room}
           </button>
         </div>
       )
@@ -205,14 +187,14 @@ export default function CalendarPage() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-purple-600 mb-8 pl-4">Party Booking</h1>
+      <h1 className="text-3xl font-bold text-purple-600 mb-8 pl-4">
+        Party Booking
+      </h1>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Calendar */}
-        <div className=" p-4 w-full lg:w-1/3">
-          <h2 className="text-lg text-center font-semibold mb-4">
-            Choose a Date
-          </h2>
+        <div className="p-4 w-full lg:w-1/3">
+          <h2 className="text-lg text-center font-semibold mb-4">Date</h2>
           <div className="flex justify-center">
             <Calendar
               onChange={handleDateChange}
@@ -223,28 +205,10 @@ export default function CalendarPage() {
               value={date}
               className="react-calendar"
             />
-        <div className="p-4 w-full lg:w-1/3">
-          <h2 className="text-lg text-center font-semibold mb-4">Date</h2>
-          <div className="flex justify-center">
-            <Calendar
-              onChange={handleDateChange}
-              minDate={new Date(new Date().setDate(new Date().getDate() + 2))}
-              maxDate={new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)}
-              value={date}
-              className="react-calendar"
-            />
           </div>
         </div>
 
         {/* Timeslots */}
-        <div className="bgwhite shadow-d flex flex-col justify-center rounded-md p-4 w-full lg:w-1/3">
-          <h2 className="text-lg text-enter font-semibold mb-4">
-            Select a Timeslot
-          </h2>
-          <div className="flex ites-center  flex-col gap-3">
-            {renderTimeslots()}
-          </div>
-          <div></div>
         <div className="w-full lg:w-1/3 p-4">
           <h2 className="text-lg font-semibold mb-4">Timeslot</h2>
           <div className="flex flex-col gap-3">{renderTimeslots()}</div>
@@ -254,9 +218,8 @@ export default function CalendarPage() {
         <div className="w-full lg:w-1/6 p-4">
           <h2 className="text-lg font-semibold mb-4">Package</h2>
           <div className="flex flex-col gap-3">{renderPackages()}</div>
-          <div className='text-lg font-semibold mt-4 mb-4'> Room </div>
+          <div className="text-lg font-semibold mt-4 mb-4"> Room </div>
           <div className="flex flex-col gap-3">{renderRooms()}</div>
-           
         </div>
 
         {/* Info Panel */}
@@ -264,7 +227,14 @@ export default function CalendarPage() {
           <h2 className="text-lg font-semibold mb-2">Booking Info</h2>
           {selectedTimeslot ? (
             <p className="text-gray-800">
-              Number of Rooms: <strong>{(selectedRoom === ROOMS[0])?1:(selectedRoom ===ROOMS[1])?2:'Select a Room'}</strong>
+              Number of Rooms:{' '}
+              <strong>
+                {selectedRoom === ROOMS[0]
+                  ? 1
+                  : selectedRoom === ROOMS[1]
+                  ? 2
+                  : 'Select a Room'}
+              </strong>
             </p>
           ) : (
             <p className="text-gray-500">Select a timeslot to see details.</p>
@@ -273,19 +243,16 @@ export default function CalendarPage() {
             Selected date: <strong>{date.toDateString()}</strong>
           </p>
           <p className="text-sm text-gray-600">
-            Selected timeslot: <strong>{TIMESLOTS[selectedTimeslot] ?? 'None selected'}</strong>
+            Selected timeslot:{' '}
+            <strong>{TIMESLOTS[selectedTimeslot] ?? 'None selected'}</strong>
           </p>
           <p className="text-sm text-gray-600">
-            Selected package: <strong>{selectedPackage ?? 'None selected'}</strong>
+            Selected package:{' '}
+            <strong>{selectedPackage ?? 'None selected'}</strong>
           </p>
           <p className="text-sm text-gray-600">
             Selected room: <strong>{selectedRoom ?? 'None selected'}</strong>
           </p>
-          {selectedTimeslot && (
-            <a href="/booking/form">
-              <button class="h-5 mt-12 w-5 text-xl">Book</button>
-            </a>
-          )}
 
           {selectedPackage && (
             <div className="mt-4 text-sm text-gray-600">
@@ -294,16 +261,26 @@ export default function CalendarPage() {
                 const pricing = calculatePrice()
                 return pricing ? (
                   <div className="space-y-1">
-                    <p>Base price: <strong>${pricing.base.toFixed(2)}</strong></p>
-                    
+                    <p>
+                      Base price: <strong>${pricing.base.toFixed(2)}</strong>
+                    </p>
+
                     {pricing.cleaning > 0 && (
-                      <p>Cleaning fee: <strong>${pricing.cleaning.toFixed(2)}</strong></p>
+                      <p>
+                        Cleaning fee:{' '}
+                        <strong>${pricing.cleaning.toFixed(2)}</strong>
+                      </p>
                     )}
                     {pricing.tax > 0 && (
-                      <p>Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong></p>
+                      <p>
+                        Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong>
+                      </p>
                     )}
                     <p className="mt-1">
-                      Total: <strong className="text-purple-700">${pricing.total.toFixed(2)}</strong>
+                      Total:{' '}
+                      <strong className="text-purple-700">
+                        ${pricing.total.toFixed(2)}
+                      </strong>
                     </p>
                   </div>
                 ) : null
@@ -317,11 +294,22 @@ export default function CalendarPage() {
                 Book Now
               </button>
             </a>
-          ):
-              <button disabled={true} className="mt-6 cursor-not-allowed px-4 py-2 bg-gray-300 text-white w-fit rounded  transition">
-                {(date.getDate() === new Date().getDate())?'Please Select a Date':!selectedTimeslot?'Please Select a Timeslot':!selectedPackage?'Please Select a Package':!selectedRoom?'Please Select a Room':''}
-              </button>
-            }
+          ) : (
+            <button
+              disabled={true}
+              className="mt-6 cursor-not-allowed px-4 py-2 bg-gray-300 text-white w-fit rounded  transition"
+            >
+              {date.getDate() === new Date().getDate()
+                ? 'Please Select a Date'
+                : !selectedTimeslot
+                ? 'Please Select a Timeslot'
+                : !selectedPackage
+                ? 'Please Select a Package'
+                : !selectedRoom
+                ? 'Please Select a Room'
+                : ''}
+            </button>
+          )}
         </div>
       </div>
     </div>

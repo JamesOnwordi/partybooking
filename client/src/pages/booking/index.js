@@ -3,7 +3,13 @@
 import Calendar from 'react-calendar'
 import { useEffect, useState } from 'react'
 import { DateTime } from 'luxon'
-import { calculatePrice, getAvailability, TIMESLOTS, PACKAGES, ROOMS } from '@/utils/bookingUtils'
+import {
+  calculatePrice,
+  getAvailability,
+  TIMESLOTS,
+  PACKAGES,
+  ROOMS
+} from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
 
 export default function CalendarPage() {
@@ -21,8 +27,10 @@ export default function CalendarPage() {
 
     const parsed = JSON.parse(saved)
     if (parsed.selectedDate) {
-    console.log(saved)
-      const restoredDate = DateTime.fromISO('2025-07-12', { zone: 'America/Denver' }).toJSDate()
+      console.log(saved)
+      const restoredDate = DateTime.fromISO('2025-07-12', {
+        zone: 'America/Denver'
+      }).toJSDate()
       console.log('Restored date:', restoredDate, selectedDate)
       setDate(restoredDate)
       setSelectedDate(parsed.selectedDate)
@@ -44,15 +52,21 @@ export default function CalendarPage() {
           selectedDate: date.toISOString().slice(0, 10),
           // Save the selected values
           // This ensures we save the date in YYYY-MM-DD format
-          // and not the Date object itself   
+          // and not the Date object itself
           selectedDate,
           selectedTimeslot,
           selectedPackage,
-          selectedRoom,
+          selectedRoom
         })
       )
     }
-    console.log(date.toISOString(), selectedDate, selectedTimeslot, selectedPackage, selectedRoom)
+    console.log(
+      date.toISOString(),
+      selectedDate,
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom
+    )
   }, [selectedDate, selectedTimeslot, selectedPackage, selectedRoom])
 
   // Handle calendar date change
@@ -76,19 +90,28 @@ export default function CalendarPage() {
           selectedDate,
           selectedTimeslot,
           selectedPackage,
-          selectedRoom,
+          selectedRoom
         })
       )
     }
     window.location.href = '/booking/form'
   }
 
-  const renderButtonGroup = (items, selected, handler, disabled, labelMap = {}) =>
+  const renderButtonGroup = (
+    items,
+    selected,
+    handler,
+    disabled,
+    labelMap = {}
+  ) =>
     items.map((item) => {
       const isSelected = selected === item
-      const baseClass =
-        disabled ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-green-800 hover:bg-green-100 cursor-pointer'
-      const selectedClass = isSelected ? 'ring-2 ring-purple-800 bg-green-200' : ''
+      const baseClass = disabled
+        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+        : 'text-green-800 hover:bg-green-100 cursor-pointer'
+      const selectedClass = isSelected
+        ? 'ring-2 ring-purple-800 bg-green-200'
+        : ''
 
       return (
         <div key={item} className="flex items-center gap-2">
@@ -120,7 +143,9 @@ export default function CalendarPage() {
         message = '2 rooms available'
       }
 
-      const selectedClass = selected ? 'ring-2 ring-purple-900 bg-green-200' : ''
+      const selectedClass = selected
+        ? 'ring-2 ring-purple-900 bg-green-200'
+        : ''
 
       return (
         <div key={slot} className="flex items-center gap-2">
@@ -138,7 +163,9 @@ export default function CalendarPage() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-purple-600 mb-8 pl-4">Party Booking</h1>
+      <h1 className="text-3xl font-bold text-purple-600 mb-8 pl-4">
+        Party Booking
+      </h1>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Calendar */}
@@ -148,7 +175,9 @@ export default function CalendarPage() {
             <Calendar
               onChange={handleDateChange}
               minDate={new Date(new Date().setDate(new Date().getDate() + 2))}
-              maxDate={new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)}
+              maxDate={
+                new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)
+              }
               value={date}
               className="react-calendar"
             />
@@ -165,12 +194,22 @@ export default function CalendarPage() {
         <div className="w-full lg:w-1/6 p-4">
           <h2 className="text-lg font-semibold mb-4">Package</h2>
           <div className="flex flex-col gap-3">
-            {renderButtonGroup(PACKAGES, selectedPackage, setSelectedPackage, !selectedTimeslot)}
+            {renderButtonGroup(
+              PACKAGES,
+              selectedPackage,
+              setSelectedPackage,
+              !selectedTimeslot
+            )}
           </div>
 
           <div className="text-lg font-semibold mt-4 mb-4">Room</div>
           <div className="flex flex-col gap-3">
-            {renderButtonGroup(ROOMS, selectedRoom, setSelectedRoom, !selectedPackage)}
+            {renderButtonGroup(
+              ROOMS,
+              selectedRoom,
+              setSelectedRoom,
+              !selectedPackage
+            )}
           </div>
         </div>
 
@@ -181,7 +220,11 @@ export default function CalendarPage() {
             <p className="text-gray-800">
               Number of Rooms:{' '}
               <strong>
-                {selectedRoom === ROOMS[0] ? 1 : selectedRoom === ROOMS[1] ? 2 : 'Select a Room'}
+                {selectedRoom === ROOMS[0]
+                  ? 1
+                  : selectedRoom === ROOMS[1]
+                  ? 2
+                  : 'Select a Room'}
               </strong>
             </p>
           ) : (
@@ -196,7 +239,8 @@ export default function CalendarPage() {
             <strong>{TIMESLOTS[selectedTimeslot] ?? 'None selected'}</strong>
           </p>
           <p className="text-sm text-gray-600">
-            Selected package: <strong>{selectedPackage ?? 'None selected'}</strong>
+            Selected package:{' '}
+            <strong>{selectedPackage ?? 'None selected'}</strong>
           </p>
           <p className="text-sm text-gray-600">
             Selected room: <strong>{selectedRoom ?? 'None selected'}</strong>
@@ -206,14 +250,32 @@ export default function CalendarPage() {
             <div className="mt-4 text-sm text-gray-600">
               <h3 className="font-semibold mb-1">Price Details:</h3>
               {(() => {
-                const pricing = calculatePrice({ date, selectedPackage, selectedRoom })
+                const pricing = calculatePrice({
+                  date,
+                  selectedPackage,
+                  selectedRoom
+                })
                 return pricing ? (
                   <div className="space-y-1">
-                    <p>Base price: <strong>${pricing.base.toFixed(2)}</strong></p>
-                    {pricing.cleaning > 0 && <p>Cleaning fee: <strong>${pricing.cleaning.toFixed(2)}</strong></p>}
-                    {pricing.tax > 0 && <p>Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong></p>}
+                    <p>
+                      Base price: <strong>${pricing.base.toFixed(2)}</strong>
+                    </p>
+                    {pricing.cleaning > 0 && (
+                      <p>
+                        Cleaning fee:{' '}
+                        <strong>${pricing.cleaning.toFixed(2)}</strong>
+                      </p>
+                    )}
+                    {pricing.tax > 0 && (
+                      <p>
+                        Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong>
+                      </p>
+                    )}
                     <p className="mt-1">
-                      Total: <strong className="text-purple-700">${pricing.total.toFixed(2)}</strong>
+                      Total:{' '}
+                      <strong className="text-purple-700">
+                        ${pricing.total.toFixed(2)}
+                      </strong>
                     </p>
                   </div>
                 ) : null
