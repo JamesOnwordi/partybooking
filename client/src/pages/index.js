@@ -52,7 +52,8 @@ export default function CalendarPage() {
       const availability = availableTimeslot[timeslot] ?? 0
       const isSelected = selectedTimeslot === timeslot
 
-      let baseClass = ' text-center p-2 rounded-md ring-1 ring-gray-300 border-solid border-purple-400 transition-all text-sm'
+      let baseClass =
+        ' text-center p-2 rounded-md ring-1 ring-gray-300 border-solid border-purple-400 transition-all text-sm'
       let availabilityIndicator = ''
       let stateClass = ''
       let message = 'no room available'
@@ -61,34 +62,31 @@ export default function CalendarPage() {
         stateClass = 'text-gray-400  cursor-not-allowed'
         availabilityIndicator = 'bg-gray-100'
       } else if (availability === 1) {
-        stateClass =
-          'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
+        stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
         availabilityIndicator = 'bg-yellow-100'
-          message = '1 room available '
+        message = '1 room available '
       } else if (availability === 2) {
-        stateClass =
-          'text-green-800 hover:bg-green-200 cursor-pointer'
-          availabilityIndicator = 'bg-green-100 '
-          message = '2 rooms available'
+        stateClass = 'text-green-800 hover:bg-green-200 cursor-pointer'
+        availabilityIndicator = 'bg-green-100 '
+        message = '2 rooms available'
       }
 
       const selectedClass = isSelected ? 'ring-2 bg-purple-300' : ''
 
       return (
-        <div className='flex'>
-        
-        <button
-          key={timeslot}
-          className={`${baseClass} ${stateClass} ${selectedClass} w-32  `}
-          disabled={availability === 0}
-          onClick={() => handleSelectedTimeslot(timeslot)}
-        >
-          {TIMESLOTS[timeslot]}
-        </button>
+        <div className="flex">
+          <button
+            key={timeslot}
+            className={`${baseClass} ${stateClass} ${selectedClass} w-32  `}
+            disabled={availability === 0}
+            onClick={() => handleSelectedTimeslot(timeslot)}
+          >
+            {TIMESLOTS[timeslot]}
+          </button>
 
-        <p className=' w-36 text-left p-2 rounded-md text-sm text-gray-500'>
-          {message}
-        </p>
+          <p className=" w-36 text-left p-2 rounded-md text-sm text-gray-500">
+            {message}
+          </p>
         </div>
       )
     })
@@ -106,29 +104,28 @@ export default function CalendarPage() {
           <h2 className="text-lg text-center font-semibold mb-4">
             Choose a Date
           </h2>
-          <div className='flex justify-center'>
-          <Calendar
-
-            onChange={handleDateChange}
-            minDate={new Date(new Date().setDate(new Date().getDate() + 2))}
-            maxDate={new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)}
-            value={date}
-            className="react-calendar"
-          />
-         
+          <div className="flex justify-center">
+            <Calendar
+              onChange={handleDateChange}
+              minDate={new Date(new Date().setDate(new Date().getDate() + 2))}
+              maxDate={
+                new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)
+              }
+              value={date}
+              className="react-calendar"
+            />
           </div>
         </div>
 
         {/* Timeslots */}
         <div className="bgwhite shadow-d flex flex-col justify-center rounded-md p-4 w-full lg:w-1/3">
-        
           <h2 className="text-lg text-enter font-semibold mb-4">
             Select a Timeslot
           </h2>
-          <div className="flex ites-center  flex-col gap-3">{renderTimeslots()}</div>
+          <div className="flex ites-center  flex-col gap-3">
+            {renderTimeslots()}
+          </div>
           <div></div>
-
-          
         </div>
 
         {/* Info Panel */}
@@ -149,13 +146,11 @@ export default function CalendarPage() {
             Selected timeslot:{' '}
             <strong>{selectedTimeslot ?? 'None selected'}</strong>
           </p>
-          {selectedTimeslot && <a href='/booking/form'>
-          
-            <button class="h-5 mt-12 w-5 text-xl" >
-            Book
-          </button>
-          </a>}
-          
+          {selectedTimeslot && (
+            <a href="/booking/form">
+              <button class="h-5 mt-12 w-5 text-xl">Book</button>
+            </a>
+          )}
         </div>
       </div>
     </div>
