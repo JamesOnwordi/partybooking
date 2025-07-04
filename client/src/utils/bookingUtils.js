@@ -11,6 +11,14 @@ export const TIMESLOTS = {
   '4PM': '4:00 PM - 5:30 PM',
   '6PM': '6:00 PM - 7:30 PM'
 }
+export const ADDONS = [
+  { name: 'Pepperoni Pizza', price: 35 },
+  { name: 'Cheese Pizza', price: 35 },
+  { name: 'Fruit Tray', price: 30 },
+  { name: 'Vegetable Tray', price: 30 },
+  { name: 'Goody Bags', price: 9.95 },
+  { name: 'Grip Socks', price: 2.95 }
+]
 
 export const DEFAULT_KIDS = 8
 export const DEFAULT_ADULTS = 8

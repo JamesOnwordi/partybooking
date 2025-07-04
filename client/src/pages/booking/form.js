@@ -2,22 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import {
   CAPACITY,
-  getAvailability,
   MAX_CAPACITY,
   ROOMS,
-  TIMESLOTS
+  TIMESLOTS,
+  ADDONS
 } from '@/utils/bookingUtils'
-const ADDONS = [
-  { name: 'Pepperoni Pizza', price: 35 },
-  { name: 'Cheese Pizza', price: 35 },
-  { name: 'Fruit Tray', price: 30 },
-  { name: 'Vegetable Tray', price: 30 },
-  { name: 'Goody Bags', price: 9.95 },
-  { name: 'Grip Socks', price: 2.95 }
-]
 
 export default function Form() {
   const { register, handleSubmit, setValue, control } = useForm()
@@ -25,10 +18,10 @@ export default function Form() {
   const kids = parseInt(watchedValues?.kidsCapacity) || 0
   const adults = parseInt(watchedValues?.adultsCapacity) || 0
 
-  const [availableTimeslot, setAvailableTimeslot] = useState({})
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
   const [numberOfRooms, setNumberOfRooms] = useState(0)
+  const [customerPackage, setCustomerPackage] = useState('Solar')
   const [initialData, setInitialData] = useState(null)
   const [hasRestored, setHasRestored] = useState(false)
 
@@ -58,7 +51,10 @@ export default function Form() {
     const { selectedDate, selectedTimeslot, selectedPackage, selectedRoom } =
       initialData
 
-    if (selectedPackage) setValue('partyPackage', selectedPackage)
+    if (selectedPackage) {
+      setCustomerPackage(selectedPackage)
+      setValue('partyPackage', selectedPackage)
+    }
     if (selectedDate) setValue('partyDate', selectedDate)
     if (selectedTimeslot) setValue('partyTimeslot', selectedTimeslot)
 
@@ -83,18 +79,7 @@ export default function Form() {
     setMaxAdults(adults + remaining)
   }, [watchedValues, kids, adults, numberOfRooms])
 
-  // Fetch available timeslot
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!initialData?.selectedDate) return
-      const date = new Date(initialData.selectedDate)
-      const availability = await getAvailability(date)
-      setAvailableTimeslot(availability)
-    }
-
-    fetchAvailability()
-  }, [initialData?.selectedDate])
-
+  // Form submission handler
   const onSubmit = (data) => {
     console.log('Form Data:', data)
     localStorage.removeItem('partyFormData')
@@ -145,41 +130,109 @@ export default function Form() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <FormField label="Party Date" required>
-              <input
-                {...register('partyDate')}
-                value={new Date(initialData?.selectedDate || '').toDateString()}
-                disabled
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  {...register('partyDate')}
+                  value={new Date(
+                    initialData?.selectedDate || ''
+                  ).toDateString()}
+                  disabled
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const date = initialData?.selectedDate
+                      ? new Date(initialData.selectedDate).toDateString()
+                      : 'Unavailable'
+
+                    alert(
+                      `📅 Selected Date Information:\n\nThe currently selected date is: ${date}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
 
             <FormField label="Party Timeslot" required>
-              <input
-                type="text"
-                value={TIMESLOTS[initialData?.selectedTimeslot] || ''}
-                disabled
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={TIMESLOTS[initialData?.selectedTimeslot] || ''}
+                  disabled
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const timeslot = initialData?.selectedTimeslot
+                      ? TIMESLOTS[initialData.selectedTimeslot]
+                      : 'Unavailable'
+                    alert(
+                      `🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
+                    ${timeslot}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
 
             <FormField label="Party Package" required>
-              <input
-                type="text"
-                value={initialData?.selectedPackage || ''}
-                disabled
-                {...register('partyPackage')}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={initialData?.selectedPackage || ''}
+                  disabled
+                  {...register('partyPackage')}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const packageInfo = initialData?.selectedPackage
+                      ? initialData.selectedPackage
+                      : 'Unavailable'
+                    alert(
+                      `🎁 Selected Package Information:\n\nThe currently selected package is: ${packageInfo}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
 
             <FormField label="Party Room" required>
-              <input
-                type="text"
-                value={initialData?.selectedRoom || ''}
-                disabled
-                {...register('partyRoom')}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={initialData?.selectedRoom || ''}
+                  disabled
+                  {...register('partyRoom')}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const roomInfo = initialData?.selectedRoom
+                      ? initialData.selectedRoom
+                      : 'Unavailable'
+                    alert(
+                      `🏠 Selected Room Information:\n\nThe currently selected room is: ${roomInfo}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
           </div>
         </section>
@@ -230,6 +283,18 @@ export default function Form() {
                 {...register('age', { required: true })}
                 className="w-full p-2 border rounded-md"
               />
+              <button
+                type="button"
+                className="mt-2 text-sm text-blue-600 hover:underline"
+                onClick={() => {
+                  const age = watchedValues.age || 'Unavailable'
+                  alert(
+                    `🎂 Celebrant's Age Information:\n\nThe age turning is: ${age}`
+                  )
+                }}
+              >
+                Show Age Info
+              </button>
             </FormField>
             <FormField label="Gender" required>
               <select
@@ -242,13 +307,27 @@ export default function Form() {
               </select>
             </FormField>
             <FormField label="Number of Kids">
-              <input
-                type="number"
-                min={1}
-                max={maxKids}
-                {...register('kidsCapacity')}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={maxKids}
+                  {...register('kidsCapacity')}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const kids = watchedValues.kidsCapacity || 'Unavailable'
+                    alert(
+                      `👶 Kids Capacity Information:\n\nThe number of kids is: ${kids}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Number of Adults">
               <input
@@ -258,6 +337,18 @@ export default function Form() {
                 {...register('adultsCapacity')}
                 className="w-full p-2 border rounded-md"
               />
+              <button
+                type="button"
+                className="mt-2 text-sm text-blue-600 hover:underline"
+                onClick={() => {
+                  const adults = watchedValues.adultsCapacity || 'Unavailable'
+                  alert(
+                    `👨‍👩‍👧‍👦 Adults Capacity Information: \n\n The number of adults is: ${adults}`
+                  )
+                }}
+              >
+                Show Adults Info
+              </button>
             </FormField>
           </div>
         </section>
