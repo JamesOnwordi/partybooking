@@ -245,38 +245,112 @@ export default function Form() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <FormField label="First Name" required>
+              <div className="flex items-center space-x-2">
               <input
                 {...register('firstName', { required: true })}
                 className="w-full p-2 border rounded-md"
               />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const firstName = watchedValues.firstName || 'Unavailable'
+                    alert(
+                      `👤 Customer's First Name Information:\n\nThe first name is: ${firstName}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>      
+
+              </div>
             </FormField>
             <FormField label="Last Name" required>
+              <div className="flex items-center space-x-2">
               <input
                 {...register('lastName', { required: true })}
                 className="w-full p-2 border rounded-md"
               />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const lastName = watchedValues.lastName || 'Unavailable'
+                    alert(
+                      `👤 Customer's Last Name Information:\n\nThe last name is: ${lastName}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Email" required>
+              <div className="flex items-center space-x-2">
               <input
                 type="email"
                 {...register('email', { required: true })}
                 className="w-full p-2 border rounded-md"
               />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const email = watchedValues.email || 'Unavailable'
+                    alert(
+                      `📧 Customer's Email Information:\n\nThe email is: ${email}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Phone" required>
+              <div className="flex items-center space-x-2">
               <input
                 type="tel"
                 {...register('phone', { required: true })}
                 className="w-full p-2 border rounded-md"
               />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const phone = watchedValues.phone || 'Unavailable'
+                    alert(
+                      `📞 Customer's Phone Information:\n\nThe phone number is: ${phone}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Celebrant's Name" required>
+              <div className="flex items-center space-x-2">
               <input
                 {...register('celebrantName', { required: true })}
                 className="w-full p-2 border rounded-md"
               />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const celebrantName =
+                      watchedValues.celebrantName || 'Unavailable'
+                    alert(
+                      `🎉 Celebrant's Name Information:\n\nThe celebrant's name is :
+                    ${celebrantName}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Age Turning" required>
+              <div className="flex items-center space-x-2">
               <input
                 type="number"
                 max={15}
@@ -293,10 +367,12 @@ export default function Form() {
                   )
                 }}
               >
-                Show Age Info
+                <InformationCircleIcon className="w-5 h-5" />
               </button>
+              </div>
             </FormField>
             <FormField label="Gender" required>
+              <div  className="flex items-center space-x-2">
               <select
                 {...register('gender', { required: true })}
                 className="w-full p-2 border rounded-md"
@@ -305,6 +381,19 @@ export default function Form() {
                 <option value="Girl">Female</option>
                 <option value="Boy">Male</option>
               </select>
+              <button
+                type="button"
+                className="mt-2 text-sm text-blue-600 hover:underline"
+                onClick={() => {
+                  const gender = watchedValues.gender || 'Unavailable'
+                  alert(
+                    `👦 Select Celebrant's Gender`
+                  )
+                }}
+              >
+                <InformationCircleIcon className="w-5 h-5" />
+              </button>
+              </div>
             </FormField>
             <FormField label="Number of Kids">
               <div className="flex items-center space-x-2">
@@ -330,6 +419,7 @@ export default function Form() {
               </div>
             </FormField>
             <FormField label="Number of Adults">
+            <div className="flex items-center space-x-2">
               <input
                 type="number"
                 min={1}
@@ -347,8 +437,9 @@ export default function Form() {
                   )
                 }}
               >
-                Show Adults Info
+                <InformationCircleIcon className="w-5 h-5" />
               </button>
+            </div>
             </FormField>
           </div>
         </section>
