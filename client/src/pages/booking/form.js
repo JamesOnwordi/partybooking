@@ -271,66 +271,152 @@ export default function Form() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <FormField label="First Name" required>
-              <input
-                {...register('firstName', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  {...register('firstName', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const firstName = watchedValues.firstName || 'Unavailable'
+                    alert(
+                      `👤 Customer's First Name Information:\n\nThe first name is: ${firstName}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Last Name" required>
-              <input
-                {...register('lastName', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  {...register('lastName', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const lastName = watchedValues.lastName || 'Unavailable'
+                    alert(
+                      `👤 Customer's Last Name Information:\n\nThe last name is: ${lastName}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Email" required>
-              <input
-                type="email"
-                {...register('email', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="email"
+                  {...register('email', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const email = watchedValues.email || 'Unavailable'
+                    alert(
+                      `📧 Customer's Email Information:\n\nThe email is: ${email}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Phone" required>
-              <input
-                type="tel"
-                {...register('phone', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="tel"
+                  {...register('phone', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const phone = watchedValues.phone || 'Unavailable'
+                    alert(
+                      `📞 Customer's Phone Information:\n\nThe phone number is: ${phone}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Celebrant's Name" required>
-              <input
-                {...register('celebrantName', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  {...register('celebrantName', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const celebrantName =
+                      watchedValues.celebrantName || 'Unavailable'
+                    alert(
+                      `🎉 Celebrant's Name Information:\n\nThe celebrant's name is :
+                    ${celebrantName}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Age Turning" required>
-              <input
-                type="number"
-                max={15}
-                {...register('age', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-              <button
-                type="button"
-                className="mt-2 text-sm text-blue-600 hover:underline"
-                onClick={() => {
-                  const age = watchedValues.age || 'Unavailable'
-                  alert(
-                    `🎂 Celebrant's Age Information:\n\nThe age turning is: ${age}`
-                  )
-                }}
-              >
-                Show Age Info
-              </button>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  max={15}
+                  {...register('age', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const age = watchedValues.age || 'Unavailable'
+                    alert(
+                      `🎂 Celebrant's Age Information:\n\nThe age turning is: ${age}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Gender" required>
-              <select
-                {...register('gender', { required: true })}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="">Select gender</option>
-                <option value="Girl">Female</option>
-                <option value="Boy">Male</option>
-              </select>
+              <div className="flex items-center space-x-2">
+                <select
+                  {...register('gender', { required: true })}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Select gender</option>
+                  <option value="Girl">Female</option>
+                  <option value="Boy">Male</option>
+                </select>
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const gender = watchedValues.gender || 'Unavailable'
+                    alert(`👦 Select Celebrant's Gender`)
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
             <FormField label="Number of Kids">
               <div className="flex items-center space-x-2">
