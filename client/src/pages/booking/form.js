@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { set, useForm, useWatch } from 'react-hook-form'
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import {
@@ -9,8 +9,10 @@ import {
   MAX_CAPACITY,
   ROOMS,
   TIMESLOTS,
-  ADDONS
+  ADDONS,
+  PACKAGES
 } from '@/utils/bookingUtils'
+import CustomAlert from '@/components/customAlert'
 
 export default function Form() {
   const { register, handleSubmit, setValue, control } = useForm()
@@ -18,12 +20,19 @@ export default function Form() {
   const kids = parseInt(watchedValues?.kidsCapacity) || 0
   const adults = parseInt(watchedValues?.adultsCapacity) || 0
 
+  const [partyDate, setPartyDate] = useState('')
+  const [partyTimeslot, setPartyTimeslot] = useState('')
+  const [partyPackage, setPartyPackage] = useState('Solar')
+  const [partyRoom, setPartyRoom] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
+  const [maxPepperoni, setMaxPepperoni] = useState(2)
+  const [maxCheese, setMaxCheese] = useState(2)
   const [numberOfRooms, setNumberOfRooms] = useState(0)
   const [customerPackage, setCustomerPackage] = useState('Solar')
   const [initialData, setInitialData] = useState(null)
   const [hasRestored, setHasRestored] = useState(false)
+  const [showAlert, setShowAlert] = useState(false)
 
   // Restore form state from localStorage
   useEffect(() => {
@@ -75,6 +84,13 @@ export default function Form() {
     const roomCap = MAX_CAPACITY[numberOfRooms] || MAX_CAPACITY[0]
     const remaining = Math.max(0, roomCap - (kids + adults))
 
+    const maxPizza = 2
+    const PepperoniPizza = watchedValues?.[ADDONS[0]] || 0
+    const cheesePizza = watchedValues?.[ADDONS[1]] || 0
+
+    setMaxPepperoni(maxPizza - (PepperoniPizza + cheesePizza))
+    setMaxCheese(maxPizza - (PepperoniPizza + cheesePizza))
+
     setMaxKids(kids + remaining)
     setMaxAdults(adults + remaining)
   }, [watchedValues, kids, adults, numberOfRooms])
@@ -105,6 +121,11 @@ export default function Form() {
       window.removeEventListener('submit', handleFormSubmit)
     }
   }, [handleSubmit, onSubmit])
+
+  // Handle alert for party date
+  const onClose = () => {
+    setShowAlert(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -143,17 +164,22 @@ export default function Form() {
                   type="button"
                   className="mt-2 text-sm text-blue-600 hover:underline"
                   onClick={() => {
-                    const date = initialData?.selectedDate
+                    const partyDate = initialData?.selectedDate
                       ? new Date(initialData.selectedDate).toDateString()
                       : 'Unavailable'
-
-                    alert(
-                      `📅 Selected Date Information:\n\nThe currently selected date is: ${date}`
-                    )
+                    setShowAlert(true)
                   }}
                 >
                   <InformationCircleIcon className="w-5 h-5" />
                 </button>
+                {showAlert && (
+                  <CustomAlert
+                    message={`Selected Date: ${initialData.selectedDate} \nTo change date go back to previous page.`}
+                    onClose={() => {
+                      setShowAlert(false)
+                    }}
+                  />
+                )}
               </div>
             </FormField>
 
@@ -330,26 +356,53 @@ export default function Form() {
               </div>
             </FormField>
             <FormField label="Number of Adults">
-              <input
-                type="number"
-                min={1}
-                max={maxAdults}
-                {...register('adultsCapacity')}
-                className="w-full p-2 border rounded-md"
-              />
-              <button
-                type="button"
-                className="mt-2 text-sm text-blue-600 hover:underline"
-                onClick={() => {
-                  const adults = watchedValues.adultsCapacity || 'Unavailable'
-                  alert(
-                    `👨‍👩‍👧‍👦 Adults Capacity Information: \n\n The number of adults is: ${adults}`
-                  )
-                }}
-              >
-                Show Adults Info
-              </button>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={maxAdults}
+                  {...register('adultsCapacity')}
+                  className="w-full p-2 border rounded-md"
+                />
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  onClick={() => {
+                    const adults = watchedValues.adultsCapacity || 'Unavailable'
+                    alert(
+                      `👨‍👩‍👧‍👦 Adults Capacity Information: \n\n The number of adults is: ${adults}`
+                    )
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
             </FormField>
+            {partyPackage === PACKAGES[0] && (
+              <div className="cs flex flex-col md:flex-row gap-6">
+                <FormField label={ADDONS[0].name}>
+                  <input
+                    type="number"
+                    min={0}
+                    max={maxPepperoni}
+                    defaultValue={0}
+                    {...register(`${ADDONS[0].name}`)}
+                    className=" p-2 border rounded-md flex items-center justify-between"
+                  />
+                </FormField>
+
+                <FormField label={ADDONS[1].name}>
+                  <input
+                    type="number"
+                    min={0}
+                    max={maxCheese}
+                    defaultValue={maxCheese}
+                    {...register(`${ADDONS[1].name}`)}
+                    className=" p-2 border rounded-md flex items-center justify-between"
+                  />
+                </FormField>
+              </div>
+            )}
           </div>
         </section>
 
