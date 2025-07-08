@@ -3,7 +3,7 @@
 import axios from 'axios'
 export const ROOMS = ['Single', 'Combined']
 export const PACKAGES = ['Solar', 'Galaxy']
-export const CAPACITY = [8, 16]
+export const DEFAULT_CAPACITY = [8, 16]
 export const MAX_CAPACITY = [20, 40]
 export const TIMESLOTS = {
   '12PM': '12:00 PM - 1:30 PM',

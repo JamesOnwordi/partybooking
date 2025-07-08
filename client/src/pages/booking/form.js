@@ -5,12 +5,12 @@ import { set, useForm, useWatch } from 'react-hook-form'
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import {
-  CAPACITY,
   MAX_CAPACITY,
   ROOMS,
   TIMESLOTS,
   ADDONS,
-  PACKAGES
+  PACKAGES,
+  DEFAULT_CAPACITY
 } from '@/utils/bookingUtils'
 import CustomAlert from '@/components/customAlert'
 
@@ -19,17 +19,15 @@ export default function Form() {
   const watchedValues = useWatch({ control })
   const kids = parseInt(watchedValues?.kidsCapacity) || 0
   const adults = parseInt(watchedValues?.adultsCapacity) || 0
+  const pepperoniPizza = parseInt(watchedValues?.[ADDONS[0].name]) || 0
+  const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
 
-  const [partyDate, setPartyDate] = useState('')
-  const [partyTimeslot, setPartyTimeslot] = useState('')
-  const [partyPackage, setPartyPackage] = useState('Solar')
-  const [partyRoom, setPartyRoom] = useState('')
+  const [partyPackage, setPartyPackage] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
   const [maxPepperoni, setMaxPepperoni] = useState(2)
   const [maxCheese, setMaxCheese] = useState(2)
   const [numberOfRooms, setNumberOfRooms] = useState(0)
-  const [customerPackage, setCustomerPackage] = useState('Solar')
   const [initialData, setInitialData] = useState(null)
   const [hasRestored, setHasRestored] = useState(false)
   const [showAlert, setShowAlert] = useState(false)
@@ -38,12 +36,12 @@ export default function Form() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const storedData = localStorage.getItem('partyFormData')
-    if (storedData) {
-      Object.entries(JSON.parse(storedData)).forEach(([key, value]) => {
-        setValue(key, value)
-      })
-    }
+    // const storedData = localStorage.getItem('partyFormData')
+    // if (storedData) {
+    //   Object.entries(JSON.parse(storedData)).forEach(([key, value]) => {
+    //     setValue(key, value)
+    //   })
+    // }
 
     const initial = localStorage.getItem('initialBooking')
     if (initial) {
@@ -61,7 +59,7 @@ export default function Form() {
       initialData
 
     if (selectedPackage) {
-      setCustomerPackage(selectedPackage)
+      setPartyPackage(selectedPackage)
       setValue('partyPackage', selectedPackage)
     }
     if (selectedDate) setValue('partyDate', selectedDate)
@@ -70,30 +68,40 @@ export default function Form() {
     if (selectedRoom) {
       const index = ROOMS.indexOf(selectedRoom)
       setNumberOfRooms(index !== -1 ? index : 0)
-      setValue('kidsCapacity', CAPACITY[index] || 0)
-      setValue('adultsCapacity', CAPACITY[index] || 0)
+      setValue('kidsCapacity', DEFAULT_CAPACITY[index] || 0)
+      setValue('adultsCapacity', DEFAULT_CAPACITY[index] || 0)
+    }
+    if (selectedPackage) {
+      setValue(`${ADDONS[0].name}`, 1)
+      setValue(`${ADDONS[1].name}`, 1)
     }
   }, [initialData, hasRestored, setValue])
 
-  // Update localStorage and recalculate capacity
+  // Recaculate max capacities based on number of rooms
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    localStorage.setItem('partyFormData', JSON.stringify(watchedValues))
-
     const roomCap = MAX_CAPACITY[numberOfRooms] || MAX_CAPACITY[0]
-    const remaining = Math.max(0, roomCap - (kids + adults))
+    const remainingRoom = Math.max(0, roomCap - (kids + adults))
 
     const maxPizza = 2
-    const PepperoniPizza = watchedValues?.[ADDONS[0]] || 0
-    const cheesePizza = watchedValues?.[ADDONS[1]] || 0
+    const remainingPizza = Math.max(
+      0,
+      maxPizza - (pepperoniPizza + cheesePizza)
+    )
+    console.log('coming in here', pepperoniPizza, cheesePizza, remainingPizza)
+    setMaxPepperoni(pepperoniPizza + remainingPizza)
+    setMaxCheese(cheesePizza + remainingPizza)
 
-    setMaxPepperoni(maxPizza - (PepperoniPizza + cheesePizza))
-    setMaxCheese(maxPizza - (PepperoniPizza + cheesePizza))
-
-    setMaxKids(kids + remaining)
-    setMaxAdults(adults + remaining)
-  }, [watchedValues, kids, adults, numberOfRooms])
+    setMaxKids(kids + remainingRoom)
+    setMaxAdults(adults + remainingRoom)
+  }, [
+    kids,
+    adults,
+    numberOfRooms,
+    pepperoniPizza,
+    cheesePizza,
+    partyPackage,
+    watchedValues
+  ])
 
   // Form submission handler
   const onSubmit = (data) => {
@@ -464,14 +472,14 @@ export default function Form() {
                 </button>
               </div>
             </FormField>
-            {partyPackage === PACKAGES[0] && (
+            {partyPackage === PACKAGES[1] && (
               <div className="cs flex flex-col md:flex-row gap-6">
                 <FormField label={ADDONS[0].name}>
                   <input
                     type="number"
                     min={0}
                     max={maxPepperoni}
-                    defaultValue={0}
+                    defaultValue={1}
                     {...register(`${ADDONS[0].name}`)}
                     className=" p-2 border rounded-md flex items-center justify-between"
                   />
@@ -482,8 +490,19 @@ export default function Form() {
                     type="number"
                     min={0}
                     max={maxCheese}
-                    defaultValue={maxCheese}
+                    defaultValue={1}
                     {...register(`${ADDONS[1].name}`)}
+                    className=" p-2 border rounded-md flex items-center justify-between"
+                  />
+                </FormField>
+
+                <FormField label={'Pizza Delivery Time'}>
+                  <input
+                    type="time"
+                    min={'12:00'}
+                    max={'13:00'}
+                    defaultValue="12:30"
+                    {...register('pizzaDeliveryTime')}
                     className=" p-2 border rounded-md flex items-center justify-between"
                   />
                 </FormField>
