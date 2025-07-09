@@ -11,6 +11,7 @@ import {
   ROOMS
 } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
+import { set } from 'react-hook-form'
 
 export default function CalendarPage() {
   const [date, setDate] = useState(new Date())
@@ -19,6 +20,7 @@ export default function CalendarPage() {
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
+  const [packagePrice, setPackagePrice] = useState(0)
 
   // Restore saved state
   useEffect(() => {
@@ -56,7 +58,8 @@ export default function CalendarPage() {
           selectedDate,
           selectedTimeslot,
           selectedPackage,
-          selectedRoom
+          selectedRoom,
+          packagePrice
         })
       )
     }
@@ -65,9 +68,16 @@ export default function CalendarPage() {
       selectedDate,
       selectedTimeslot,
       selectedPackage,
-      selectedRoom
+      selectedRoom,
+      packagePrice
     )
-  }, [selectedDate, selectedTimeslot, selectedPackage, selectedRoom])
+  }, [
+    selectedDate,
+    selectedTimeslot,
+    selectedPackage,
+    selectedRoom,
+    packagePrice
+  ])
 
   // Handle calendar date change
   const handleDateChange = async (newDate) => {
@@ -161,6 +171,48 @@ export default function CalendarPage() {
       )
     })
 
+  useEffect(() => {}, [selectedPackage, selectedRoom])
+
+  useEffect(() => {
+    if (selectedPackage && selectedRoom) {
+      const price = calculatePrice({
+        date: selectedDate,
+        selectedPackage,
+        selectedRoom
+      })
+      setPackagePrice(price ?? 0)
+    } else {
+      setPackagePrice(0)
+    }
+    console.log('Package price updated:', packagePrice)
+  }, [selectedPackage, selectedRoom, selectedDate])
+
+  const calculateBasePrice = () => {
+    return packagePrice ? (
+      <div className="space-y-1">
+        <p>
+          Base price: <strong>${packagePrice.base.toFixed(2)}</strong>
+        </p>
+        {packagePrice.cleaning > 0 && (
+          <p>
+            Cleaning fee: <strong>${packagePrice.cleaning.toFixed(2)}</strong>
+          </p>
+        )}
+        {packagePrice.tax > 0 && (
+          <p>
+            Tax (5%): <strong>${packagePrice.tax.toFixed(2)}</strong>
+          </p>
+        )}
+        <p className="mt-1">
+          Total:{' '}
+          <strong className="text-purple-700">
+            ${packagePrice.total.toFixed(2)}
+          </strong>
+        </p>
+      </div>
+    ) : null
+  }
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-purple-600 mb-8 pl-4">
@@ -249,37 +301,7 @@ export default function CalendarPage() {
           {selectedPackage && (
             <div className="mt-4 text-sm text-gray-600">
               <h3 className="font-semibold mb-1">Price Details:</h3>
-              {(() => {
-                const pricing = calculatePrice({
-                  date,
-                  selectedPackage,
-                  selectedRoom
-                })
-                return pricing ? (
-                  <div className="space-y-1">
-                    <p>
-                      Base price: <strong>${pricing.base.toFixed(2)}</strong>
-                    </p>
-                    {pricing.cleaning > 0 && (
-                      <p>
-                        Cleaning fee:{' '}
-                        <strong>${pricing.cleaning.toFixed(2)}</strong>
-                      </p>
-                    )}
-                    {pricing.tax > 0 && (
-                      <p>
-                        Tax (5%): <strong>${pricing.tax.toFixed(2)}</strong>
-                      </p>
-                    )}
-                    <p className="mt-1">
-                      Total:{' '}
-                      <strong className="text-purple-700">
-                        ${pricing.total.toFixed(2)}
-                      </strong>
-                    </p>
-                  </div>
-                ) : null
-              })()}
+              {calculateBasePrice()}
             </div>
           )}
 

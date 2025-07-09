@@ -23,6 +23,7 @@ export default function Form() {
   const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
 
   const [partyPackage, setPartyPackage] = useState('')
+  const [partyTimeslot, setPartyTimeslot] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
   const [maxPepperoni, setMaxPepperoni] = useState(2)
@@ -31,17 +32,11 @@ export default function Form() {
   const [initialData, setInitialData] = useState(null)
   const [hasRestored, setHasRestored] = useState(false)
   const [showAlert, setShowAlert] = useState(false)
+  const [partyPrice, setPartyPrice] = useState(0)
 
   // Restore form state from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return
-
-    // const storedData = localStorage.getItem('partyFormData')
-    // if (storedData) {
-    //   Object.entries(JSON.parse(storedData)).forEach(([key, value]) => {
-    //     setValue(key, value)
-    //   })
-    // }
 
     const initial = localStorage.getItem('initialBooking')
     if (initial) {
@@ -55,8 +50,13 @@ export default function Form() {
   useEffect(() => {
     if (!hasRestored || !initialData) return
 
-    const { selectedDate, selectedTimeslot, selectedPackage, selectedRoom } =
-      initialData
+    const {
+      selectedDate,
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom,
+      packagePrice
+    } = initialData
 
     if (selectedPackage) {
       setPartyPackage(selectedPackage)
@@ -74,6 +74,10 @@ export default function Form() {
     if (selectedPackage) {
       setValue(`${ADDONS[0].name}`, 1)
       setValue(`${ADDONS[1].name}`, 1)
+    }
+    if (selectedTimeslot) {
+      setValue('pizzaDeliveryTime', TIMESLOTS[selectedTimeslot] || '')
+      setPartyTimeslot(selectedTimeslot || '')
     }
   }, [initialData, hasRestored, setValue])
 
@@ -135,6 +139,20 @@ export default function Form() {
     setShowAlert(false)
   }
 
+  const pizzaDeliveryTime = () => {
+    console.log('Pizza Delivery Time:', partyTimeslot)
+    const timeslot = partyTimeslot.split('PM')[0]
+    const pickupTime = ['00', '15', '30', '45']
+
+    return pickupTime.map((time) => {
+      const formattedTime = `${timeslot}:${time} PM`
+      return (
+        <option key={formattedTime} value={formattedTime}>
+          {formattedTime}
+        </option>
+      )
+    })
+  }
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <header className="text-xl font-bold mb-8">
@@ -170,7 +188,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const partyDate = initialData?.selectedDate
                       ? new Date(initialData.selectedDate).toDateString()
@@ -201,7 +219,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const timeslot = initialData?.selectedTimeslot
                       ? TIMESLOTS[initialData.selectedTimeslot]
@@ -228,7 +246,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const packageInfo = initialData?.selectedPackage
                       ? initialData.selectedPackage
@@ -254,7 +272,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const roomInfo = initialData?.selectedRoom
                       ? initialData.selectedRoom
@@ -286,7 +304,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const firstName = watchedValues.firstName || 'Unavailable'
                     alert(
@@ -306,7 +324,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const lastName = watchedValues.lastName || 'Unavailable'
                     alert(
@@ -327,7 +345,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const email = watchedValues.email || 'Unavailable'
                     alert(
@@ -348,7 +366,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const phone = watchedValues.phone || 'Unavailable'
                     alert(
@@ -368,7 +386,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const celebrantName =
                       watchedValues.celebrantName || 'Unavailable'
@@ -392,7 +410,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const age = watchedValues.age || 'Unavailable'
                     alert(
@@ -416,7 +434,7 @@ export default function Form() {
                 </select>
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const gender = watchedValues.gender || 'Unavailable'
                     alert(`👦 Select Celebrant's Gender`)
@@ -437,7 +455,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const kids = watchedValues.kidsCapacity || 'Unavailable'
                     alert(
@@ -460,7 +478,7 @@ export default function Form() {
                 />
                 <button
                   type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600"
                   onClick={() => {
                     const adults = watchedValues.adultsCapacity || 'Unavailable'
                     alert(
@@ -484,7 +502,6 @@ export default function Form() {
                     className=" p-2 border rounded-md flex items-center justify-between"
                   />
                 </FormField>
-
                 <FormField label={ADDONS[1].name}>
                   <input
                     type="number"
@@ -495,17 +512,26 @@ export default function Form() {
                     className=" p-2 border rounded-md flex items-center justify-between"
                   />
                 </FormField>
-
-                <FormField label={'Pizza Delivery Time'}>
-                  <input
-                    type="time"
-                    min={'12:00'}
-                    max={'13:00'}
-                    defaultValue="12:30"
+                <FormField label={'Pizza Delivery Time'} required>
+                  <select
+                    type="select"
                     {...register('pizzaDeliveryTime')}
                     className=" p-2 border rounded-md flex items-center justify-between"
-                  />
+                  >
+                    {pizzaDeliveryTime()}
+                  </select>
                 </FormField>
+                <button
+                  type="button"
+                  className="mt-2 text-sm text-blue-600"
+                  onClick={() => {
+                    alert(`You have 2 pizzas included in this package.
+                    \n\nYou can select up to 2 pizzas of each type.
+                    \n\nYou can also select a delivery time for the pizzas.`)
+                  }}
+                >
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
               </div>
             )}
           </div>
@@ -546,7 +572,7 @@ export default function Form() {
           </p>
         </div>
         {/* Back and Submit Buttons */}
-        <div className="flex justify-between pt-4">
+        <div className="flex justify-between items-center">
           <Link href="/booking/">
             <button
               type="button"
@@ -556,12 +582,17 @@ export default function Form() {
             </button>
           </Link>
 
-          <button
-            type="submit"
-            className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-          >
-            Submit Booking
-          </button>
+          <div className="flex items-center">
+            <p className="text-lg text-gray-600 mr-4">
+              Total Price: ${(partyPrice || 0).toFixed(2)}
+            </p>
+            <button
+              type="submit"
+              className="px-4 py-2  bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+            >
+              Submit Booking
+            </button>
+          </div>
         </div>
       </form>
     </div>

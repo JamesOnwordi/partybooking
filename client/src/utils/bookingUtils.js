@@ -58,6 +58,8 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   return null
 }
 
+export function calaculateTotalPrice({ basePrice }) {}
+
 export async function getAvailability(date) {
   // console.log(choosenDate)
   if (!(date instanceof Date) || isNaN(date)) return {}
