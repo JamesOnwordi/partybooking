@@ -5,6 +5,7 @@ export const ROOMS = ['Single', 'Combined']
 export const PACKAGES = ['Solar', 'Galaxy']
 export const DEFAULT_CAPACITY = [8, 16]
 export const MAX_CAPACITY = [20, 40]
+export const EXTRA_KIDS_PRICE = []
 export const TIMESLOTS = {
   '12PM': '12:00 PM - 1:30 PM',
   '2PM': '2:00 PM - 3:30 PM',

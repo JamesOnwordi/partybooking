@@ -19,6 +19,15 @@ export default function Form() {
   const watchedValues = useWatch({ control })
   const kids = parseInt(watchedValues?.kidsCapacity) || 0
   const adults = parseInt(watchedValues?.adultsCapacity) || 0
+
+  const addons = ADDONS.map((addon) => {
+    return {
+      quantity: watchedValues?.addons?.[addon.name] || 0,
+      name: addon.name,
+      price: addon.price
+    }
+  })
+
   const pepperoniPizza = parseInt(watchedValues?.[ADDONS[0].name]) || 0
   const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
 
@@ -55,8 +64,14 @@ export default function Form() {
       selectedTimeslot,
       selectedPackage,
       selectedRoom,
-      packagePrice
+      basePrice
     } = initialData
+
+    console.log('Restoring initial data:', initialData)
+    if (basePrice) {
+      setPartyPrice(basePrice)
+      console.log('Package Price:', basePrice)
+    }
 
     if (selectedPackage) {
       setPartyPackage(selectedPackage)
@@ -107,6 +122,25 @@ export default function Form() {
     watchedValues
   ])
 
+  // Calculate party price based on selected package and addons
+  useEffect(() => {
+    console.log(kids, adults, addons, watchedValues)
+    const basePrice = partyPrice || 0
+
+    const addonsPrice = addons.reduce((acc, addon) => {
+      return acc + addon.quantity * addon.price
+    }, 0)
+
+    const extraKidsPrice = Math.max(0, kids - maxKids) * 10
+
+    if (kids > DEFAULT_CAPACITY[numberOfRooms]) {
+      console.log('Extra kids price:', DEFAULT_CAPACITY[numberOfRooms])
+    }
+    console.log('Addons price:', addonsPrice)
+
+    let totalPrice = basePrice + addonsPrice
+  }, [kids, adults, addons])
+
   // Form submission handler
   const onSubmit = (data) => {
     console.log('Form Data:', data)
@@ -153,6 +187,7 @@ export default function Form() {
       )
     })
   }
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <header className="text-xl font-bold mb-8">

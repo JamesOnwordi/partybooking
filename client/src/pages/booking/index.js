@@ -46,20 +46,17 @@ export default function CalendarPage() {
   // Save state to localStorage on change
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const basePrice = packagePrice.base || 0
+
+      console.log(typeof basePrice)
       localStorage.setItem(
         'initialBooking',
         JSON.stringify({
-          date: date.toISOString(),
-          // Ensure we save the actual date string
-          selectedDate: date.toISOString().slice(0, 10),
-          // Save the selected values
-          // This ensures we save the date in YYYY-MM-DD format
-          // and not the Date object itself
           selectedDate,
           selectedTimeslot,
           selectedPackage,
           selectedRoom,
-          packagePrice
+          basePrice
         })
       )
     }
@@ -68,8 +65,8 @@ export default function CalendarPage() {
       selectedDate,
       selectedTimeslot,
       selectedPackage,
-      selectedRoom,
-      packagePrice
+      selectedRoom
+      // basePrice
     )
   }, [
     selectedDate,
