@@ -10,7 +10,8 @@ import {
   TIMESLOTS,
   ADDONS,
   PACKAGES,
-  DEFAULT_CAPACITY
+  DEFAULT_CAPACITY,
+  EXTRA_KIDS_PRICE
 } from '@/utils/bookingUtils'
 import CustomAlert from '@/components/customAlert'
 
@@ -39,9 +40,10 @@ export default function Form() {
   const [maxCheese, setMaxCheese] = useState(2)
   const [numberOfRooms, setNumberOfRooms] = useState(0)
   const [initialData, setInitialData] = useState(null)
-  const [hasRestored, setHasRestored] = useState(false)
   const [showAlert, setShowAlert] = useState(false)
   const [partyPrice, setPartyPrice] = useState(0)
+  const [totalPrice, setTotalPrice] = useState(0)
+  const [galaxyPackage, setGalaxyPackage] = useState(false)
 
   // Restore form state from localStorage
   useEffect(() => {
@@ -51,13 +53,11 @@ export default function Form() {
     if (initial) {
       setInitialData(JSON.parse(initial))
     }
-
-    setHasRestored(true)
-  }, [setValue])
+  }, [])
 
   // Set initial values from restored booking
   useEffect(() => {
-    if (!hasRestored || !initialData) return
+    if (!initialData) return
 
     const {
       selectedDate,
@@ -67,34 +67,41 @@ export default function Form() {
       basePrice
     } = initialData
 
-    console.log('Restoring initial data:', initialData)
-    if (basePrice) {
-      setPartyPrice(basePrice)
-      console.log('Package Price:', basePrice)
+    // Set party date
+    selectedDate && setValue('partyDate', selectedDate)
+
+    // Set timeslot
+    if (selectedTimeslot) {
+      setPartyTimeslot(selectedTimeslot)
+      setValue('partyTimeslot', selectedTimeslot)
     }
 
+    // Set package and possible addons
     if (selectedPackage) {
       setPartyPackage(selectedPackage)
       setValue('partyPackage', selectedPackage)
-    }
-    if (selectedDate) setValue('partyDate', selectedDate)
-    if (selectedTimeslot) setValue('partyTimeslot', selectedTimeslot)
 
+      // Automatically add Galaxy package addons
+      if (selectedPackage === PACKAGES[1]) {
+        setGalaxyPackage(true)
+        setValue(ADDONS[0].name, 1)
+        setValue(ADDONS[1].name, 1)
+      }
+    }
+
+    // Set price
+    basePrice && setPartyPrice(basePrice)
+
+    // Set room and capacities
     if (selectedRoom) {
       const index = ROOMS.indexOf(selectedRoom)
+      const capacity = DEFAULT_CAPACITY[index] || 0
+
       setNumberOfRooms(index !== -1 ? index : 0)
-      setValue('kidsCapacity', DEFAULT_CAPACITY[index] || 0)
-      setValue('adultsCapacity', DEFAULT_CAPACITY[index] || 0)
+      setValue('kidsCapacity', capacity)
+      setValue('adultsCapacity', capacity)
     }
-    if (selectedPackage) {
-      setValue(`${ADDONS[0].name}`, 1)
-      setValue(`${ADDONS[1].name}`, 1)
-    }
-    if (selectedTimeslot) {
-      setValue('pizzaDeliveryTime', TIMESLOTS[selectedTimeslot] || '')
-      setPartyTimeslot(selectedTimeslot || '')
-    }
-  }, [initialData, hasRestored, setValue])
+  }, [initialData])
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
@@ -106,39 +113,33 @@ export default function Form() {
       0,
       maxPizza - (pepperoniPizza + cheesePizza)
     )
-    console.log('coming in here', pepperoniPizza, cheesePizza, remainingPizza)
+
     setMaxPepperoni(pepperoniPizza + remainingPizza)
     setMaxCheese(cheesePizza + remainingPizza)
 
     setMaxKids(kids + remainingRoom)
     setMaxAdults(adults + remainingRoom)
-  }, [
-    kids,
-    adults,
-    numberOfRooms,
-    pepperoniPizza,
-    cheesePizza,
-    partyPackage,
-    watchedValues
-  ])
+  }, [kids, adults, pepperoniPizza, cheesePizza])
 
   // Calculate party price based on selected package and addons
   useEffect(() => {
     console.log(kids, adults, addons, watchedValues)
-    const basePrice = partyPrice || 0
 
     const addonsPrice = addons.reduce((acc, addon) => {
       return acc + addon.quantity * addon.price
     }, 0)
 
-    const extraKidsPrice = Math.max(0, kids - maxKids) * 10
-
-    if (kids > DEFAULT_CAPACITY[numberOfRooms]) {
-      console.log('Extra kids price:', DEFAULT_CAPACITY[numberOfRooms])
+    const additionalKids = kids - DEFAULT_CAPACITY
+    let additionalKidsPrice = 0
+    if (kids > 8) {
+      if (selectedPackage === PACKAGES[1]) {
+        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
+      }
     }
-    console.log('Addons price:', addonsPrice)
 
-    let totalPrice = basePrice + addonsPrice
+    const total = addonsPrice + partyPrice
+
+    setTotalPrice(total)
   }, [kids, adults, addons])
 
   // Form submission handler
@@ -525,7 +526,7 @@ export default function Form() {
                 </button>
               </div>
             </FormField>
-            {partyPackage === PACKAGES[1] && (
+            {galaxyPackage && (
               <div className="cs flex flex-col md:flex-row gap-6">
                 <FormField label={ADDONS[0].name}>
                   <input
@@ -619,7 +620,7 @@ export default function Form() {
 
           <div className="flex items-center">
             <p className="text-lg text-gray-600 mr-4">
-              Total Price: ${(partyPrice || 0).toFixed(2)}
+              Total Price: ${(totalPrice || 0).toFixed(2)}
             </p>
             <button
               type="submit"
