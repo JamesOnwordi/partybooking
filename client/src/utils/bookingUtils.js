@@ -5,7 +5,7 @@ export const ROOMS = ['Single', 'Combined']
 export const PACKAGES = ['Solar', 'Galaxy']
 export const DEFAULT_CAPACITY = [8, 16]
 export const MAX_CAPACITY = [20, 40]
-export const EXTRA_KIDS_PRICE = []
+export const EXTRA_KIDS_PRICE = [20.95, 24.95, 28.5]
 export const TIMESLOTS = {
   '12PM': '12:00 PM - 1:30 PM',
   '2PM': '2:00 PM - 3:30 PM',
@@ -20,6 +20,10 @@ export const ADDONS = [
   { name: 'Goody Bags', price: 9.95 },
   { name: 'Grip Socks', price: 2.95 }
 ]
+export const HOLIDAYS = []
+// days that require extra charges in cloudLand
+// days are in javascript.getDay() format
+export const EXCLUSIVE_DAYS = [0, 5, 6]
 
 export const DEFAULT_KIDS = 8
 export const DEFAULT_ADULTS = 8

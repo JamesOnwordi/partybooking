@@ -30,7 +30,7 @@ export default function CalendarPage() {
     const parsed = JSON.parse(saved)
     if (parsed.selectedDate) {
       console.log(saved)
-      const restoredDate = DateTime.fromISO('2025-07-12', {
+      const restoredDate = DateTime.fromISO(parsed.selectedDate, {
         zone: 'America/Denver'
       }).toJSDate()
       console.log('Restored date:', restoredDate, selectedDate)
@@ -45,10 +45,9 @@ export default function CalendarPage() {
 
   // Save state to localStorage on change
   useEffect(() => {
+    const basePrice = packagePrice.base
+    console.log(packagePrice)
     if (typeof window !== 'undefined') {
-      const basePrice = packagePrice.base || 0
-
-      console.log(typeof basePrice)
       localStorage.setItem(
         'initialBooking',
         JSON.stringify({
@@ -65,8 +64,8 @@ export default function CalendarPage() {
       selectedDate,
       selectedTimeslot,
       selectedPackage,
-      selectedRoom
-      // basePrice
+      selectedRoom,
+      basePrice
     )
   }, [
     selectedDate,

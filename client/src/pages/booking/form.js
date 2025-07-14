@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { set, useForm, useWatch } from 'react-hook-form'
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import {
+  ExclamationCircleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import {
   MAX_CAPACITY,
@@ -11,9 +14,11 @@ import {
   ADDONS,
   PACKAGES,
   DEFAULT_CAPACITY,
-  EXTRA_KIDS_PRICE
+  EXTRA_KIDS_PRICE,
+  EXCLUSIVE_DAYS
 } from '@/utils/bookingUtils'
 import CustomAlert from '@/components/customAlert'
+import { DateTime, Zone } from 'luxon'
 
 export default function Form() {
   const { register, handleSubmit, setValue, control } = useForm()
@@ -32,6 +37,7 @@ export default function Form() {
   const pepperoniPizza = parseInt(watchedValues?.[ADDONS[0].name]) || 0
   const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
 
+  const [date, setDate] = useState(new Date())
   const [partyPackage, setPartyPackage] = useState('')
   const [partyTimeslot, setPartyTimeslot] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
@@ -58,6 +64,7 @@ export default function Form() {
   // Set initial values from restored booking
   useEffect(() => {
     if (!initialData) return
+    console.log(initialData)
 
     const {
       selectedDate,
@@ -68,7 +75,14 @@ export default function Form() {
     } = initialData
 
     // Set party date
-    selectedDate && setValue('partyDate', selectedDate)
+    if (selectedDate) {
+      const JSDate = DateTime.fromISO(selectedDate, {
+        zone: 'America/Denver'
+      }).toJSDate()
+
+      setValue('partyDate', JSDate.toDateString())
+      setDate(JSDate)
+    }
 
     // Set timeslot
     if (selectedTimeslot) {
@@ -129,16 +143,24 @@ export default function Form() {
       return acc + addon.quantity * addon.price
     }, 0)
 
-    const additionalKids = kids - DEFAULT_CAPACITY
+    let additionalKids = kids - DEFAULT_CAPACITY[numberOfRooms]
+    console.log(additionalKids)
     let additionalKidsPrice = 0
-    if (kids > 8) {
-      if (selectedPackage === PACKAGES[1]) {
+    if (additionalKids > 0) {
+      if (partyPackage === PACKAGES[1]) {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
+        console.log('in here ', EXTRA_KIDS_PRICE[2])
+      } else if (
+        partyPackage === PACKAGES[0] &&
+        EXCLUSIVE_DAYS.includes(date.getDay())
+      ) {
+        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
+      } else {
+        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
       }
     }
-
-    const total = addonsPrice + partyPrice
-
+    console.log(additionalKidsPrice)
+    const total = addonsPrice + partyPrice + additionalKidsPrice
     setTotalPrice(total)
   }, [kids, adults, addons])
 
@@ -216,9 +238,6 @@ export default function Form() {
               <div className="flex items-center space-x-2">
                 <input
                   {...register('partyDate')}
-                  value={new Date(
-                    initialData?.selectedDate || ''
-                  ).toDateString()}
                   disabled
                   className="w-full p-2 border rounded-md"
                 />
