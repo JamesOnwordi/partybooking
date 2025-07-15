@@ -3,9 +3,11 @@
 import axios from 'axios'
 export const ROOMS = ['Single', 'Combined']
 export const PACKAGES = ['Solar', 'Galaxy']
+export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
 export const DEFAULT_CAPACITY = [8, 16]
 export const MAX_CAPACITY = [20, 40]
 export const EXTRA_KIDS_PRICE = [20.95, 24.95, 28.5]
+export const EXTRA_ADULTS_PRICE = 5
 export const TIMESLOTS = {
   '12PM': '12:00 PM - 1:30 PM',
   '2PM': '2:00 PM - 3:30 PM',
@@ -83,5 +85,17 @@ export async function getAvailability(date) {
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)
     return {}
+  }
+}
+
+export async function submitBooking(bookingData) {
+  try {
+    const res = await axios
+      .post(`http://localhost:4000/`, bookingData)
+      .then(function (response) {
+        console.log(response)
+      })
+  } catch (error) {
+    console.log(error)
   }
 }

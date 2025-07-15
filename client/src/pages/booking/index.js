@@ -33,7 +33,6 @@ export default function CalendarPage() {
       const restoredDate = DateTime.fromISO(parsed.selectedDate, {
         zone: 'America/Denver'
       }).toJSDate()
-      console.log('Restored date:', restoredDate, selectedDate)
       setDate(restoredDate)
       setSelectedDate(parsed.selectedDate)
       getAvailability(restoredDate).then(setAvailableTimeslot)
@@ -55,10 +54,11 @@ export default function CalendarPage() {
           selectedTimeslot,
           selectedPackage,
           selectedRoom,
-          basePrice
+          packagePrice
         })
       )
     }
+    console.log(localStorage.getItem('initialBooking'))
     console.log(
       date.toISOString(),
       selectedDate,
@@ -96,7 +96,8 @@ export default function CalendarPage() {
           selectedDate,
           selectedTimeslot,
           selectedPackage,
-          selectedRoom
+          selectedRoom,
+          basePrice: packagePrice.base
         })
       )
     }

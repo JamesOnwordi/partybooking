@@ -15,9 +15,13 @@ import {
   PACKAGES,
   DEFAULT_CAPACITY,
   EXTRA_KIDS_PRICE,
-  EXCLUSIVE_DAYS
+  EXCLUSIVE_DAYS,
+  EXTRA_ADULTS_PRICE,
+  PARTY_PACKAGES,
+  submitBooking
 } from '@/utils/bookingUtils'
-import CustomAlert from '@/components/customAlert'
+import FormField from '@/components/FormField'
+import Modal from '@/components/Modal'
 import { DateTime, Zone } from 'luxon'
 
 export default function Form() {
@@ -39,6 +43,7 @@ export default function Form() {
 
   const [date, setDate] = useState(new Date())
   const [partyPackage, setPartyPackage] = useState('')
+  const [choosenPackage, setChoosenPackage] = useState('')
   const [partyTimeslot, setPartyTimeslot] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
@@ -56,6 +61,7 @@ export default function Form() {
     if (typeof window === 'undefined') return
 
     const initial = localStorage.getItem('initialBooking')
+    console.log(initial)
     if (initial) {
       setInitialData(JSON.parse(initial))
     }
@@ -142,58 +148,72 @@ export default function Form() {
     const addonsPrice = addons.reduce((acc, addon) => {
       return acc + addon.quantity * addon.price
     }, 0)
+    const defaultCapacity = DEFAULT_CAPACITY[numberOfRooms]
 
-    let additionalKids = kids - DEFAULT_CAPACITY[numberOfRooms]
-    console.log(additionalKids)
+    let additionalKids = kids - defaultCapacity
     let additionalKidsPrice = 0
     if (additionalKids > 0) {
       if (partyPackage === PACKAGES[1]) {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
-        console.log('in here ', EXTRA_KIDS_PRICE[2])
+        setChoosenPackage(PARTY_PACKAGES[2])
       } else if (
         partyPackage === PACKAGES[0] &&
         EXCLUSIVE_DAYS.includes(date.getDay())
       ) {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
+        setChoosenPackage(PARTY_PACKAGES[1])
       } else {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
+        setChoosenPackage(PARTY_PACKAGES[0])
       }
     }
-    console.log(additionalKidsPrice)
-    const total = addonsPrice + partyPrice + additionalKidsPrice
+
+    let fewerKids
+    kids < defaultCapacity
+      ? (fewerKids = defaultCapacity - kids)
+      : (fewerKids = 0)
+
+    let additionalAdults = adults - defaultCapacity - fewerKids
+    let additionalAdultsPrice = 0
+
+    console.log(additionalAdults)
+    if (additionalAdults > 0) {
+      console.log('ahh', additionalAdults)
+      additionalAdultsPrice = additionalAdults * EXTRA_ADULTS_PRICE
+    }
+
+    const total =
+      addonsPrice + partyPrice + additionalKidsPrice + additionalAdultsPrice
     setTotalPrice(total)
   }, [kids, adults, addons])
 
   // Form submission handler
   const onSubmit = (data) => {
     console.log('Form Data:', data)
-    localStorage.removeItem('partyFormData')
+    const booking = {
+      date: initialData.selectedDate,
+      timeslot: initialData.selectedTimeslot,
+      package: choosenPackage,
+      customer: {
+        first_name: watchedValues.firstName,
+        last_name: watchedValues.lastName,
+        phone: watchedValues.phone,
+        email: watchedValues.email
+      },
+      celebrant: {
+        name: watchedValues.celebrantName,
+        gender: watchedValues.gender,
+        ageTurning: watchedValues.age
+      },
+      reservation: {
+        kids,
+        adults,
+        noOfRooms: numberOfRooms + 1
+      },
+      addons
+    }
+    submitBooking(booking)
     localStorage.removeItem('initialBooking')
-  }
-
-  // Handle form submission
-  useEffect(() => {
-    if (typeof window === 'undefined') return // Ensure form is submitted only once
-    const handleFormSubmit = (event) => {
-      event.preventDefault()
-      handleSubmit(onSubmit)()
-      // Prevent default form submission to avoid page reload
-      // This allows us to handle the submission with React Hook Form
-      // and perform any additional actions like API calls or state updates
-      // You can also redirect or show a success message here
-      console.log('Form submitted successfully!')
-      // Optionally, you can redirect to a confirmation page or show a success message
-      window.location.href = '/booking/confirmation' // Redirect to confirmation page
-    }
-    window.addEventListener('submit', handleFormSubmit)
-    return () => {
-      window.removeEventListener('submit', handleFormSubmit)
-    }
-  }, [handleSubmit, onSubmit])
-
-  // Handle alert for party date
-  const onClose = () => {
-    setShowAlert(false)
   }
 
   const pizzaDeliveryTime = () => {
@@ -241,26 +261,14 @@ export default function Form() {
                   disabled
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const partyDate = initialData?.selectedDate
-                      ? new Date(initialData.selectedDate).toDateString()
-                      : 'Unavailable'
-                    setShowAlert(true)
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
-                {showAlert && (
-                  <CustomAlert
-                    message={`Selected Date: ${initialData.selectedDate} \nTo change date go back to previous page.`}
-                    onClose={() => {
-                      setShowAlert(false)
-                    }}
-                  />
-                )}
+                <Modal
+                  message={
+                    <p>
+                      Selected Party Date: {initialData?.selectedDate} <br />
+                      <span>To change date go back to previous page.</span>
+                    </p>
+                  }
+                />
               </div>
             </FormField>
 
@@ -272,21 +280,10 @@ export default function Form() {
                   disabled
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const timeslot = initialData?.selectedTimeslot
-                      ? TIMESLOTS[initialData.selectedTimeslot]
-                      : 'Unavailable'
-                    alert(
-                      `🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
-                    ${timeslot}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
+                    ${initialData?.selectedTimeslot}`}
+                />
               </div>
             </FormField>
 
@@ -299,20 +296,9 @@ export default function Form() {
                   {...register('partyPackage')}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const packageInfo = initialData?.selectedPackage
-                      ? initialData.selectedPackage
-                      : 'Unavailable'
-                    alert(
-                      `🎁 Selected Package Information:\n\nThe currently selected package is: ${packageInfo}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${initialData?.selectedPackage}`}
+                />
               </div>
             </FormField>
 
@@ -325,20 +311,9 @@ export default function Form() {
                   {...register('partyRoom')}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const roomInfo = initialData?.selectedRoom
-                      ? initialData.selectedRoom
-                      : 'Unavailable'
-                    alert(
-                      `🏠 Selected Room Information:\n\nThe currently selected room is: ${roomInfo}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${initialData?.selectedRoom}`}
+                />
               </div>
             </FormField>
           </div>
@@ -357,18 +332,9 @@ export default function Form() {
                   {...register('firstName', { required: true })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const firstName = watchedValues.firstName || 'Unavailable'
-                    alert(
-                      `👤 Customer's First Name Information:\n\nThe first name is: ${firstName}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`👤 Customer's First Name Information:\n\nThe first name is: ${watchedValues.firstName}`}
+                />
               </div>
             </FormField>
             <FormField label="Last Name" required>
@@ -377,18 +343,9 @@ export default function Form() {
                   {...register('lastName', { required: true })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const lastName = watchedValues.lastName || 'Unavailable'
-                    alert(
-                      `👤 Customer's Last Name Information:\n\nThe last name is: ${lastName}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`👤 Customer's Last Name Information:\n\nThe last name is: ${watchedValues.lastName}`}
+                />
               </div>
             </FormField>
             <FormField label="Email" required>
@@ -398,18 +355,9 @@ export default function Form() {
                   {...register('email', { required: true })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const email = watchedValues.email || 'Unavailable'
-                    alert(
-                      `📧 Customer's Email Information:\n\nThe email is: ${email}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`📧 Customer's Email Information:\n\nThe email is:`}
+                />
               </div>
             </FormField>
             <FormField label="Phone" required>
@@ -419,18 +367,9 @@ export default function Form() {
                   {...register('phone', { required: true })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const phone = watchedValues.phone || 'Unavailable'
-                    alert(
-                      `📞 Customer's Phone Information:\n\nThe phone number is: ${phone}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`📞 Customer's Phone Information:\n\nThe phone number is: `}
+                />
               </div>
             </FormField>
             <FormField label="Celebrant's Name" required>
@@ -439,20 +378,9 @@ export default function Form() {
                   {...register('celebrantName', { required: true })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const celebrantName =
-                      watchedValues.celebrantName || 'Unavailable'
-                    alert(
-                      `🎉 Celebrant's Name Information:\n\nThe celebrant's name is :
-                    ${celebrantName}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🎉 Celebrant's Name Information:\n\nThe celebrant's name is :  `}
+                />
               </div>
             </FormField>
             <FormField label="Age Turning" required>
@@ -463,18 +391,9 @@ export default function Form() {
                   {...register('age', { required: true })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const age = watchedValues.age || 'Unavailable'
-                    alert(
-                      `🎂 Celebrant's Age Information:\n\nThe age turning is: ${age}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🎂 Celebrant's Age Information:\n\nThe age turning is:   `}
+                />
               </div>
             </FormField>
             <FormField label="Gender" required>
@@ -484,19 +403,10 @@ export default function Form() {
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="">Select gender</option>
-                  <option value="Girl">Female</option>
-                  <option value="Boy">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
                 </select>
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const gender = watchedValues.gender || 'Unavailable'
-                    alert(`👦 Select Celebrant's Gender`)
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal message={` Select Celebrant's Gender   `} />
               </div>
             </FormField>
             <FormField label="Number of Kids">
@@ -508,18 +418,9 @@ export default function Form() {
                   {...register('kidsCapacity')}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const kids = watchedValues.kidsCapacity || 'Unavailable'
-                    alert(
-                      `👶 Kids Capacity Information:\n\nThe number of kids is: ${kids}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`👶 Kids Capacity Information:\n\nThe number of kids is: `}
+                />
               </div>
             </FormField>
             <FormField label="Number of Adults">
@@ -531,18 +432,9 @@ export default function Form() {
                   {...register('adultsCapacity')}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    const adults = watchedValues.adultsCapacity || 'Unavailable'
-                    alert(
-                      `👨‍👩‍👧‍👦 Adults Capacity Information: \n\n The number of adults is: ${adults}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
+                />
               </div>
             </FormField>
             {galaxyPackage && (
@@ -576,17 +468,15 @@ export default function Form() {
                     {pizzaDeliveryTime()}
                   </select>
                 </FormField>
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600"
-                  onClick={() => {
-                    alert(`You have 2 pizzas included in this package.
-                    \n\nYou can select up to 2 pizzas of each type.
-                    \n\nYou can also select a delivery time for the pizzas.`)
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={
+                    <p>
+                      You have 2 pizzas included in this package. <br />
+                      You can select up to 2 pizzas of each type. <br />
+                      You can also select a delivery time for the pizzas.
+                    </p>
+                  }
+                />
               </div>
             )}
           </div>
@@ -650,18 +540,6 @@ export default function Form() {
           </div>
         </div>
       </form>
-    </div>
-  )
-}
-
-// Reusable Form Field Component
-function FormField({ label, children, required }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
     </div>
   )
 }
