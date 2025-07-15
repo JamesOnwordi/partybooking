@@ -91,7 +91,7 @@ export async function getAvailability(date) {
 export async function submitBooking(bookingData) {
   try {
     const res = await axios
-      .post(`http://localhost:4000/`, bookingData)
+      .post(`http://localhost:4000`, bookingData)
       .then(function (response) {
         console.log(response)
       })

@@ -54,7 +54,7 @@ export default function CalendarPage() {
           selectedTimeslot,
           selectedPackage,
           selectedRoom,
-          packagePrice
+          basePrice
         })
       )
     }

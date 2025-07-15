@@ -101,6 +101,17 @@ export default function Form() {
       setPartyPackage(selectedPackage)
       setValue('partyPackage', selectedPackage)
 
+      if (selectedPackage === PACKAGES[1]) {
+        setChoosenPackage(PARTY_PACKAGES[2])
+      } else if (
+        partyPackage === PACKAGES[0] &&
+        EXCLUSIVE_DAYS.includes(date.getDay())
+      ) {
+        setChoosenPackage(PARTY_PACKAGES[1])
+      } else {
+        setChoosenPackage(PARTY_PACKAGES[0])
+      }
+
       // Automatically add Galaxy package addons
       if (selectedPackage === PACKAGES[1]) {
         setGalaxyPackage(true)
@@ -155,16 +166,13 @@ export default function Form() {
     if (additionalKids > 0) {
       if (partyPackage === PACKAGES[1]) {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
-        setChoosenPackage(PARTY_PACKAGES[2])
       } else if (
         partyPackage === PACKAGES[0] &&
         EXCLUSIVE_DAYS.includes(date.getDay())
       ) {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
-        setChoosenPackage(PARTY_PACKAGES[1])
       } else {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
-        setChoosenPackage(PARTY_PACKAGES[0])
       }
     }
 
@@ -178,7 +186,6 @@ export default function Form() {
 
     console.log(additionalAdults)
     if (additionalAdults > 0) {
-      console.log('ahh', additionalAdults)
       additionalAdultsPrice = additionalAdults * EXTRA_ADULTS_PRICE
     }
 
