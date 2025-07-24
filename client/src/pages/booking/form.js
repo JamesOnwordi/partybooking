@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { set, useForm, useWatch } from 'react-hook-form'
 import {
+  CurrencyPoundIcon,
   ExclamationCircleIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
@@ -18,14 +19,37 @@ import {
   EXCLUSIVE_DAYS,
   EXTRA_ADULTS_PRICE,
   PARTY_PACKAGES,
-  submitBooking
+  submitBooking,
+  AGE_RANGE,
+  KIDS_CAPACITY_RANGE,
+  ADULTS_CAPACITY_RANGE
 } from '@/utils/bookingUtils'
 import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
 import { DateTime, Zone } from 'luxon'
 
 export default function Form() {
-  const { register, handleSubmit, setValue, control } = useForm()
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      age: '',
+      gender: '',
+      celebrantName: '',
+      kidsCapacity: 0,
+      adultsCapacity: 0,
+      addons: {},
+      pizzaDeliveryTime: ''
+    }
+  })
   const watchedValues = useWatch({ control })
   const kids = parseInt(watchedValues?.kidsCapacity) || 0
   const adults = parseInt(watchedValues?.adultsCapacity) || 0
@@ -51,6 +75,7 @@ export default function Form() {
   const [maxCheese, setMaxCheese] = useState(2)
   const [numberOfRooms, setNumberOfRooms] = useState(0)
   const [initialData, setInitialData] = useState(null)
+  const [spaceRemaining, setSpaceRemaining] = useState(0)
   const [showAlert, setShowAlert] = useState(false)
   const [partyPrice, setPartyPrice] = useState(0)
   const [totalPrice, setTotalPrice] = useState(0)
@@ -137,7 +162,38 @@ export default function Form() {
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
     const roomCap = MAX_CAPACITY[numberOfRooms] || MAX_CAPACITY[0]
-    const remainingRoom = Math.max(0, roomCap - (kids + adults))
+
+    const kidsCapacity = Math.max(KIDS_CAPACITY_RANGE[0], kids)
+    const adultsCapacity = Math.max(ADULTS_CAPACITY_RANGE[0], adults)
+
+    const remainingSpace = Math.max(
+      0,
+      roomCap - (kidsCapacity + adultsCapacity)
+    )
+    const currentCapacity = kidsCapacity + adultsCapacity
+    console.log(
+      'capacity',
+      kids,
+      adults,
+      'max',
+      // remainingSpaceKids,
+      // remainingSpaceAdults,
+      'room cap',
+      remainingSpace,
+      roomCap
+    )
+
+    if (currentCapacity > roomCap) {
+      console.log('in here')
+      setSpaceRemaining(0)
+    } else {
+      const remainingSpaceKids = kidsCapacity + remainingSpace
+      const remainingSpaceAdults = adultsCapacity + remainingSpace
+      setSpaceRemaining(remainingSpace)
+      setMaxKids(remainingSpaceKids)
+      setMaxAdults(remainingSpaceAdults)
+      //
+    }
 
     const maxPizza = 2
     const remainingPizza = Math.max(
@@ -148,8 +204,7 @@ export default function Form() {
     setMaxPepperoni(pepperoniPizza + remainingPizza)
     setMaxCheese(cheesePizza + remainingPizza)
 
-    setMaxKids(kids + remainingRoom)
-    setMaxAdults(adults + remainingRoom)
+    console.log('maxkid', maxKids)
   }, [kids, adults, pepperoniPizza, cheesePizza])
 
   // Calculate party price based on selected package and addons
@@ -220,7 +275,7 @@ export default function Form() {
       addons
     }
     submitBooking(booking)
-    localStorage.removeItem('initialBooking')
+    // localStorage.removeItem('initialBooking')
   }
 
   const pizzaDeliveryTime = () => {
@@ -255,7 +310,7 @@ export default function Form() {
         className="bg-white p-6 rounded shadow-md space-y-8"
       >
         {/* Party Details */}
-        <section>
+        {/* <section>
           <h2 className="text-lg font-semibold">Party Details</h2>
           <p className="text-gray-600">
             To modify any details, please go back to the booking page.
@@ -324,10 +379,10 @@ export default function Form() {
               </div>
             </FormField>
           </div>
-        </section>
+        </section> */}
 
         {/* Customer Details */}
-        <section>
+        {/* <section>
           <h2 className="text-lg font-semibold">Booking Details</h2>
           <p className="text-gray-600">
             Provide contact information for confirmation and communication.
@@ -336,77 +391,136 @@ export default function Form() {
             <FormField label="First Name" required>
               <div className="flex items-center space-x-2">
                 <input
-                  {...register('firstName', { required: true })}
+                  {...register('firstName', {
+                    required: 'First name is required.'
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
+
                 <Modal
                   message={`👤 Customer's First Name Information:\n\nThe first name is: ${watchedValues.firstName}`}
                 />
               </div>
+              {errors.firstName && (
+                <p className="text-red-500 text-sm">
+                  {errors.firstName.message}
+                </p>
+              )}
             </FormField>
             <FormField label="Last Name" required>
               <div className="flex items-center space-x-2">
                 <input
-                  {...register('lastName', { required: true })}
+                  {...register('lastName', {
+                    required: 'Last name is required.'
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
                   message={`👤 Customer's Last Name Information:\n\nThe last name is: ${watchedValues.lastName}`}
                 />
               </div>
+              {errors.lastName && (
+                <p className="text-red-500 text-sm">
+                  {errors.lastName.message}
+                </p>
+              )}
             </FormField>
             <FormField label="Email" required>
               <div className="flex items-center space-x-2">
                 <input
                   type="email"
-                  {...register('email', { required: true })}
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[^@]+@[^@]+\.[^@]+$/,
+                      message: ' Invalid email address'
+                    }
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
+
                 <Modal
                   message={`📧 Customer's Email Information:\n\nThe email is:`}
                 />
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm">{errors.email.message}</p>
+              )}
             </FormField>
             <FormField label="Phone" required>
               <div className="flex items-center space-x-2">
                 <input
                   type="tel"
-                  {...register('phone', { required: true })}
+                  {...register('phone', {
+                    required: 'Phone number is required.',
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: 'Phone number must be 10 digits'
+                    }
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
                   message={`📞 Customer's Phone Information:\n\nThe phone number is: `}
                 />
               </div>
+              {errors.phone && (
+                <p className="text-red-500 text-sm">{errors.phone.message}</p>
+              )}
             </FormField>
-            <FormField label="Celebrant's Name" required>
+            <FormField
+              label="Celebrant's Name"
+              required="Celebrant name is required"
+            >
               <div className="flex items-center space-x-2">
                 <input
-                  {...register('celebrantName', { required: true })}
+                  {...register('celebrantName', {
+                    required: "Celebrant's name is required"
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
                   message={`🎉 Celebrant's Name Information:\n\nThe celebrant's name is :  `}
                 />
               </div>
+              {errors.celebrantName && (
+                <p className="text-red-500 text-sm">
+                  {errors.celebrantName.message}
+                </p>
+              )}
             </FormField>
             <FormField label="Age Turning" required>
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
                   max={15}
-                  {...register('age', { required: true })}
+                  {...register('age', {
+                    required: ` Celebrant's age is required`,
+                    min: {
+                      value: 1,
+                      message: `Age must be at least ${AGE_RANGE[0]}`
+                    },
+                    max: {
+                      value: 15,
+                      message: `Age must be ${AGE_RANGE[1]} or younger`
+                    }
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
                   message={`🎂 Celebrant's Age Information:\n\nThe age turning is:   `}
                 />
               </div>
+              {errors.age && (
+                <p className="text-red-500 text-sm">{errors.age.message}</p>
+              )}
             </FormField>
             <FormField label="Gender" required>
               <div className="flex items-center space-x-2">
                 <select
-                  {...register('gender', { required: true })}
+                  {...register('gender', {
+                    required: `Celebrant's gender is required`
+                  })}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="">Select gender</option>
@@ -415,79 +529,157 @@ export default function Form() {
                 </select>
                 <Modal message={` Select Celebrant's Gender   `} />
               </div>
-            </FormField>
-            <FormField label="Number of Kids">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={maxKids}
-                  {...register('kidsCapacity')}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`👶 Kids Capacity Information:\n\nThe number of kids is: `}
-                />
-              </div>
-            </FormField>
-            <FormField label="Number of Adults">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={maxAdults}
-                  {...register('adultsCapacity')}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
-                />
-              </div>
+              {errors.gender && (
+                <p className="text-red-500 text-sm">{errors.gender.message}</p>
+              )}
             </FormField>
             {galaxyPackage && (
-              <div className="cs flex flex-col md:flex-row gap-6">
-                <FormField label={ADDONS[0].name}>
-                  <input
-                    type="number"
-                    min={0}
-                    max={maxPepperoni}
-                    defaultValue={1}
-                    {...register(`${ADDONS[0].name}`)}
-                    className=" p-2 border rounded-md flex items-center justify-between"
+              <div>
+                <div className="cs flex flex-col justify-between md:flex-row gap-6">
+                  <FormField label={ADDONS[0].name}>
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxPepperoni}
+                      defaultValue={1}
+                      {...register(`${ADDONS[0].name}`)}
+                      className=" p-2 border rounded-md flex items-center justify-between"
+                    />
+                  </FormField>
+                  <FormField label={ADDONS[1].name}>
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxCheese}
+                      defaultValue={1}
+                      {...register(`${ADDONS[1].name}`)}
+                      className=" p-2 border rounded-md flex items-center justify-between"
+                    />
+                  </FormField>
+                  <FormField label={'Pizza Delivery Time'} required>
+                    <select
+                      type="select"
+                      {...register('pizzaDeliveryTime', {
+                        required: "Pizza's Delivery Time required"
+                      })}
+                      className=" p-2 border rounded-md flex items-center justify-between"
+                    >
+                      {pizzaDeliveryTime()}
+                    </select>
+                  </FormField>
+                  <Modal
+                    message={
+                      <p>
+                        You have 2 pizzas included in this package. <br />
+                        You can select up to 2 pizzas of each type. <br />
+                        You can also select a delivery time for the pizzas.
+                      </p>
+                    }
                   />
-                </FormField>
-                <FormField label={ADDONS[1].name}>
-                  <input
-                    type="number"
-                    min={0}
-                    max={maxCheese}
-                    defaultValue={1}
-                    {...register(`${ADDONS[1].name}`)}
-                    className=" p-2 border rounded-md flex items-center justify-between"
-                  />
-                </FormField>
-                <FormField label={'Pizza Delivery Time'} required>
-                  <select
-                    type="select"
-                    {...register('pizzaDeliveryTime')}
-                    className=" p-2 border rounded-md flex items-center justify-between"
-                  >
-                    {pizzaDeliveryTime()}
-                  </select>
-                </FormField>
-                <Modal
-                  message={
-                    <p>
-                      You have 2 pizzas included in this package. <br />
-                      You can select up to 2 pizzas of each type. <br />
-                      You can also select a delivery time for the pizzas.
-                    </p>
-                  }
-                />
+                </div>
+                {errors.pizzaDeliveryTime && (
+                  <p className="text-red-500 text-sm">
+                    {errors.pizzaDeliveryTime.message}
+                  </p>
+                )}
               </div>
             )}
           </div>
-        </section>
+        </section> */}
+
+        {/* Capacity Control */}
+        {/* <section>
+          <h2 className="text-lg font-semibold">Capacity Details</h2>
+          <p className="text-gray-600">
+            Provide contact information for confirmation and communication.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div>
+              <div className=" mb-4">
+                <p>Total Capacity: {MAX_CAPACITY[numberOfRooms]}</p>
+                <p>Spots Left: {spaceRemaining}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <FormField label="Number of Kids">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min={KIDS_CAPACITY_RANGE[0]}
+                      max={maxKids}
+                      {...register('kidsCapacity', {
+                        valueAsNumber: true,
+                        required: 'Number of kids is required',
+                        min: {
+                          value: KIDS_CAPACITY_RANGE[0],
+                          message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid`
+                        },
+                        max: {
+                          value: maxKids,
+                          message: `cannot exceed ${maxKids} kids for selected room`
+                        }
+                      })}
+                      onBlur={(e) => {
+                        const numberOfKids = Number(e.currentTarget.value)
+
+                        const clamped = Math.min(
+                          maxKids,
+                          Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
+                        )
+                        e.currentTarget.value = clamped
+                        setValue('kidsCapacity', clamped)
+                      }}
+                      className="w-full p-2 border rounded-md"
+                    />
+                    {errors.kidsCapacity && (
+                      <p> {errors.kidsCapacity.message}</p>
+                    )}
+
+                    <Modal
+                      message={`👶 Kids Capacity Information:\n\nThe number of kids is: `}
+                    />
+                  </div>
+                </FormField>
+                <FormField label="Number of Adults">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min={ADULTS_CAPACITY_RANGE[0]}
+                      max={maxAdults}
+                      {...register('adultsCapacity', {
+                        valueAsNumber: true,
+                        min: {
+                          value: ADULTS_CAPACITY_RANGE[0],
+                          message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult`
+                        },
+                        max: {
+                          value: maxAdults,
+                          message: `cannot exceed ${maxAdults} adults for selected room`
+                        }
+                      })}
+                      className="w-full p-2 border rounded-md"
+                      onBlur={(e) => {
+                        const numberOfAdults = Number(e.currentTarget.value)
+                        const clamped = Math.min(
+                          Math.max(numberOfAdults, ADULTS_CAPACITY_RANGE[0]),
+                          maxAdults
+                        )
+                        e.currentTarget.value = clamped
+                        setValue('adultsCapacity', clamped)
+                      }}
+                    />
+
+                    <Modal
+                      message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
+                    />
+                  </div>
+                  {errors.adultsCapacity && (
+                    <p>{errors.adultsCapacity.message}</p>
+                  )}
+                </FormField>
+              </div>
+            </div>
+          </div>
+        </section> */}
 
         {/* Addons */}
         {/* Addons Section */}
@@ -498,21 +690,23 @@ export default function Form() {
             party.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid  grid-cols-1 md:grid-cols-3 gap-6">
             {ADDONS.map((addon) => (
-              <FormField
-                key={addon.name}
-                label={`${addon.name} ($${addon.price})`}
-              >
-                <input
-                  type="number"
-                  min={0}
-                  max={5}
-                  defaultValue={0}
-                  {...register(`addons.${addon.name}`)}
-                  className=" p-2 border rounded-md flex items-center justify-between"
-                />
-              </FormField>
+              <div key={addon.name} className="flex flex-col  w-fit">
+                <FormField
+                  key={addon.name}
+                  label={`${addon.name} ($${addon.price})`}
+                >
+                  <input
+                    type="number"
+                    min={0}
+                    max={5}
+                    defaultValue={0}
+                    {...register(`addons.${addon.name}`)}
+                    className=" p-2 border rounded-md flex items-center justify-center"
+                  />
+                </FormField>
+              </div>
             ))}
           </div>
         </section>

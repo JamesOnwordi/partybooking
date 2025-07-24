@@ -4,7 +4,10 @@ import axios from 'axios'
 export const ROOMS = ['Single', 'Combined']
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
+export const AGE_RANGE = [1, 15]
 export const DEFAULT_CAPACITY = [8, 16]
+export const KIDS_CAPACITY_RANGE = [0, 19, 39]
+export const ADULTS_CAPACITY_RANGE = [1, 20, 40]
 export const MAX_CAPACITY = [20, 40]
 export const EXTRA_KIDS_PRICE = [20.95, 24.95, 28.5]
 export const EXTRA_ADULTS_PRICE = 5
