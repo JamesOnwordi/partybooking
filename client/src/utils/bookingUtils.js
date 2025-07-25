@@ -17,14 +17,19 @@ export const TIMESLOTS = {
   '4PM': '4:00 PM - 5:30 PM',
   '6PM': '6:00 PM - 7:30 PM'
 }
-export const ADDONS = [
-  { name: 'Pepperoni Pizza', price: 35 },
-  { name: 'Cheese Pizza', price: 35 },
-  { name: 'Fruit Tray', price: 30 },
-  { name: 'Vegetable Tray', price: 30 },
-  { name: 'Goody Bags', price: 9.95 },
-  { name: 'Grip Socks', price: 2.95 }
+export const GALAXY_PACKAGE_ADDONS = [
+  { name: 'Pepperoni Pizza', tag: 'Galaxy' },
+  { name: 'Cheese Pizza', tag: 'Galaxy' }
 ]
+export const ADDONS = [
+  { id: 'pepperoni_pizza', name: 'Pepperoni Pizza', price: 35, max: 5 },
+  { id: 'cheese_pizza', name: 'Cheese Pizza', price: 35, max: 5 },
+  { id: 'fruit_tray', name: 'Fruit Tray', price: 30, max: 5 },
+  { id: 'vegetable_tray', name: 'Vegetable Tray', price: 30, max: 5 },
+  { id: 'goody_bags', name: 'Goody Bags', price: 9.95, max: 40 },
+  { id: 'grip_socks', name: 'Grip Socks', price: 2.95, max: 40 }
+]
+
 export const HOLIDAYS = []
 // days that require extra charges in cloudLand
 // days are in javascript.getDay() format

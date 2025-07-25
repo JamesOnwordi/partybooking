@@ -22,7 +22,8 @@ import {
   submitBooking,
   AGE_RANGE,
   KIDS_CAPACITY_RANGE,
-  ADULTS_CAPACITY_RANGE
+  ADULTS_CAPACITY_RANGE,
+  GALAXY_PACKAGE_ADDONS
 } from '@/utils/bookingUtils'
 import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
@@ -56,13 +57,21 @@ export default function Form() {
 
   const addons = ADDONS.map((addon) => {
     return {
-      quantity: watchedValues?.addons?.[addon.name] || 0,
+      quantity: watchedValues?.addons?.[addon.id] || 0,
+      id: addon.id,
       name: addon.name,
-      price: addon.price
+      price: addon.price,
+      min: 0,
+      max: addon.max
     }
   })
 
-  const pepperoniPizza = parseInt(watchedValues?.[ADDONS[0].name]) || 0
+  const pepperoniPizza =
+    parseInt(
+      watchedValues?.[
+        (GALAXY_PACKAGE_ADDONS[0].tag, GALAXY_PACKAGE_ADDONS[0].name)
+      ]
+    ) || 0
   const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
 
   const [date, setDate] = useState(new Date())
@@ -140,8 +149,8 @@ export default function Form() {
       // Automatically add Galaxy package addons
       if (selectedPackage === PACKAGES[1]) {
         setGalaxyPackage(true)
-        setValue(ADDONS[0].name, 1)
-        setValue(ADDONS[1].name, 1)
+        // setValue(ADDONS[0].name, 1)
+        // setValue(ADDONS[1].name, 1)
       }
     }
 
@@ -230,6 +239,7 @@ export default function Form() {
         additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
       }
     }
+    console.log('errors: ', errors)
 
     let fewerKids
     kids < defaultCapacity
@@ -310,7 +320,7 @@ export default function Form() {
         className="bg-white p-6 rounded shadow-md space-y-8"
       >
         {/* Party Details */}
-        {/* <section>
+        <section>
           <h2 className="text-lg font-semibold">Party Details</h2>
           <p className="text-gray-600">
             To modify any details, please go back to the booking page.
@@ -379,15 +389,17 @@ export default function Form() {
               </div>
             </FormField>
           </div>
-        </section> */}
+        </section>
 
         {/* Customer Details */}
-        {/* <section>
+        <section>
           <h2 className="text-lg font-semibold">Booking Details</h2>
           <p className="text-gray-600">
             Provide contact information for confirmation and communication.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-2 gap-6 mt-4">
+            {/* First Name */}
             <FormField label="First Name" required>
               <div className="flex items-center space-x-2">
                 <input
@@ -395,18 +407,23 @@ export default function Form() {
                     required: 'First name is required.'
                   })}
                   className="w-full p-2 border rounded-md"
+                  aria-invalid={!!errors.firstName}
+                  aria-describedby="firstNameError"
                 />
-
                 <Modal
-                  message={`👤 Customer's First Name Information:\n\nThe first name is: ${watchedValues.firstName}`}
+                  message={`👤 Customer's First Name:\n\n${
+                    watchedValues.firstName || ''
+                  }`}
                 />
               </div>
               {errors.firstName && (
-                <p className="text-red-500 text-sm">
+                <p id="firstNameError" className="text-red-500 text-sm mt-1">
                   {errors.firstName.message}
                 </p>
               )}
             </FormField>
+
+            {/* Last Name */}
             <FormField label="Last Name" required>
               <div className="flex items-center space-x-2">
                 <input
@@ -416,15 +433,19 @@ export default function Form() {
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`👤 Customer's Last Name Information:\n\nThe last name is: ${watchedValues.lastName}`}
+                  message={`👤 Customer's Last Name:\n\n${
+                    watchedValues.lastName || ''
+                  }`}
                 />
               </div>
               {errors.lastName && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.lastName.message}
                 </p>
               )}
             </FormField>
+
+            {/* Email */}
             <FormField label="Email" required>
               <div className="flex items-center space-x-2">
                 <input
@@ -433,20 +454,25 @@ export default function Form() {
                     required: 'Email is required',
                     pattern: {
                       value: /^[^@]+@[^@]+\.[^@]+$/,
-                      message: ' Invalid email address'
+                      message: 'Invalid email address'
                     }
                   })}
                   className="w-full p-2 border rounded-md"
                 />
-
                 <Modal
-                  message={`📧 Customer's Email Information:\n\nThe email is:`}
+                  message={`📧 Customer's Email:\n\n${
+                    watchedValues.email || ''
+                  }`}
                 />
               </div>
               {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email.message}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.email.message}
+                </p>
               )}
             </FormField>
+
+            {/* Phone */}
             <FormField label="Phone" required>
               <div className="flex items-center space-x-2">
                 <input
@@ -461,17 +487,18 @@ export default function Form() {
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`📞 Customer's Phone Information:\n\nThe phone number is: `}
+                  message={`📞 Phone Number:\n\n${watchedValues.phone || ''}`}
                 />
               </div>
               {errors.phone && (
-                <p className="text-red-500 text-sm">{errors.phone.message}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.phone.message}
+                </p>
               )}
             </FormField>
-            <FormField
-              label="Celebrant's Name"
-              required="Celebrant name is required"
-            >
+
+            {/* Celebrant Name */}
+            <FormField label="Celebrant's Name" required>
               <div className="flex items-center space-x-2">
                 <input
                   {...register('celebrantName', {
@@ -480,46 +507,54 @@ export default function Form() {
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`🎉 Celebrant's Name Information:\n\nThe celebrant's name is :  `}
+                  message={`🎉 Celebrant's Name:\n\n${
+                    watchedValues.celebrantName || ''
+                  }`}
                 />
               </div>
               {errors.celebrantName && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.celebrantName.message}
                 </p>
               )}
             </FormField>
+
+            {/* Age */}
             <FormField label="Age Turning" required>
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
-                  max={15}
+                  max={AGE_RANGE[1]}
                   {...register('age', {
-                    required: ` Celebrant's age is required`,
+                    required: "Celebrant's age is required",
                     min: {
-                      value: 1,
+                      value: AGE_RANGE[0],
                       message: `Age must be at least ${AGE_RANGE[0]}`
                     },
                     max: {
-                      value: 15,
+                      value: AGE_RANGE[1],
                       message: `Age must be ${AGE_RANGE[1]} or younger`
                     }
                   })}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`🎂 Celebrant's Age Information:\n\nThe age turning is:   `}
+                  message={`🎂 Age Turning:\n\n${watchedValues.age || ''}`}
                 />
               </div>
               {errors.age && (
-                <p className="text-red-500 text-sm">{errors.age.message}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.age.message}
+                </p>
               )}
             </FormField>
+
+            {/* Gender */}
             <FormField label="Gender" required>
               <div className="flex items-center space-x-2">
                 <select
                   {...register('gender', {
-                    required: `Celebrant's gender is required`
+                    required: "Celebrant's gender is required"
                   })}
                   className="w-full p-2 border rounded-md"
                 >
@@ -527,79 +562,91 @@ export default function Form() {
                   <option value="Female">Female</option>
                   <option value="Male">Male</option>
                 </select>
-                <Modal message={` Select Celebrant's Gender   `} />
+                <Modal message="Select the celebrant's gender" />
               </div>
               {errors.gender && (
-                <p className="text-red-500 text-sm">{errors.gender.message}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.gender.message}
+                </p>
               )}
             </FormField>
+
+            {/* Galaxy Package Add-ons */}
             {galaxyPackage && (
               <div>
-                <div className="cs flex flex-col justify-between md:flex-row gap-6">
-                  <FormField label={ADDONS[0].name}>
-                    <input
-                      type="number"
-                      min={0}
-                      max={maxPepperoni}
-                      defaultValue={1}
-                      {...register(`${ADDONS[0].name}`)}
-                      className=" p-2 border rounded-md flex items-center justify-between"
-                    />
-                  </FormField>
-                  <FormField label={ADDONS[1].name}>
-                    <input
-                      type="number"
-                      min={0}
-                      max={maxCheese}
-                      defaultValue={1}
-                      {...register(`${ADDONS[1].name}`)}
-                      className=" p-2 border rounded-md flex items-center justify-between"
-                    />
-                  </FormField>
-                  <FormField label={'Pizza Delivery Time'} required>
-                    <select
-                      type="select"
-                      {...register('pizzaDeliveryTime', {
-                        required: "Pizza's Delivery Time required"
-                      })}
-                      className=" p-2 border rounded-md flex items-center justify-between"
-                    >
-                      {pizzaDeliveryTime()}
-                    </select>
-                  </FormField>
-                  <Modal
-                    message={
-                      <p>
-                        You have 2 pizzas included in this package. <br />
-                        You can select up to 2 pizzas of each type. <br />
-                        You can also select a delivery time for the pizzas.
-                      </p>
-                    }
-                  />
+                <div className="md:col-span-2 space-y-6">
+                  <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3  md:gap-6">
+                    {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
+                      <FormField key={addon.name} label={addon.name}>
+                        <input
+                          type="number"
+                          min={0}
+                          max={index === 0 ? maxPepperoni : maxCheese}
+                          defaultValue={1}
+                          {...register(
+                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
+                            {
+                              min: 0,
+                              max: index === 0 ? maxPepperoni : maxCheese
+                            }
+                          )}
+                          className="w-full p-2 border rounded-md"
+                        />
+                      </FormField>
+                    ))}
+
+                    <div className="flex justify-between gap-2 ">
+                      <FormField label="Delivery Time" required>
+                        <select
+                          {...register('pizzaDeliveryTime', {
+                            required: 'Pizza delivery time is required'
+                          })}
+                          className="w-full p-2 border rounded-md"
+                        >
+                          {pizzaDeliveryTime()}
+                        </select>
+                      </FormField>
+                      <Modal
+                        message={
+                          <p>
+                            You have 2 pizzas included in this package. <br />
+                            You can select up to 2 pizzas of each type. <br />
+                            You can also select a delivery time for the pizzas.
+                          </p>
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {errors.pizzaDeliveryTime && (
+                    <p className="text-red-500 text-sm">
+                      {errors.pizzaDeliveryTime.message}
+                    </p>
+                  )}
                 </div>
-                {errors.pizzaDeliveryTime && (
-                  <p className="text-red-500 text-sm">
-                    {errors.pizzaDeliveryTime.message}
-                  </p>
-                )}
               </div>
             )}
           </div>
-        </section> */}
+        </section>
 
         {/* Capacity Control */}
-        {/* <section>
+        <section>
           <h2 className="text-lg font-semibold">Capacity Details</h2>
           <p className="text-gray-600">
             Provide contact information for confirmation and communication.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mt-4">
             <div>
-              <div className=" mb-4">
-                <p>Total Capacity: {MAX_CAPACITY[numberOfRooms]}</p>
-                <p>Spots Left: {spaceRemaining}</p>
+              <div className="mb-4">
+                <p className="text-sm">
+                  Total Capacity: {MAX_CAPACITY[numberOfRooms]}
+                </p>
+                <p className="text-sm">Spots Left: {spaceRemaining}</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Number of Kids */}
                 <FormField label="Number of Kids">
                   <div className="flex items-center space-x-2">
                     <input
@@ -611,16 +658,15 @@ export default function Form() {
                         required: 'Number of kids is required',
                         min: {
                           value: KIDS_CAPACITY_RANGE[0],
-                          message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid`
+                          message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid(s)`
                         },
                         max: {
                           value: maxKids,
-                          message: `cannot exceed ${maxKids} kids for selected room`
+                          message: `Cannot exceed ${maxKids} kids for selected room`
                         }
                       })}
                       onBlur={(e) => {
                         const numberOfKids = Number(e.currentTarget.value)
-
                         const clamped = Math.min(
                           maxKids,
                           Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
@@ -628,17 +674,25 @@ export default function Form() {
                         e.currentTarget.value = clamped
                         setValue('kidsCapacity', clamped)
                       }}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      aria-invalid={!!errors.kidsCapacity}
+                      aria-describedby="kidsCapacityError"
                     />
-                    {errors.kidsCapacity && (
-                      <p> {errors.kidsCapacity.message}</p>
-                    )}
-
                     <Modal
-                      message={`👶 Kids Capacity Information:\n\nThe number of kids is: `}
+                      message={`👶 Kids Capacity Information:\n\nThe number of kids is:`}
                     />
                   </div>
+                  {errors.kidsCapacity && (
+                    <p
+                      id="kidsCapacityError"
+                      className="text-red-500 text-sm mt-1"
+                    >
+                      {errors.kidsCapacity.message}
+                    </p>
+                  )}
                 </FormField>
+
+                {/* Number of Adults */}
                 <FormField label="Number of Adults">
                   <div className="flex items-center space-x-2">
                     <input
@@ -649,14 +703,13 @@ export default function Form() {
                         valueAsNumber: true,
                         min: {
                           value: ADULTS_CAPACITY_RANGE[0],
-                          message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult`
+                          message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult(s)`
                         },
                         max: {
                           value: maxAdults,
-                          message: `cannot exceed ${maxAdults} adults for selected room`
+                          message: `Cannot exceed ${maxAdults} adults for selected room`
                         }
                       })}
-                      className="w-full p-2 border rounded-md"
                       onBlur={(e) => {
                         const numberOfAdults = Number(e.currentTarget.value)
                         const clamped = Math.min(
@@ -666,20 +719,27 @@ export default function Form() {
                         e.currentTarget.value = clamped
                         setValue('adultsCapacity', clamped)
                       }}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      aria-invalid={!!errors.adultsCapacity}
+                      aria-describedby="adultsCapacityError"
                     />
-
                     <Modal
                       message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
                     />
                   </div>
                   {errors.adultsCapacity && (
-                    <p>{errors.adultsCapacity.message}</p>
+                    <p
+                      id="adultsCapacityError"
+                      className="text-red-500 text-sm mt-1"
+                    >
+                      {errors.adultsCapacity.message}
+                    </p>
                   )}
                 </FormField>
               </div>
             </div>
           </div>
-        </section> */}
+        </section>
 
         {/* Addons */}
         {/* Addons Section */}
@@ -690,51 +750,68 @@ export default function Form() {
             party.
           </p>
 
-          <div className="grid  grid-cols-1 md:grid-cols-3 gap-6">
-            {ADDONS.map((addon) => (
-              <div key={addon.name} className="flex flex-col  w-fit">
-                <FormField
-                  key={addon.name}
-                  label={`${addon.name} ($${addon.price})`}
-                >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            {addons.map((addon) => (
+              <div key={addon.id} className="flex flex-col">
+                <FormField label={`${addon.name} ($${addon.price})`}>
                   <input
                     type="number"
                     min={0}
-                    max={5}
+                    max={addon.max}
                     defaultValue={0}
-                    {...register(`addons.${addon.name}`)}
-                    className=" p-2 border rounded-md flex items-center justify-center"
+                    {...register(`addons.${addon.id}`, {
+                      valueAsNumber: true,
+                      min: {
+                        value: 0,
+                        message: `Minimum value is 0`
+                      },
+                      max: {
+                        value: addon.max,
+                        message: `Cannot exceed ${addon.max} ${addon.name}`
+                      }
+                    })}
+                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
+                  {errors?.addons?.[addon.id]?.message && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.addons[addon.id].message}
+                    </p>
+                  )}
                 </FormField>
               </div>
             ))}
           </div>
         </section>
-        {/* Submit Button */}
+
+        {/* Review Message */}
         <div className="text-gray-600 mt-6">
           <p className="text-sm">
             Please review your booking details before submitting. If you need to
             make changes, you can go back to the booking page.
           </p>
         </div>
+
         {/* Back and Submit Buttons */}
-        <div className="flex justify-between items-center">
-          <Link href="/booking/">
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center mt-4 gap-4">
+          <Link href="/booking/" passHref>
             <button
               type="button"
-              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+              className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
             >
               Back
             </button>
           </Link>
 
-          <div className="flex items-center">
-            <p className="text-lg text-gray-600 mr-4">
-              Total Price: ${(totalPrice || 0).toFixed(2)}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
+            <p className="text-lg text-gray-700">
+              Total Price:{' '}
+              <span className="font-semibold">
+                ${(totalPrice || 0).toFixed(2)}
+              </span>
             </p>
             <button
               type="submit"
-              className="px-4 py-2  bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+              className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
             >
               Submit Booking
             </button>
