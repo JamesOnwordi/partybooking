@@ -82,13 +82,16 @@ export async function getAvailability(date) {
 
   try {
     const res = await axios.get(`http://localhost:4000/${choosenDate}`)
-    const timeslotData = res.data?.timeslotAvailability
+    const { timeslotAvailability, roomsHeld } = res.data
 
-    console.log('Fetched timeslot data:', timeslotData)
+    console.log('Fetched timeslot data:', timeslotAvailability, roomsHeld)
 
-    // Ensure timeslotData is an object
-    return typeof timeslotData === 'object' && timeslotData !== null
-      ? timeslotData
+    // Ensure timeslotAvailability is an object
+    return typeof timeslotAvailability === 'object' &&
+      timeslotAvailability !== null &&
+      typeof roomsHeld === 'object' &&
+      roomsHeld !== null
+      ? { timeslotAvailability, roomsHeld }
       : {}
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)

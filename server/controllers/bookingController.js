@@ -1,6 +1,7 @@
-const { raw } = require('express')
 const Bookings = require('../models/booking')
+const HeldSlot = require('../models/heldSlot')
 const asyncHandler = require('express-async-handler')
+const { default: mongoose } = require('mongoose')
 
 // constant value
 const MAX_ROOMS_PER_TIMESLOT = 2
@@ -11,24 +12,41 @@ const TIMESLOTS = ['12PM', '2PM', '4PM', '6PM']
 
 exports.timeslots_available = asyncHandler(async (req, res, next) => {
   try {
+    const date = req.params.date
     const bookings = await Bookings.find(
-      { date: req.params.date },
+      { date },
       'reservation.noOfRooms timeslot'
     ).exec()
+
+    const heldSlots = await HeldSlot.find({ date }, 'noOfRooms timeslot').exec()
 
     const roomsBooked = {}
     bookings.forEach(({ reservation: { noOfRooms }, timeslot }) => {
       roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + noOfRooms
     })
 
+    const roomsHeld = {}
+    heldSlots.forEach(({ noOfRooms, timeslot }) => {
+      roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + noOfRooms
+    })
+
+    const sortedRoomsBooked = {}
+    const sortedRoomsHeld = {}
     const timeslotAvailability = {}
     TIMESLOTS.forEach((slot) => {
       timeslotAvailability[slot] =
-        MAX_ROOMS_PER_TIMESLOT - (roomsBooked[slot] || 0)
+        MAX_ROOMS_PER_TIMESLOT -
+        ((roomsBooked[slot] || 0) + (roomsHeld[slot] || 0))
+
+      sortedRoomsBooked[slot] = roomsBooked[slot] || 0
+      sortedRoomsHeld[slot] = roomsHeld[slot] || 0
     })
 
+    Object.keys(roomsBooked).sort()
     res.status(200).json({
       message: `List of available timeslots for ${req.params.date}`,
+      roomsBooked: sortedRoomsBooked,
+      roomsHeld: sortedRoomsHeld,
       timeslotAvailability
     })
 
@@ -40,30 +58,42 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
 })
 
 // create a new booking
-exports.booking_create = asyncHandler(async (req, res, next) => {
+exports.booking_create = async (req, res) => {
+  const session = await mongoose.startSession()
+  session.startTransaction()
+
   try {
     const bookingForm = req.body
 
-    if (
-      await bookingAvailable(
-        bookingForm.date,
-        bookingForm.timeslot,
-        bookingForm.reservation.noOfRooms
-      )
-    ) {
-      const createdBooking = await Bookings.create(bookingForm)
-      res.status(201).json({
-        message: 'Booking Created Succesfully',
-        createdBooking
-      })
-    } else {
+    const isAvailable = await bookingAvailable(
+      bookingForm.date,
+      bookingForm.timeslot,
+      bookingForm.reservation.noOfRooms,
+      session
+    )
+
+    if (!isAvailable) {
+      await session.abortTransaction()
+      session.endSession()
       res.status(400).json({ error: 'Exceeds room capacity' })
     }
+
+    const createdBooking = await Bookings.create([bookingForm], { session })
+
+    await session.commitTransaction()
+    session.endSession()
+
+    res.status(201).json({
+      message: 'Booking Created Succesfully',
+      createdBooking: createdBooking[0]
+    })
   } catch (error) {
-    console.error('Error creating booking:', error.message)
-    res.status(400).json({ error: error.message })
+    await session.abortTransaction()
+    session.endSession()
+    console.error('Transaction failed:', error.message)
+    res.status(500).json({ error: 'Booking failed. Try again.' })
   }
-})
+}
 
 // admin only routes
 // get all bookings
@@ -109,15 +139,30 @@ exports.booking_delete = asyncHandler(async (req, res, next) => {
 })
 
 // check if timeslot choosen is available for booking
-const bookingAvailable = async (date, timeslot, noOfRooms) => {
+const bookingAvailable = async (date, timeslot, noOfRooms, session) => {
   const bookings = await Bookings.find(
-    { date: date, timeslot: timeslot },
-    'reservation.noOfRooms'
+    { date, timeslot },
+    'reservation.noOfRooms',
+    { session }
+  ).exec()
+
+  console.log(bookings)
+
+  const heldSlots = await HeldSlot.find(
+    {
+      date,
+      timeslot
+    },
+    'noOfRooms'
   ).exec()
 
   const roomBooked = bookings.reduce((total, booking) => {
     return (total += booking.reservation.noOfRooms)
   }, 0)
 
-  return MAX_ROOMS_PER_TIMESLOT - roomBooked >= noOfRooms ? true : false
+  const roomHeld = heldSlots.reduce((total, slot) => {
+    return (total += slot.noOfRooms)
+  }, 0)
+
+  return MAX_ROOMS_PER_TIMESLOT - roomBooked >= noOfRooms
 }
