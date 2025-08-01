@@ -1,7 +1,7 @@
 // utils/bookingUtils.js
 
 import axios from 'axios'
-export const ROOMS = ['Single', 'Combined']
+export const ROOMS = { 1: 'Single', 2: 'Combined' }
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
 export const AGE_RANGE = [1, 15]
@@ -84,7 +84,7 @@ export async function getAvailability(date) {
     const res = await axios.get(`http://localhost:4000/${choosenDate}`)
     const { timeslotAvailability, roomsHeld } = res.data
 
-    console.log('Fetched timeslot data:', timeslotAvailability, roomsHeld)
+    console.log('Fetched timeslot data:', date, timeslotAvailability, roomsHeld)
 
     // Ensure timeslotAvailability is an object
     return typeof timeslotAvailability === 'object' &&

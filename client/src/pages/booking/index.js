@@ -21,12 +21,15 @@ export default function CalendarPage() {
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
+  const [availableRoom, setAvailableRoom] = useState(0)
   const [packagePrice, setPackagePrice] = useState(0)
+  const [guidingMessage, setGuidingMessage] = useState('')
 
   const setAvailability = (availability) => {
     console.log(availability)
     setAvailableTimeslot(availability.timeslotAvailability)
     setHeldTimeslot(availability.roomsHeld)
+    setAvailableRoom(availability.timeslotAvailability[selectedTimeslot])
   }
   // Restore saved state
   useEffect(() => {
@@ -43,15 +46,17 @@ export default function CalendarPage() {
 
       const currentDate = DateTime.now().setZone('America/Denver').toJSDate()
 
-      if (restoredDate <= new Date()) {
-        console.log('date expired')
+      if (currentDate > restoredDate) {
+        setGuidingMessage('Date Choosen Expired')
+        localStorage.removeItem('initialBooking')
+        return
       }
 
       if (restoredDate) console.log(restoredDate, currentDate)
       const parsedDate = parsed.selectedDate
       setDate(restoredDate)
       setSelectedDate(parsedDate)
-      getAvailability(date).then(setAvailability)
+      getAvailability(restoredDate).then(setAvailability)
     }
     setSelectedTimeslot(parsed.selectedTimeslot ?? null)
     setSelectedPackage(parsed.selectedPackage ?? null)
@@ -66,13 +71,29 @@ export default function CalendarPage() {
       localStorage.setItem(
         'initialBooking',
         JSON.stringify({
-          selectedDate: '2025-07-30',
+          selectedDate,
           selectedTimeslot,
           selectedPackage,
           selectedRoom,
           basePrice
         })
       )
+    }
+    {
+      !selectedDate
+        ? setGuidingMessage('Please Select a Date')
+        : !selectedTimeslot
+        ? setGuidingMessage('Please Select a Timeslot')
+        : !selectedPackage
+        ? setGuidingMessage('Please Select a Package')
+        : !selectedRoom
+        ? setGuidingMessage('Please Select a Room')
+        : setGuidingMessage('Proceed to Form!')
+    }
+    {
+      availableTimeslot
+        ? setAvailableRoom(availableTimeslot[selectedTimeslot])
+        : console.warn('Timeslot not yet selected')
     }
     console.log(localStorage.getItem('initialBooking'))
     console.log(
@@ -88,8 +109,11 @@ export default function CalendarPage() {
     selectedTimeslot,
     selectedPackage,
     selectedRoom,
-    packagePrice
+    packagePrice,
+    availableTimeslot
   ])
+
+  useEffect(() => {}, [availableTimeslot])
 
   // Handle calendar date change
   const handleDateChange = async (newDate) => {
@@ -100,6 +124,7 @@ export default function CalendarPage() {
     console.log(availability.roomsHeld)
     setAvailableTimeslot(availability.timeslotAvailability)
     setHeldTimeslot(availability.roomsHeld)
+    setGuidingMessage('Please Select a Timeslot')
     // Reset selections for the new date
     setSelectedTimeslot(null)
     setSelectedPackage(null)
@@ -150,6 +175,38 @@ export default function CalendarPage() {
         </div>
       )
     })
+  const renderRooms = () =>
+    Object.keys(ROOMS).map((room) => {
+      console.log(ROOMS[room], availableRoom, room)
+
+      const isSelected = selectedRoom === ROOMS[room]
+      const disabled = room > availableRoom
+
+      let baseClass = !selectedPackage
+        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+        : 'text-green-800 hover:bg-green-100 cursor-pointer'
+      const selectedClass = isSelected
+        ? 'ring-2 ring-purple-900 bg-green-200'
+        : ''
+
+      if (availableRoom < room) {
+        baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
+      }
+
+      return (
+        <div key={ROOMS[room]} className="flex items-center gap-2">
+          <button
+            className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${baseClass} ${selectedClass}`}
+            disabled={disabled}
+            onClick={() => setSelectedRoom(ROOMS[room])}
+          >
+            {ROOMS[room]}
+          </button>
+        </div>
+      )
+    })
+
+  // ROOMS, selectedRoom, setSelectedRoom, !selectedPackage
 
   const renderTimeslots = () =>
     Object.keys(TIMESLOTS).map((slot) => {
@@ -191,7 +248,10 @@ export default function CalendarPage() {
           <button
             className={`w-36 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
             disabled={disabled}
-            onClick={() => setSelectedTimeslot(slot)}
+            onClick={() => {
+              setSelectedTimeslot(slot)
+              setSelectedRoom(null)
+            }}
           >
             {TIMESLOTS[slot]}
           </button>
@@ -251,6 +311,12 @@ export default function CalendarPage() {
         Party Booking
       </h1>
 
+      {guidingMessage && (
+        <p className="mb-4 text-center text-purple-700 animate-pulse">
+          {guidingMessage}
+        </p>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Calendar */}
         <div className="p-4 w-full lg:w-1/3">
@@ -293,14 +359,7 @@ export default function CalendarPage() {
           </div>
 
           <div className="text-lg font-semibold mt-4 mb-4">Room</div>
-          <div className="flex flex-col gap-3">
-            {renderButtonGroup(
-              ROOMS,
-              selectedRoom,
-              setSelectedRoom,
-              !selectedPackage
-            )}
-          </div>
+          <div className="flex flex-col gap-3">{renderRooms()}</div>
         </div>
 
         {/* Info + Price + Book Now */}
@@ -310,9 +369,9 @@ export default function CalendarPage() {
             <p className="text-gray-800">
               Number of Rooms:{' '}
               <strong>
-                {selectedRoom === ROOMS[0]
+                {selectedRoom === ROOMS[1]
                   ? 1
-                  : selectedRoom === ROOMS[1]
+                  : selectedRoom === ROOMS[2]
                   ? 2
                   : 'Select a Room'}
               </strong>
