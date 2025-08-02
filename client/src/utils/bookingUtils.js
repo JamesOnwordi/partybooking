@@ -1,6 +1,7 @@
 // utils/bookingUtils.js
 
 import axios from 'axios'
+const { nanoid } = require('nanoid')
 export const ROOMS = { 1: 'Single', 2: 'Combined' }
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
@@ -75,13 +76,16 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
 
 export function calaculateTotalPrice({ basePrice }) {}
 
-export async function getAvailability(date) {
-  // console.log(choosenDate)
+export async function getAvailability(availabilityData) {
+  console.log(availabilityData)
+  const { date, heldSlotId } = availabilityData
   if (!(date instanceof Date) || isNaN(date)) return {}
   const choosenDate = date.toISOString().slice(0, 10)
 
   try {
-    const res = await axios.get(`http://localhost:4000/${choosenDate}`)
+    const res = await axios.get(
+      `http://localhost:4000/${choosenDate}/heldSlot/${heldSlotId}`
+    )
     const { timeslotAvailability, roomsHeld } = res.data
 
     console.log('Fetched timeslot data:', date, timeslotAvailability, roomsHeld)
@@ -96,6 +100,31 @@ export async function getAvailability(date) {
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)
     return {}
+  }
+}
+
+export async function createHold(data, setHeldSlotId) {
+  try {
+    const heldSlotId = data.heldSlotId ? data.heldSlotId : nanoid(10)
+
+    const holdData = {
+      heldSlotId,
+      date: data.date,
+      timeslot: data.timeslot,
+      noOfRooms: data.noOfRooms
+    }
+    console.log('Sending hold data:', holdData)
+
+    const response = await axios.post(
+      `http://localhost:4000/heldSlots/start`,
+      holdData
+    )
+    if (!data.heldSlotId) {
+      setHeldSlotId(heldSlotId)
+    }
+    return heldSlotId
+  } catch (error) {
+    console.log('Hold failed:', error.response?.data || error.message)
   }
 }
 

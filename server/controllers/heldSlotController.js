@@ -7,11 +7,24 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
     const { heldSlotId, date, timeslot, noOfRooms } = req.body
 
     const foundHeldSlot = await HeldSlot.findOne({ heldSlotId })
+    let updatedHeldSlot
 
     if (foundHeldSlot) {
+      console.log(foundHeldSlot, heldSlotId, date, timeslot, noOfRooms)
+      if (
+        foundHeldSlot.timeslot != timeslot ||
+        foundHeldSlot.date != date ||
+        foundHeldSlot.noOfRooms != noOfRooms
+      ) {
+        updatedHeldSlot = await HeldSlot.findOneAndUpdate(
+          { heldSlotId },
+          { timeslot, date, noOfRooms },
+          { new: true }
+        )
+      }
       return res.status(400).json({
         message: 'Slot is already held',
-        heldSlot: foundHeldSlot
+        heldSlot: updatedHeldSlot ? updatedHeldSlot : foundHeldSlot
       })
     }
 

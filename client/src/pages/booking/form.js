@@ -159,7 +159,13 @@ export default function Form() {
 
     // Set room and capacities
     if (selectedRoom) {
-      const index = ROOMS.indexOf(selectedRoom)
+      const index = Object.keys(ROOMS).reduce((value, room) => {
+        console.warn(ROOMS[room], selectedRoom)
+        if (ROOMS[room] === selectedRoom) {
+          return room
+        } else return value
+      }, 0)
+      console.error(index)
       const capacity = DEFAULT_CAPACITY[index] || 0
 
       setNumberOfRooms(index !== -1 ? index : 0)

@@ -12,13 +12,23 @@ const TIMESLOTS = ['12PM', '2PM', '4PM', '6PM']
 
 exports.timeslots_available = asyncHandler(async (req, res, next) => {
   try {
-    const date = req.params.date
+    console.log(req.params)
+    const { date, id } = req.params
+    const excludeHeldSlotIds = id ? [id] : []
     const bookings = await Bookings.find(
       { date },
       'reservation.noOfRooms timeslot'
     ).exec()
 
-    const heldSlots = await HeldSlot.find({ date }, 'noOfRooms timeslot').exec()
+    const heldSlots = await HeldSlot.find(
+      {
+        date,
+        ...(excludeHeldSlotIds.length && {
+          heldSlotId: { $nin: excludeHeldSlotIds }
+        })
+      },
+      'noOfRooms timeslot'
+    ).exec()
 
     const roomsBooked = {}
     bookings.forEach(({ reservation: { noOfRooms }, timeslot }) => {
@@ -139,7 +149,13 @@ exports.booking_delete = asyncHandler(async (req, res, next) => {
 })
 
 // check if timeslot choosen is available for booking
-const bookingAvailable = async (date, timeslot, noOfRooms, session) => {
+const bookingAvailable = async (
+  date,
+  timeslot,
+  noOfRooms,
+  heldSlotId,
+  session
+) => {
   const bookings = await Bookings.find(
     { date, timeslot },
     'reservation.noOfRooms',
@@ -150,6 +166,7 @@ const bookingAvailable = async (date, timeslot, noOfRooms, session) => {
 
   const heldSlots = await HeldSlot.find(
     {
+      heldSlotId: { $nin: heldSlotId },
       date,
       timeslot
     },
