@@ -1,6 +1,7 @@
 const { default: mongoose } = require('mongoose')
 const HeldSlot = require('../models/heldSlot')
 const asyncHandler = require('express-async-handler')
+const invalidateTimeslotCache = require('../utils/cache')
 
 exports.start_slot_hold = asyncHandler(async (req, res) => {
   try {
@@ -37,6 +38,8 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
       expiresAt
     })
 
+    await invalidateTimeslotCache(date)
+
     res.status(201).json({ message: 'Slot  succesfully held', heldSlot })
   } catch (error) {
     res.status(400).json({ error: error.message })
@@ -63,6 +66,7 @@ exports.extend_held_slot = async (req, res) => {
     if (!updatedHold) {
       return res.status(404).json({ error: 'Held Slot not found after update' })
     }
+
     res.status(200).json({ message: ' Hold extended', heldSlot: updatedHold })
   } catch (error) {
     res.status(400).json({ message: error.message })

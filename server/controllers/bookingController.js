@@ -1,8 +1,17 @@
 const Bookings = require('../models/booking')
 const HeldSlot = require('../models/heldSlot')
+
+const dayjs = require('dayjs')
+const customParseFormat = require('dayjs/plugin/customParseFormat')
+
+const redisClient = require('../redisClient')
+const invalidateTimeslotCache = require('../utils/cache')
+
 const asyncHandler = require('express-async-handler')
 const { default: mongoose } = require('mongoose')
+const { response } = require('express')
 
+dayjs.extend(customParseFormat)
 // constant value
 const MAX_ROOMS_PER_TIMESLOT = 2
 const TIMESLOTS = ['12PM', '2PM', '4PM', '6PM']
@@ -14,6 +23,36 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
   try {
     console.log(req.params)
     const { date, id } = req.params
+    if (!date || !dayjs(date, 'YYYY-MM-DD', true).isValid()) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid or missing date. Expected format: YYYY-MM-DD' })
+    }
+    const minDate = new Date(new Date().setDate(new Date().getDate() + 2))
+    const maxDate = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth() + 4,
+      0
+    )
+
+    if (
+      date < minDate.toLocaleDateString() ||
+      date > maxDate.toLocaleDateString()
+    ) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid Date. Cannot Book Date Requested' })
+    }
+
+    const cacheKey = `timeslots:${date}`
+    if (!id) {
+      const cached = await redisClient.get(cacheKey)
+      if (cached) {
+        console.log(`Cache hit for ${date}`)
+        return res.status(200).json(JSON.parse(cached))
+      }
+    }
+
     const excludeHeldSlotIds = id ? [id] : []
     const bookings = await Bookings.find(
       { date },
@@ -52,13 +91,16 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       sortedRoomsHeld[slot] = roomsHeld[slot] || 0
     })
 
-    Object.keys(roomsBooked).sort()
     res.status(200).json({
       message: `List of available timeslots for ${req.params.date}`,
       roomsBooked: sortedRoomsBooked,
       roomsHeld: sortedRoomsHeld,
       timeslotAvailability
     })
+
+    if (!id) {
+      await redisClient.setEx(cacheKey, 300, JSON.stringify(response))
+    }
 
     console.log(`List of available timeslots for ${req.params.date}`)
   } catch (error) {
@@ -92,6 +134,8 @@ exports.booking_create = async (req, res) => {
 
     await session.commitTransaction()
     session.endSession()
+
+    await invalidateTimeslotCache(date)
 
     res.status(201).json({
       message: 'Booking Created Succesfully',
