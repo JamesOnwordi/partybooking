@@ -12,12 +12,9 @@ import {
   createHold
 } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
-import { set } from 'react-hook-form'
 
 export default function CalendarPage() {
-  const [date, setDate] = useState(
-    new Date(new Date().setDate(new Date().getDate() + 2))
-  )
+  const [date, setDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState()
   const [availableTimeslot, setAvailableTimeslot] = useState({})
   const [heldTimeslot, setHeldTimeslot] = useState({})
@@ -29,124 +26,161 @@ export default function CalendarPage() {
   const [guidingMessage, setGuidingMessage] = useState('')
   const [numberOfRoom, setNumberOfRoom] = useState()
   const [heldSlotId, setHeldSlotId] = useState()
+  const [heldSlotExpiration, setHeldSlotExpiration] = useState()
+  const [timeLeft, setTimeLeft] = useState()
 
-  const setAvailability = (availability) => {
-    console.warn(availability)
-    setAvailableTimeslot(availability.timeslotAvailability)
-    setHeldTimeslot(availability.roomsHeld)
-    availability.timeslotAvailability
-      ? setAvailableRoom(availability.timeslotAvailability[selectedTimeslot])
-      : setAvailableRoom([])
-  }
-  // Restore saved state
+  // Load saved booking state from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('initialBooking')
     if (!saved) return
 
     const parsed = JSON.parse(saved)
+    if (!parsed.heldSlotId) return
 
+    const {
+      selectedDate,
+      selectedPackage,
+      selectedRoom,
+      heldSlotId,
+      heldSlotExpiration
+    } = parsed
+
+    // Restore date
     if (parsed.selectedDate) {
-      console.log(saved)
-      const restoredDate = DateTime.fromISO(parsed.selectedDate, {
+      const restoredDate = DateTime.fromISO(selectedDate, {
         zone: 'America/Denver'
       }).toJSDate()
 
       const currentDate = DateTime.now().setZone('America/Denver').toJSDate()
 
+      // If date is in the past, clear saved booking
       if (currentDate > restoredDate) {
-        setGuidingMessage('Date Choosen Expired')
+        setGuidingMessage('Date Chosen Expired')
         localStorage.removeItem('initialBooking')
         return
       }
-      const parsedDate = parsed.selectedDate
-      const parsedHeldSlotId = parsed.heldSlotId
-      if (restoredDate) console.warn(restoredDate, parsedDate)
 
       setDate(restoredDate)
-      setSelectedDate(parsedDate)
+      setSelectedDate(selectedDate)
+
       getAvailability({
-        date: restoredDate,
-        heldSlotId: parsedHeldSlotId
+        date: selectedDate,
+        heldSlotId: heldSlotId
       }).then(setAvailability)
     }
-    setSelectedTimeslot(parsed.selectedTimeslot ?? null)
-    setSelectedPackage(parsed.selectedPackage ?? null)
-    setSelectedRoom(parsed.selectedRoom ?? null)
-    setHeldSlotId(parsed.heldSlotId ?? null)
+
+    setSelectedTimeslot(selectedTimeslot ?? null)
+    setSelectedPackage(selectedPackage ?? null)
+    setSelectedRoom(selectedRoom ?? null)
+    setHeldSlotId(heldSlotId ?? null)
+    setHeldSlotExpiration(heldSlotExpiration ?? null)
   }, [])
 
-  // Save state to localStorage on change
+  // Save booking state to localStorage
   useEffect(() => {
-    const basePrice = packagePrice.base
-    console.log(packagePrice)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        'initialBooking',
-        JSON.stringify({
-          selectedDate,
-          selectedTimeslot,
-          selectedPackage,
-          selectedRoom,
-          basePrice,
-          heldSlotId
-        })
-      )
-    }
-    {
-      !selectedDate
-        ? setGuidingMessage('Please Select a Date')
-        : !selectedTimeslot
-        ? setGuidingMessage('Please Select a Timeslot')
-        : !selectedPackage
-        ? setGuidingMessage('Please Select a Package')
-        : !selectedRoom
-        ? setGuidingMessage('Please Select a Room')
-        : setGuidingMessage('Proceed to Form!')
-    }
-    {
-      availableTimeslot
-        ? setAvailableRoom(availableTimeslot[selectedTimeslot])
-        : console.warn('Timeslot not yet selected')
-    }
-    console.log(localStorage.getItem('initialBooking'))
-    console.log(
-      date.toISOString(),
-      selectedDate,
-      selectedTimeslot,
-      selectedPackage,
-      selectedRoom,
-      basePrice,
-      heldSlotId
+    if (typeof window === 'undefined') return
+    const basePrice = packagePrice?.base ?? 0
+
+    localStorage.setItem(
+      'initialBooking',
+      JSON.stringify({
+        selectedDate,
+        selectedTimeslot,
+        selectedPackage,
+        selectedRoom,
+        basePrice,
+        heldSlotId,
+        heldSlotExpiration
+      })
     )
   }, [
     selectedDate,
     selectedTimeslot,
     selectedPackage,
     selectedRoom,
-    packagePrice
+    packagePrice,
+    heldSlotId,
+    heldSlotExpiration
   ])
 
-  useEffect(() => {}, [availableTimeslot])
+  // Update guiding message whenever selection changes
+  useEffect(() => {
+    if (!selectedDate) setGuidingMessage('Please Select a Date')
+    else if (!selectedTimeslot) setGuidingMessage('Please Select a Timeslot')
+    else if (!selectedPackage) setGuidingMessage('Please Select a Package')
+    else if (!selectedRoom) setGuidingMessage('Please Select a Room')
+    else setGuidingMessage('Proceed to Form!')
 
-  // Handle calendar date change
+    if (availableTimeslot) {
+      setAvailableRoom(availableTimeslot[selectedTimeslot] ?? 0)
+    }
+  }, [
+    selectedDate,
+    selectedTimeslot,
+    selectedPackage,
+    selectedRoom,
+    availableTimeslot
+  ])
+
+  // Availability helper
+  const setAvailability = (availability) => {
+    setAvailableTimeslot(availability.timeslotAvailability)
+    setHeldTimeslot(availability.roomsHeld)
+    if (availability.timeslotAvailability) {
+      setAvailableRoom(availability.timeslotAvailability[selectedTimeslot] ?? 0)
+    }
+  }
+
+  // Hold countdown timer
+  const getTimeRemaining = () => {
+    const now = DateTime.now()
+    const expiryDate = DateTime.fromISO(heldSlotExpiration)
+    const diff = expiryDate.diff(now, ['minutes', 'seconds'])
+
+    if (diff.toMillis() <= 0) return { expired: true }
+    return {
+      minutes: Math.floor(diff.minutes),
+      seconds: Math.floor(diff.seconds),
+      expired: false
+    }
+  }
+
+  useEffect(() => {
+    if (!heldSlotId) return
+    const interval = setInterval(() => {
+      const remaining = getTimeRemaining()
+      setTimeLeft(remaining)
+      if (remaining.expired) {
+        clearInterval(interval)
+        setHeldSlotId(null)
+        localStorage.removeItem('initialBooking') // clear expired hold
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [heldSlotId])
+
+  // Date change handler
   const handleDateChange = async (newDate) => {
-    const chosenDate = newDate.toISOString().slice(0, 10)
+    const chosenDate = DateTime.fromJSDate(newDate, {
+      zone: 'America/Denver'
+    })
+      .toISO()
+      .slice(0, 10)
+    console.log('index:', newDate, chosenDate)
     setDate(newDate)
     setSelectedDate(chosenDate)
     const availability = await getAvailability({
-      date: newDate,
+      date: chosenDate,
       heldSlotId
     })
-    console.log(availability.roomsHeld)
-    setAvailableTimeslot(availability.timeslotAvailability)
-    setHeldTimeslot(availability.roomsHeld)
+    setAvailability(availability)
     setGuidingMessage('Please Select a Timeslot')
-    // Reset selections for the new date
     setSelectedTimeslot(null)
     setSelectedPackage(null)
     setSelectedRoom(null)
   }
 
+  // Booking handler
   const handleBookNow = async () => {
     const roomCount = Object.keys(ROOMS).find(
       (room) => ROOMS[room] === selectedRoom
@@ -159,27 +193,22 @@ export default function CalendarPage() {
       noOfRooms: roomCount
     }
 
-    try {
-      const newHeldSlotId = await createHold(data, setHeldSlotId)
+    console.log('handleBookNowData:', data)
 
-      console.log('came back out', newHeldSlotId)
-      localStorage.setItem(
-        'initialBooking',
-        JSON.stringify({
-          selectedDate,
-          selectedTimeslot,
-          selectedPackage,
-          selectedRoom,
-          basePrice: packagePrice.base,
-          heldSlotId: newHeldSlotId ? newHeldSlotId : heldSlotId
-        })
-      )
-      // window.location.href = '/booking/form'
+    try {
+      const heldSlotResponse = await createHold(data, setHeldSlotId)
+      const heldSlotData = heldSlotResponse.heldSlot
+
+      if (heldSlotData) {
+        setHeldSlotExpiration(heldSlotData.expiresAt)
+        setHeldSlotId(heldSlotData.heldSlotId)
+      }
     } catch (error) {
       setGuidingMessage('Timeslot already held or unavailable. Try again.')
     }
   }
 
+  // Render helpers
   const renderButtonGroup = (
     items,
     selected,
@@ -211,21 +240,20 @@ export default function CalendarPage() {
 
   const renderRooms = () =>
     Object.keys(ROOMS).map((room) => {
-      console.log(ROOMS[room], availableRoom, room)
-
+      const numericRoom = Number(room)
       const isSelected = selectedRoom === ROOMS[room]
-      const disabled = room > availableRoom
+      const disabled =
+        !selectedPackage || (availableRoom && numericRoom > availableRoom)
 
       let baseClass = !selectedPackage
         ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
         : 'text-green-800 hover:bg-green-100 cursor-pointer'
+      if (numericRoom > availableRoom) {
+        baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
+      }
       const selectedClass = isSelected
         ? 'ring-2 ring-purple-900 bg-green-200'
         : ''
-
-      if (availableRoom < room) {
-        baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
-      }
 
       return (
         <div key={ROOMS[room]} className="flex items-center gap-2">
@@ -234,7 +262,7 @@ export default function CalendarPage() {
             disabled={disabled}
             onClick={() => {
               setSelectedRoom(ROOMS[room])
-              setNumberOfRoom(room)
+              setNumberOfRoom(numericRoom)
             }}
           >
             {ROOMS[room]}
@@ -243,39 +271,22 @@ export default function CalendarPage() {
       )
     })
 
-  // ROOMS, selectedRoom, setSelectedRoom, !selectedPackage
-
   const renderTimeslots = () =>
     Object.keys(TIMESLOTS).map((slot) => {
-      const openSlot = availableTimeslot ? availableTimeslot[slot] : null
-      const heldSlot = heldTimeslot ? heldTimeslot[slot] : null
-      const disabled = openSlot === 0
+      const openSlot = availableTimeslot?.[slot] ?? null
+      const heldSlot = heldTimeslot?.[slot] ?? null
+      const disabled = !openSlot
       const selected = selectedTimeslot === slot
 
-      console.log(openSlot, heldSlot) // Log heldSlot for debugging
+      let stateClass = disabled
+        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+        : 'text-green-800 hover:bg-green-200 cursor-pointer'
 
-      let stateClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
-      let availabilityMessage
-      let onHoldMessage
-
-      // Availability logic for openSlot
-      if (openSlot === 0) {
-        stateClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
-        availabilityMessage = 'No room available'
-      } else if (openSlot === 1) {
+      if (openSlot === 1) {
         stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
-        availabilityMessage = '1 room available'
-      } else if (openSlot >= 2) {
-        stateClass = 'text-green-800 hover:bg-green-200 cursor-pointer'
-        availabilityMessage = '2 rooms available'
       }
-
-      // On Hold logic for heldSlot
       if (heldSlot > 0) {
         stateClass = 'text-orange-700 hover:bg-orange-200 cursor-pointer'
-        onHoldMessage = `${heldSlot} room${heldSlot > 1 ? 's' : ''} on Hold`
-      } else if (heldSlot === 0) {
-        onHoldMessage = 'No rooms on Hold'
       }
 
       const selectedClass = selected
@@ -283,24 +294,32 @@ export default function CalendarPage() {
         : ''
 
       return (
-        <div key={slot} className="flx items-center gap-2">
-          <button
-            className={`w-36 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
-            disabled={disabled}
-            onClick={() => {
-              setSelectedTimeslot(slot)
-              setSelectedRoom(null)
-            }}
-          >
-            {TIMESLOTS[slot]}
-          </button>
-          <p className="text-sm text-gray-500 w-36">{availabilityMessage}</p>
-          <p className="text-sm text-gray-500 w-36">{onHoldMessage}</p>
+        <div key={slot} className="flex items-center gap-2">
+          <div>
+            <button
+              className={`w-36 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
+              disabled={disabled}
+              onClick={() => {
+                setSelectedTimeslot(slot)
+                setSelectedRoom(null)
+              }}
+            >
+              {TIMESLOTS[slot]}
+            </button>
+            <p className="text-sm text-gray-500 w-36">
+              {openSlot === 0
+                ? 'No room available'
+                : `${openSlot} room${openSlot > 1 ? 's' : ''} available`}
+            </p>
+            {heldSlot > 0 && (
+              <p className="text-sm text-gray-500 w-36">
+                {`${heldSlot} room${heldSlot > 1 ? 's' : ''} on Hold`}
+              </p>
+            )}
+          </div>
         </div>
       )
     })
-
-  useEffect(() => {}, [selectedPackage, selectedRoom])
 
   useEffect(() => {
     if (selectedPackage && selectedRoom) {
@@ -313,7 +332,6 @@ export default function CalendarPage() {
     } else {
       setPackagePrice(0)
     }
-    console.log('Package price updated:', packagePrice)
   }, [selectedPackage, selectedRoom, selectedDate])
 
   const calculateBasePrice = () => {
@@ -348,6 +366,15 @@ export default function CalendarPage() {
         Party Booking
       </h1>
 
+      {heldSlotId && (
+        <p className="text-center text-pink-700 animate-pulse">
+          {'Hold Time: '}
+          {timeLeft && !timeLeft.expired
+            ? `${timeLeft.minutes}m ${timeLeft.seconds}s`
+            : 'No active hold'}
+        </p>
+      )}
+
       {guidingMessage && (
         <p className="text-center text-purple-700 animate-pulse">
           {guidingMessage}
@@ -373,7 +400,7 @@ export default function CalendarPage() {
 
         {/* Timeslots */}
         <div className="w-full lg:w-1/3 p-4">
-          <h2 className="text-lg  font-semibold mb-4">Timeslot</h2>
+          <h2 className="text-lg font-semibold mb-4">Timeslot</h2>
           <div className="flex md:flex-col gap-3">{renderTimeslots()}</div>
         </div>
 
@@ -433,27 +460,25 @@ export default function CalendarPage() {
             </div>
           )}
 
-          {selectedRoom ? (
-            <button
-              onClick={handleBookNow}
-              className="mt-6 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-            >
-              Book Now
-            </button>
-          ) : (
-            <button
-              disabled
-              className="mt-6 cursor-not-allowed px-4 py-2 bg-gray-300 text-white rounded transition"
-            >
-              {!selectedDate
-                ? 'Please Select a Date'
-                : !selectedTimeslot
-                ? 'Please Select a Timeslot'
-                : !selectedPackage
-                ? 'Please Select a Package'
-                : 'Please Select a Room'}
-            </button>
-          )}
+          <button
+            onClick={handleBookNow}
+            disabled={!selectedRoom}
+            className={`mt-6 px-4 py-2 rounded transition ${
+              selectedRoom
+                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-gray-300 text-white cursor-not-allowed'
+            }`}
+          >
+            {!selectedDate
+              ? 'Please Select a Date'
+              : !selectedTimeslot
+              ? 'Please Select a Timeslot'
+              : !selectedPackage
+              ? 'Please Select a Package'
+              : !selectedRoom
+              ? 'Please Select a Room'
+              : 'Book Now'}
+          </button>
         </div>
       </div>
     </div>

@@ -44,12 +44,12 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   if (!selectedPackage || !selectedRoom || !date) return null
 
   const day = new Date(date).getDay()
-  const cleaningFee = selectedRoom === ROOMS[0] ? 40 : 60
+  const cleaningFee = selectedRoom === ROOMS[1] ? 40 : 60
   const taxRate = 0.05
 
-  if (selectedPackage === 'Solar') {
+  if (selectedPackage === PACKAGES[0]) {
     let basePrice =
-      selectedRoom === ROOMS[1]
+      selectedRoom === ROOMS[2]
         ? day >= 1 && day <= 4
           ? 295 * 1.7
           : 395 * 1.7
@@ -63,8 +63,8 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
     return { base: basePrice, cleaning: cleaningFee, tax, total }
   }
 
-  if (selectedPackage === 'Galaxy') {
-    let basePrice = selectedRoom === ROOMS[1] ? 495 * 1.7 : 495
+  if (selectedPackage === PACKAGES[1]) {
+    let basePrice = selectedRoom === ROOMS[2] ? 495 * 1.7 : 495
     const tax = basePrice * taxRate
     const total = basePrice + tax
 
@@ -79,16 +79,14 @@ export function calaculateTotalPrice({ basePrice }) {}
 export async function getAvailability(availabilityData) {
   console.log(availabilityData)
   const { date, heldSlotId } = availabilityData
-  if (!(date instanceof Date) || isNaN(date)) return {}
-  const choosenDate = date.toISOString().slice(0, 10)
 
   try {
     const res = await axios.get(
-      `http://localhost:4000/${choosenDate}/heldSlot/${heldSlotId}`
+      `http://localhost:4000/${date}/heldSlot/${heldSlotId}`
     )
     const { timeslotAvailability, roomsHeld } = res.data
 
-    console.log('Fetched timeslot data:', date, timeslotAvailability, roomsHeld)
+    console.log('Fetched timeslot data:', date, res.data)
 
     // Ensure timeslotAvailability is an object
     return typeof timeslotAvailability === 'object' &&
@@ -119,10 +117,12 @@ export async function createHold(data, setHeldSlotId) {
       `http://localhost:4000/heldSlots/start`,
       holdData
     )
+
+    console.log(response.data)
     if (!data.heldSlotId) {
       setHeldSlotId(heldSlotId)
     }
-    return heldSlotId
+    return response.data
   } catch (error) {
     console.log('Hold failed:', error.response?.data || error.message)
   }

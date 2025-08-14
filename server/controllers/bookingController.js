@@ -4,12 +4,8 @@ const HeldSlot = require('../models/heldSlot')
 const dayjs = require('dayjs')
 const customParseFormat = require('dayjs/plugin/customParseFormat')
 
-const redisClient = require('../redisClient')
-const invalidateTimeslotCache = require('../utils/cache')
-
 const asyncHandler = require('express-async-handler')
 const { default: mongoose } = require('mongoose')
-const { response } = require('express')
 
 dayjs.extend(customParseFormat)
 // constant value
@@ -43,16 +39,6 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
         .status(400)
         .json({ error: 'Invalid Date. Cannot Book Date Requested' })
     }
-
-    const cacheKey = `timeslots:${date}`
-    if (!id) {
-      const cached = await redisClient.get(cacheKey)
-      if (cached) {
-        console.log(`Cache hit for ${date}`)
-        return res.status(200).json(JSON.parse(cached))
-      }
-    }
-
     const excludeHeldSlotIds = id ? [id] : []
     const bookings = await Bookings.find(
       { date },
@@ -98,10 +84,6 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       timeslotAvailability
     })
 
-    if (!id) {
-      await redisClient.setEx(cacheKey, 300, JSON.stringify(response))
-    }
-
     console.log(`List of available timeslots for ${req.params.date}`)
   } catch (error) {
     console.error('Error finding date:', error)
@@ -134,8 +116,6 @@ exports.booking_create = async (req, res) => {
 
     await session.commitTransaction()
     session.endSession()
-
-    await invalidateTimeslotCache(date)
 
     res.status(201).json({
       message: 'Booking Created Succesfully',
@@ -193,37 +173,34 @@ exports.booking_delete = asyncHandler(async (req, res, next) => {
 })
 
 // check if timeslot choosen is available for booking
-const bookingAvailable = async (
-  date,
-  timeslot,
-  noOfRooms,
-  heldSlotId,
-  session
-) => {
-  const bookings = await Bookings.find(
-    { date, timeslot },
-    'reservation.noOfRooms',
-    { session }
-  ).exec()
+exports.booking_available = asyncHandler(
+  async (date, timeslot, room, heldSlotId) => {
+    const bookings = await Bookings.find(
+      { date, timeslot },
+      'reservation.noOfRooms'
+    ).exec()
 
-  console.log(bookings)
+    const heldSlots = await HeldSlot.find(
+      {
+        heldSlotId: { $nin: heldSlotId },
+        date,
+        timeslot
+      },
+      'room'
+    ).exec()
 
-  const heldSlots = await HeldSlot.find(
-    {
-      heldSlotId: { $nin: heldSlotId },
-      date,
-      timeslot
-    },
-    'noOfRooms'
-  ).exec()
+    try {
+      const roomBooked = bookings.reduce((total, booking) => {
+        return (total += booking.reservation.room)
+      }, 0)
 
-  const roomBooked = bookings.reduce((total, booking) => {
-    return (total += booking.reservation.noOfRooms)
-  }, 0)
+      const roomHeld = heldSlots.reduce((total, slot) => {
+        return (total += slot.room)
+      }, 0)
 
-  const roomHeld = heldSlots.reduce((total, slot) => {
-    return (total += slot.noOfRooms)
-  }, 0)
-
-  return MAX_ROOMS_PER_TIMESLOT - roomBooked >= noOfRooms
-}
+      return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= room
+    } catch (err) {
+      res.status(400).json({ error: error.message })
+    }
+  }
+)
