@@ -1,110 +1,313 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import { set, useForm, useWatch } from 'react-hook-form'
+import {
+  CurrencyPoundIcon,
+  ExclamationCircleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import {
-  CAPACITY,
   MAX_CAPACITY,
   ROOMS,
   TIMESLOTS,
-  ADDONS
+  ADDONS,
+  PACKAGES,
+  DEFAULT_CAPACITY,
+  EXTRA_KIDS_PRICE,
+  EXCLUSIVE_DAYS,
+  EXTRA_ADULTS_PRICE,
+  PARTY_PACKAGES,
+  submitBooking,
+  AGE_RANGE,
+  KIDS_CAPACITY_RANGE,
+  ADULTS_CAPACITY_RANGE,
+  GALAXY_PACKAGE_ADDONS
 } from '@/utils/bookingUtils'
+import FormField from '@/components/FormField'
+import Modal from '@/components/Modal'
+import { DateTime, Zone } from 'luxon'
 
 export default function Form() {
-  const { register, handleSubmit, setValue, control } = useForm()
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      age: '',
+      gender: '',
+      celebrantName: '',
+      kidsCapacity: 0,
+      adultsCapacity: 0,
+      addons: {},
+      pizzaDeliveryTime: ''
+    }
+  })
   const watchedValues = useWatch({ control })
   const kids = parseInt(watchedValues?.kidsCapacity) || 0
   const adults = parseInt(watchedValues?.adultsCapacity) || 0
 
+  const addons = ADDONS.map((addon) => {
+    return {
+      quantity: watchedValues?.addons?.[addon.id] || 0,
+      id: addon.id,
+      name: addon.name,
+      price: addon.price,
+      min: 0,
+      max: addon.max
+    }
+  })
+
+  const pepperoniPizza =
+    parseInt(
+      watchedValues?.[
+        (GALAXY_PACKAGE_ADDONS[0].tag, GALAXY_PACKAGE_ADDONS[0].name)
+      ]
+    ) || 0
+  const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
+
+  const [date, setDate] = useState(new Date())
+  const [partyPackage, setPartyPackage] = useState('')
+  const [choosenPackage, setChoosenPackage] = useState('')
+  const [partyTimeslot, setPartyTimeslot] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
+  const [maxPepperoni, setMaxPepperoni] = useState(2)
+  const [maxCheese, setMaxCheese] = useState(2)
   const [numberOfRooms, setNumberOfRooms] = useState(0)
-  const [customerPackage, setCustomerPackage] = useState('Solar')
   const [initialData, setInitialData] = useState(null)
-  const [hasRestored, setHasRestored] = useState(false)
+  const [spaceRemaining, setSpaceRemaining] = useState(0)
+  const [showAlert, setShowAlert] = useState(false)
+  const [partyPrice, setPartyPrice] = useState(0)
+  const [totalPrice, setTotalPrice] = useState(0)
+  const [galaxyPackage, setGalaxyPackage] = useState(false)
 
   // Restore form state from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const storedData = localStorage.getItem('partyFormData')
-    if (storedData) {
-      Object.entries(JSON.parse(storedData)).forEach(([key, value]) => {
-        setValue(key, value)
-      })
-    }
-
     const initial = localStorage.getItem('initialBooking')
+    console.log(initial)
     if (initial) {
       setInitialData(JSON.parse(initial))
     }
-
-    setHasRestored(true)
-  }, [setValue])
+  }, [])
 
   // Set initial values from restored booking
   useEffect(() => {
-    if (!hasRestored || !initialData) return
+    if (!initialData) return
+    console.log(initialData)
 
-    const { selectedDate, selectedTimeslot, selectedPackage, selectedRoom } =
-      initialData
+    const {
+      selectedDate,
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom,
+      basePrice
+    } = initialData
 
+    // Set party date
+    if (selectedDate) {
+      const JSDate = DateTime.fromISO(selectedDate, {
+        zone: 'America/Denver'
+      }).toJSDate()
+
+      setValue('partyDate', JSDate.toDateString())
+      setDate(JSDate)
+    }
+
+    // Set timeslot
+    if (selectedTimeslot) {
+      setPartyTimeslot(selectedTimeslot)
+      setValue('partyTimeslot', selectedTimeslot)
+    }
+
+    // Set package and possible addons
     if (selectedPackage) {
-      setCustomerPackage(selectedPackage)
+      setPartyPackage(selectedPackage)
       setValue('partyPackage', selectedPackage)
-    }
-    if (selectedDate) setValue('partyDate', selectedDate)
-    if (selectedTimeslot) setValue('partyTimeslot', selectedTimeslot)
 
+      if (selectedPackage === PACKAGES[1]) {
+        setChoosenPackage(PARTY_PACKAGES[2])
+      } else if (
+        partyPackage === PACKAGES[0] &&
+        EXCLUSIVE_DAYS.includes(date.getDay())
+      ) {
+        setChoosenPackage(PARTY_PACKAGES[1])
+      } else {
+        setChoosenPackage(PARTY_PACKAGES[0])
+      }
+
+      // Automatically add Galaxy package addons
+      if (selectedPackage === PACKAGES[1]) {
+        setGalaxyPackage(true)
+        // setValue(ADDONS[0].name, 1)
+        // setValue(ADDONS[1].name, 1)
+      }
+    }
+
+    // Set price
+    basePrice && setPartyPrice(basePrice)
+
+    // Set room and capacities
     if (selectedRoom) {
-      const index = ROOMS.indexOf(selectedRoom)
+      const index = Object.keys(ROOMS).reduce((value, room) => {
+        console.warn(ROOMS[room], selectedRoom)
+        if (ROOMS[room] === selectedRoom) {
+          return room
+        } else return value
+      }, 0)
+      console.error(index)
+      const capacity = DEFAULT_CAPACITY[index] || 0
+
       setNumberOfRooms(index !== -1 ? index : 0)
-      setValue('kidsCapacity', CAPACITY[index] || 0)
-      setValue('adultsCapacity', CAPACITY[index] || 0)
+      setValue('kidsCapacity', capacity)
+      setValue('adultsCapacity', capacity)
     }
-  }, [initialData, hasRestored, setValue])
+  }, [initialData])
 
-  // Update localStorage and recalculate capacity
+  // Recaculate max capacities based on number of rooms
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    localStorage.setItem('partyFormData', JSON.stringify(watchedValues))
-
     const roomCap = MAX_CAPACITY[numberOfRooms] || MAX_CAPACITY[0]
-    const remaining = Math.max(0, roomCap - (kids + adults))
 
-    setMaxKids(kids + remaining)
-    setMaxAdults(adults + remaining)
-  }, [watchedValues, kids, adults, numberOfRooms])
+    const kidsCapacity = Math.max(KIDS_CAPACITY_RANGE[0], kids)
+    const adultsCapacity = Math.max(ADULTS_CAPACITY_RANGE[0], adults)
+
+    const remainingSpace = Math.max(
+      0,
+      roomCap - (kidsCapacity + adultsCapacity)
+    )
+    const currentCapacity = kidsCapacity + adultsCapacity
+    console.log(
+      'capacity',
+      kids,
+      adults,
+      'max',
+      // remainingSpaceKids,
+      // remainingSpaceAdults,
+      'room cap',
+      remainingSpace,
+      roomCap
+    )
+
+    if (currentCapacity > roomCap) {
+      console.log('in here')
+      setSpaceRemaining(0)
+    } else {
+      const remainingSpaceKids = kidsCapacity + remainingSpace
+      const remainingSpaceAdults = adultsCapacity + remainingSpace
+      setSpaceRemaining(remainingSpace)
+      setMaxKids(remainingSpaceKids)
+      setMaxAdults(remainingSpaceAdults)
+      //
+    }
+
+    const maxPizza = 2
+    const remainingPizza = Math.max(
+      0,
+      maxPizza - (pepperoniPizza + cheesePizza)
+    )
+
+    setMaxPepperoni(pepperoniPizza + remainingPizza)
+    setMaxCheese(cheesePizza + remainingPizza)
+
+    console.log('maxkid', maxKids)
+  }, [kids, adults, pepperoniPizza, cheesePizza])
+
+  // Calculate party price based on selected package and addons
+  useEffect(() => {
+    console.log(kids, adults, addons, watchedValues)
+
+    const addonsPrice = addons.reduce((acc, addon) => {
+      return acc + addon.quantity * addon.price
+    }, 0)
+    const defaultCapacity = DEFAULT_CAPACITY[numberOfRooms]
+
+    let additionalKids = kids - defaultCapacity
+    let additionalKidsPrice = 0
+    if (additionalKids > 0) {
+      if (partyPackage === PACKAGES[1]) {
+        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
+      } else if (
+        partyPackage === PACKAGES[0] &&
+        EXCLUSIVE_DAYS.includes(date.getDay())
+      ) {
+        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
+      } else {
+        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
+      }
+    }
+    console.log('errors: ', errors)
+
+    let fewerKids
+    kids < defaultCapacity
+      ? (fewerKids = defaultCapacity - kids)
+      : (fewerKids = 0)
+
+    let additionalAdults = adults - defaultCapacity - fewerKids
+    let additionalAdultsPrice = 0
+
+    console.log(additionalAdults)
+    if (additionalAdults > 0) {
+      additionalAdultsPrice = additionalAdults * EXTRA_ADULTS_PRICE
+    }
+
+    const total =
+      addonsPrice + partyPrice + additionalKidsPrice + additionalAdultsPrice
+    setTotalPrice(total)
+  }, [kids, adults, addons])
 
   // Form submission handler
   const onSubmit = (data) => {
     console.log('Form Data:', data)
-    localStorage.removeItem('partyFormData')
-    localStorage.removeItem('initialBooking')
+    const booking = {
+      date: initialData.selectedDate,
+      timeslot: initialData.selectedTimeslot,
+      package: choosenPackage,
+      customer: {
+        first_name: watchedValues.firstName,
+        last_name: watchedValues.lastName,
+        phone: watchedValues.phone,
+        email: watchedValues.email
+      },
+      celebrant: {
+        name: watchedValues.celebrantName,
+        gender: watchedValues.gender,
+        ageTurning: watchedValues.age
+      },
+      reservation: {
+        kids,
+        adults,
+        noOfRooms: numberOfRooms + 1
+      },
+      addons
+    }
+    submitBooking(booking)
+    // localStorage.removeItem('initialBooking')
   }
 
-  // Handle form submission
-  useEffect(() => {
-    if (typeof window === 'undefined') return // Ensure form is submitted only once
-    const handleFormSubmit = (event) => {
-      event.preventDefault()
-      handleSubmit(onSubmit)()
-      // Prevent default form submission to avoid page reload
-      // This allows us to handle the submission with React Hook Form
-      // and perform any additional actions like API calls or state updates
-      // You can also redirect or show a success message here
-      console.log('Form submitted successfully!')
-      // Optionally, you can redirect to a confirmation page or show a success message
-      window.location.href = '/booking/confirmation' // Redirect to confirmation page
-    }
-    window.addEventListener('submit', handleFormSubmit)
-    return () => {
-      window.removeEventListener('submit', handleFormSubmit)
-    }
-  }, [handleSubmit, onSubmit])
+  const pizzaDeliveryTime = () => {
+    console.log('Pizza Delivery Time:', partyTimeslot)
+    const timeslot = partyTimeslot.split('PM')[0]
+    const pickupTime = ['00', '15', '30', '45']
+
+    return pickupTime.map((time) => {
+      const formattedTime = `${timeslot}:${time} PM`
+      return (
+        <option key={formattedTime} value={formattedTime}>
+          {formattedTime}
+        </option>
+      )
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -133,27 +336,17 @@ export default function Form() {
               <div className="flex items-center space-x-2">
                 <input
                   {...register('partyDate')}
-                  value={new Date(
-                    initialData?.selectedDate || ''
-                  ).toDateString()}
                   disabled
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const date = initialData?.selectedDate
-                      ? new Date(initialData.selectedDate).toDateString()
-                      : 'Unavailable'
-
-                    alert(
-                      `📅 Selected Date Information:\n\nThe currently selected date is: ${date}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={
+                    <p>
+                      Selected Party Date: {initialData?.selectedDate} <br />
+                      <span>To change date go back to previous page.</span>
+                    </p>
+                  }
+                />
               </div>
             </FormField>
 
@@ -165,21 +358,10 @@ export default function Form() {
                   disabled
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const timeslot = initialData?.selectedTimeslot
-                      ? TIMESLOTS[initialData.selectedTimeslot]
-                      : 'Unavailable'
-                    alert(
-                      `🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
-                    ${timeslot}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
+                    ${initialData?.selectedTimeslot}`}
+                />
               </div>
             </FormField>
 
@@ -192,20 +374,9 @@ export default function Form() {
                   {...register('partyPackage')}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const packageInfo = initialData?.selectedPackage
-                      ? initialData.selectedPackage
-                      : 'Unavailable'
-                    alert(
-                      `🎁 Selected Package Information:\n\nThe currently selected package is: ${packageInfo}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${initialData?.selectedPackage}`}
+                />
               </div>
             </FormField>
 
@@ -218,20 +389,9 @@ export default function Form() {
                   {...register('partyRoom')}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const roomInfo = initialData?.selectedRoom
-                      ? initialData.selectedRoom
-                      : 'Unavailable'
-                    alert(
-                      `🏠 Selected Room Information:\n\nThe currently selected room is: ${roomInfo}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${initialData?.selectedRoom}`}
+                />
               </div>
             </FormField>
           </div>
@@ -243,204 +403,347 @@ export default function Form() {
           <p className="text-gray-600">
             Provide contact information for confirmation and communication.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-2 gap-6 mt-4">
+            {/* First Name */}
             <FormField label="First Name" required>
               <div className="flex items-center space-x-2">
-              <input
-                {...register('firstName', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const firstName = watchedValues.firstName || 'Unavailable'
-                    alert(
-                      `👤 Customer's First Name Information:\n\nThe first name is: ${firstName}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>      
-
+                <input
+                  {...register('firstName', {
+                    required: 'First name is required.'
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  aria-invalid={!!errors.firstName}
+                  aria-describedby="firstNameError"
+                />
+                <Modal
+                  message={`👤 Customer's First Name:\n\n${
+                    watchedValues.firstName || ''
+                  }`}
+                />
               </div>
+              {errors.firstName && (
+                <p id="firstNameError" className="text-red-500 text-sm mt-1">
+                  {errors.firstName.message}
+                </p>
+              )}
             </FormField>
+
+            {/* Last Name */}
             <FormField label="Last Name" required>
               <div className="flex items-center space-x-2">
-              <input
-                {...register('lastName', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const lastName = watchedValues.lastName || 'Unavailable'
-                    alert(
-                      `👤 Customer's Last Name Information:\n\nThe last name is: ${lastName}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <input
+                  {...register('lastName', {
+                    required: 'Last name is required.'
+                  })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <Modal
+                  message={`👤 Customer's Last Name:\n\n${
+                    watchedValues.lastName || ''
+                  }`}
+                />
               </div>
+              {errors.lastName && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.lastName.message}
+                </p>
+              )}
             </FormField>
+
+            {/* Email */}
             <FormField label="Email" required>
               <div className="flex items-center space-x-2">
-              <input
-                type="email"
-                {...register('email', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const email = watchedValues.email || 'Unavailable'
-                    alert(
-                      `📧 Customer's Email Information:\n\nThe email is: ${email}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <input
+                  type="email"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[^@]+@[^@]+\.[^@]+$/,
+                      message: 'Invalid email address'
+                    }
+                  })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <Modal
+                  message={`📧 Customer's Email:\n\n${
+                    watchedValues.email || ''
+                  }`}
+                />
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </FormField>
+
+            {/* Phone */}
             <FormField label="Phone" required>
               <div className="flex items-center space-x-2">
-              <input
-                type="tel"
-                {...register('phone', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const phone = watchedValues.phone || 'Unavailable'
-                    alert(
-                      `📞 Customer's Phone Information:\n\nThe phone number is: ${phone}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <input
+                  type="tel"
+                  {...register('phone', {
+                    required: 'Phone number is required.',
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: 'Phone number must be 10 digits'
+                    }
+                  })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <Modal
+                  message={`📞 Phone Number:\n\n${watchedValues.phone || ''}`}
+                />
               </div>
+              {errors.phone && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.phone.message}
+                </p>
+              )}
             </FormField>
+
+            {/* Celebrant Name */}
             <FormField label="Celebrant's Name" required>
               <div className="flex items-center space-x-2">
-              <input
-                {...register('celebrantName', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const celebrantName =
-                      watchedValues.celebrantName || 'Unavailable'
-                    alert(
-                      `🎉 Celebrant's Name Information:\n\nThe celebrant's name is :
-                    ${celebrantName}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <input
+                  {...register('celebrantName', {
+                    required: "Celebrant's name is required"
+                  })}
+                  className="w-full p-2 border rounded-md"
+                />
+                <Modal
+                  message={`🎉 Celebrant's Name:\n\n${
+                    watchedValues.celebrantName || ''
+                  }`}
+                />
               </div>
+              {errors.celebrantName && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.celebrantName.message}
+                </p>
+              )}
             </FormField>
+
+            {/* Age */}
             <FormField label="Age Turning" required>
-              <div className="flex items-center space-x-2">
-              <input
-                type="number"
-                max={15}
-                {...register('age', { required: true })}
-                className="w-full p-2 border rounded-md"
-              />
-              <button
-                type="button"
-                className="mt-2 text-sm text-blue-600 hover:underline"
-                onClick={() => {
-                  const age = watchedValues.age || 'Unavailable'
-                  alert(
-                    `🎂 Celebrant's Age Information:\n\nThe age turning is: ${age}`
-                  )
-                }}
-              >
-                <InformationCircleIcon className="w-5 h-5" />
-              </button>
-              </div>
-            </FormField>
-            <FormField label="Gender" required>
-              <div  className="flex items-center space-x-2">
-              <select
-                {...register('gender', { required: true })}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="">Select gender</option>
-                <option value="Girl">Female</option>
-                <option value="Boy">Male</option>
-              </select>
-              <button
-                type="button"
-                className="mt-2 text-sm text-blue-600 hover:underline"
-                onClick={() => {
-                  const gender = watchedValues.gender || 'Unavailable'
-                  alert(
-                    `👦 Select Celebrant's Gender`
-                  )
-                }}
-              >
-                <InformationCircleIcon className="w-5 h-5" />
-              </button>
-              </div>
-            </FormField>
-            <FormField label="Number of Kids">
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
-                  min={1}
-                  max={maxKids}
-                  {...register('kidsCapacity')}
+                  max={AGE_RANGE[1]}
+                  {...register('age', {
+                    required: "Celebrant's age is required",
+                    min: {
+                      value: AGE_RANGE[0],
+                      message: `Age must be at least ${AGE_RANGE[0]}`
+                    },
+                    max: {
+                      value: AGE_RANGE[1],
+                      message: `Age must be ${AGE_RANGE[1]} or younger`
+                    }
+                  })}
                   className="w-full p-2 border rounded-md"
                 />
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    const kids = watchedValues.kidsCapacity || 'Unavailable'
-                    alert(
-                      `👶 Kids Capacity Information:\n\nThe number of kids is: ${kids}`
-                    )
-                  }}
-                >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
+                <Modal
+                  message={`🎂 Age Turning:\n\n${watchedValues.age || ''}`}
+                />
               </div>
+              {errors.age && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.age.message}
+                </p>
+              )}
             </FormField>
-            <FormField label="Number of Adults">
-            <div className="flex items-center space-x-2">
-              <input
-                type="number"
-                min={1}
-                max={maxAdults}
-                {...register('adultsCapacity')}
-                className="w-full p-2 border rounded-md"
-              />
-              <button
-                type="button"
-                className="mt-2 text-sm text-blue-600 hover:underline"
-                onClick={() => {
-                  const adults = watchedValues.adultsCapacity || 'Unavailable'
-                  alert(
-                    `👨‍👩‍👧‍👦 Adults Capacity Information: \n\n The number of adults is: ${adults}`
-                  )
-                }}
-              >
-                <InformationCircleIcon className="w-5 h-5" />
-              </button>
+
+            {/* Gender */}
+            <FormField label="Gender" required>
+              <div className="flex items-center space-x-2">
+                <select
+                  {...register('gender', {
+                    required: "Celebrant's gender is required"
+                  })}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Select gender</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                </select>
+                <Modal message="Select the celebrant's gender" />
+              </div>
+              {errors.gender && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.gender.message}
+                </p>
+              )}
+            </FormField>
+
+            {/* Galaxy Package Add-ons */}
+            {galaxyPackage && (
+              <div>
+                <div className="md:col-span-2 space-y-6">
+                  <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3  md:gap-6">
+                    {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
+                      <FormField key={addon.name} label={addon.name}>
+                        <input
+                          type="number"
+                          min={0}
+                          max={index === 0 ? maxPepperoni : maxCheese}
+                          defaultValue={1}
+                          {...register(
+                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
+                            {
+                              min: 0,
+                              max: index === 0 ? maxPepperoni : maxCheese
+                            }
+                          )}
+                          className="w-full p-2 border rounded-md"
+                        />
+                      </FormField>
+                    ))}
+
+                    <div className="flex justify-between gap-2 ">
+                      <FormField label="Delivery Time" required>
+                        <select
+                          {...register('pizzaDeliveryTime', {
+                            required: 'Pizza delivery time is required'
+                          })}
+                          className="w-full p-2 border rounded-md"
+                        >
+                          {pizzaDeliveryTime()}
+                        </select>
+                      </FormField>
+                      <Modal
+                        message={
+                          <p>
+                            You have 2 pizzas included in this package. <br />
+                            You can select up to 2 pizzas of each type. <br />
+                            You can also select a delivery time for the pizzas.
+                          </p>
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {errors.pizzaDeliveryTime && (
+                    <p className="text-red-500 text-sm">
+                      {errors.pizzaDeliveryTime.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Capacity Control */}
+        <section>
+          <h2 className="text-lg font-semibold">Capacity Details</h2>
+          <p className="text-gray-600">
+            Provide contact information for confirmation and communication.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mt-4">
+            <div>
+              <div className="mb-4">
+                <p className="text-sm">
+                  Total Capacity: {MAX_CAPACITY[numberOfRooms]}
+                </p>
+                <p className="text-sm">Spots Left: {spaceRemaining}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Number of Kids */}
+                <FormField label="Number of Kids">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min={KIDS_CAPACITY_RANGE[0]}
+                      max={maxKids}
+                      {...register('kidsCapacity', {
+                        valueAsNumber: true,
+                        required: 'Number of kids is required',
+                        min: {
+                          value: KIDS_CAPACITY_RANGE[0],
+                          message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid(s)`
+                        },
+                        max: {
+                          value: maxKids,
+                          message: `Cannot exceed ${maxKids} kids for selected room`
+                        }
+                      })}
+                      onBlur={(e) => {
+                        const numberOfKids = Number(e.currentTarget.value)
+                        const clamped = Math.min(
+                          maxKids,
+                          Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
+                        )
+                        e.currentTarget.value = clamped
+                        setValue('kidsCapacity', clamped)
+                      }}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      aria-invalid={!!errors.kidsCapacity}
+                      aria-describedby="kidsCapacityError"
+                    />
+                    <Modal
+                      message={`👶 Kids Capacity Information:\n\nThe number of kids is:`}
+                    />
+                  </div>
+                  {errors.kidsCapacity && (
+                    <p
+                      id="kidsCapacityError"
+                      className="text-red-500 text-sm mt-1"
+                    >
+                      {errors.kidsCapacity.message}
+                    </p>
+                  )}
+                </FormField>
+
+                {/* Number of Adults */}
+                <FormField label="Number of Adults">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min={ADULTS_CAPACITY_RANGE[0]}
+                      max={maxAdults}
+                      {...register('adultsCapacity', {
+                        valueAsNumber: true,
+                        min: {
+                          value: ADULTS_CAPACITY_RANGE[0],
+                          message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult(s)`
+                        },
+                        max: {
+                          value: maxAdults,
+                          message: `Cannot exceed ${maxAdults} adults for selected room`
+                        }
+                      })}
+                      onBlur={(e) => {
+                        const numberOfAdults = Number(e.currentTarget.value)
+                        const clamped = Math.min(
+                          Math.max(numberOfAdults, ADULTS_CAPACITY_RANGE[0]),
+                          maxAdults
+                        )
+                        e.currentTarget.value = clamped
+                        setValue('adultsCapacity', clamped)
+                      }}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      aria-invalid={!!errors.adultsCapacity}
+                      aria-describedby="adultsCapacityError"
+                    />
+                    <Modal
+                      message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
+                    />
+                  </div>
+                  {errors.adultsCapacity && (
+                    <p
+                      id="adultsCapacityError"
+                      className="text-red-500 text-sm mt-1"
+                    >
+                      {errors.adultsCapacity.message}
+                    </p>
+                  )}
+                </FormField>
+              </div>
             </div>
-            </FormField>
           </div>
         </section>
 
@@ -453,62 +756,74 @@ export default function Form() {
             party.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {ADDONS.map((addon) => (
-              <FormField
-                key={addon.name}
-                label={`${addon.name} ($${addon.price})`}
-              >
-                <input
-                  type="number"
-                  min={0}
-                  max={5}
-                  defaultValue={0}
-                  {...register(`addons.${addon.name}`)}
-                  className=" p-2 border rounded-md flex items-center justify-between"
-                />
-              </FormField>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            {addons.map((addon) => (
+              <div key={addon.id} className="flex flex-col">
+                <FormField label={`${addon.name} ($${addon.price})`}>
+                  <input
+                    type="number"
+                    min={0}
+                    max={addon.max}
+                    defaultValue={0}
+                    {...register(`addons.${addon.id}`, {
+                      valueAsNumber: true,
+                      min: {
+                        value: 0,
+                        message: `Minimum value is 0`
+                      },
+                      max: {
+                        value: addon.max,
+                        message: `Cannot exceed ${addon.max} ${addon.name}`
+                      }
+                    })}
+                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  {errors?.addons?.[addon.id]?.message && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.addons[addon.id].message}
+                    </p>
+                  )}
+                </FormField>
+              </div>
             ))}
           </div>
         </section>
-        {/* Submit Button */}
+
+        {/* Review Message */}
         <div className="text-gray-600 mt-6">
           <p className="text-sm">
             Please review your booking details before submitting. If you need to
             make changes, you can go back to the booking page.
           </p>
         </div>
+
         {/* Back and Submit Buttons */}
-        <div className="flex justify-between pt-4">
-          <Link href="/booking/">
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center mt-4 gap-4">
+          <Link href="/booking/" passHref>
             <button
               type="button"
-              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+              className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
             >
               Back
             </button>
           </Link>
 
-          <button
-            type="submit"
-            className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-          >
-            Submit Booking
-          </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
+            <p className="text-lg text-gray-700">
+              Total Price:{' '}
+              <span className="font-semibold">
+                ${(totalPrice || 0).toFixed(2)}
+              </span>
+            </p>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+            >
+              Submit Booking
+            </button>
+          </div>
         </div>
       </form>
-    </div>
-  )
-}
-
-// Reusable Form Field Component
-function FormField({ label, children, required }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
     </div>
   )
 }

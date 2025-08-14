@@ -1,6 +1,7 @@
 require('dotenv').config()
 const bookingsRouter = require('./routes/booking')
 const adminRouter = require('./routes/admin')
+const heldSlotRouter = require('./routes/heldSlot')
 const mongoose = require('mongoose')
 const express = require('express')
 const cors = require('cors')
@@ -17,6 +18,7 @@ async function main() {
 app.use(express.json())
 app.use(cors())
 
+app.use('/heldSlots', heldSlotRouter)
 app.use('/admin', adminRouter)
 app.use('/', bookingsRouter)
 

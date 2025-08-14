@@ -42,7 +42,10 @@ const bookingSchema = new Schema(
         required: true
       }
     },
-    addons: [{ type: String }]
+    packageAddons: {
+      type: Object
+    },
+    addons: [{ type: Object }]
   },
   {
     timestamps: true
@@ -63,27 +66,28 @@ bookingSchema.virtual('reservation.totalGuests').get(function () {
 })
 
 // Pre-save hook: Default kids if not set, and validate capacity
-bookingSchema.pre('save', function (next) {
-  const totalCapacity = this.reservation.noOfRoom === 2 ? 40 : 20
-  const defaultCapacity = this.reservation.noOfRooms === 2 ? 16 : 8
+// bookingSchema.pre('save', function (next) {
+//   const totalCapacity = this.reservation.noOfRoom === 2 ? 40 : 20
+//   const defaultCapacity = this.reservation.noOfRooms === 2 ? 16 : 8
 
-  // Set default kids if not provided
-  if (this.reservation.kids == null && this.reservation.adults == null) {
-    this.reservation.kids = defaultCapacity
-    this.reservation.adults = defaultCapacity
-  }
+//   // Set default kids if not provided
+//   if (this.reservation.kids == null && this.reservation.adults == null) {
+//     this.reservation.kids = defaultCapacity
+//     this.reservation.adults = defaultCapacity
+//   }
 
-  const totalGuests =
-    (this.reservation.kids || 0) + (this.reservation.adults || 0)
-  if (totalGuests > totalCapacity) {
-    return next(
-      new Error(
-        'Total guests exceed the allowed capacity for selected room count.'
-      )
-    )
-  }
+//   const totalGuests =
+//     (this.reservation.kids || 0) + (this.reservation.adults || 0)
+//   console.log(totalGuests, totalCapacity)
+//   if (totalGuests > totalCapacity) {
+//     return next(
+//       new Error(
+//         'Total guests exceed the allowed capacity for selected room count.'
+//       )
+//     )
+//   }
 
-  next()
-})
+//   next()
+// })
 
 module.exports = mongoose.model('Booking', bookingSchema)
