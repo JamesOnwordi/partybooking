@@ -186,17 +186,21 @@ exports.booking_available = asyncHandler(
         date,
         timeslot
       },
-      'room'
+      'noOfRooms'
     ).exec()
 
     try {
       const roomBooked = bookings.reduce((total, booking) => {
-        return (total += booking.reservation.room)
+        return (total += booking.reservation.noOfRooms)
       }, 0)
 
       const roomHeld = heldSlots.reduce((total, slot) => {
-        return (total += slot.room)
+        console.log('slot: ', slot)
+        return (total += slot.noOfRooms)
       }, 0)
+
+      console.log(date, timeslot, room, heldSlotId)
+      console.log(bookings, heldSlots, roomBooked, roomHeld)
 
       return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= room
     } catch (err) {

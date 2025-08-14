@@ -37,9 +37,12 @@ export default function CalendarPage() {
     const parsed = JSON.parse(saved)
     if (!parsed.heldSlotId) return
 
+    console.log(parsed)
+
     const {
       selectedDate,
       selectedPackage,
+      selectedTimeslot,
       selectedRoom,
       heldSlotId,
       heldSlotExpiration

@@ -105,6 +105,8 @@ export async function createHold(data, setHeldSlotId) {
   try {
     const heldSlotId = data.heldSlotId ? data.heldSlotId : nanoid(10)
 
+    console.log('data:', data)
+
     const holdData = {
       heldSlotId,
       date: data.date,

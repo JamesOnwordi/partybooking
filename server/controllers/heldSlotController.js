@@ -6,7 +6,6 @@ const asyncHandler = require('express-async-handler')
 exports.start_slot_hold = asyncHandler(async (req, res) => {
   try {
     const { heldSlotId, date, timeslot, noOfRooms } = req.body
-    console.log(booking_controller)
     const timeslotIsAvailable = await booking_controller.booking_available(
       date,
       timeslot,
@@ -15,16 +14,29 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
     )
 
     console.log(timeslotIsAvailable)
-    if (!timeslotIsAvailable) return
+    if (!timeslotIsAvailable)
+      return res.status(400).json({
+        message: 'Timeslot Filled Up'
+      })
 
     const foundHeldSlot = await HeldSlot.findOne({ heldSlotId })
     let updatedHeldSlot
 
     if (foundHeldSlot) {
-      console.log(foundHeldSlot, heldSlotId, date, timeslot, noOfRooms)
+      const stringDate = foundHeldSlot.date.toISOString().slice(0, 10)
+      console.log(
+        'found Heldslot: ',
+        foundHeldSlot,
+        stringDate,
+        // foundHeldSlot.slice(0, 10),
+        heldSlotId,
+        date,
+        timeslot,
+        noOfRooms
+      )
       if (
         foundHeldSlot.timeslot != timeslot ||
-        foundHeldSlot.date != date ||
+        stringDate != date ||
         foundHeldSlot.noOfRooms != noOfRooms
       ) {
         updatedHeldSlot = await HeldSlot.findOneAndUpdate(
@@ -32,11 +44,15 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
           { timeslot, date, noOfRooms },
           { new: true }
         )
-      }
-      return res.status(400).json({
-        message: 'Slot is already held',
-        heldSlot: updatedHeldSlot ? updatedHeldSlot : foundHeldSlot
-      })
+        return res.status(200).json({
+          message: 'Slot updated',
+          heldSlot: updatedHeldSlot ? updatedHeldSlot : foundHeldSlot
+        })
+      } else
+        return res.status(300).json({
+          message: 'Slot already Updated',
+          heldSlot: foundHeldSlot
+        })
     }
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
