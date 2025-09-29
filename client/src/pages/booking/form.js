@@ -166,7 +166,7 @@ export default function Form() {
         } else return value
       }, 0)
       console.error(index)
-      const capacity = DEFAULT_CAPACITY[index] || 0
+      const capacity = DEFAULT_CAPACITY[index - 1] || 0
 
       setNumberOfRooms(index !== -1 ? index : 0)
       setValue('kidsCapacity', capacity)

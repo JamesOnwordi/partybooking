@@ -15,8 +15,9 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
 
     console.log(timeslotIsAvailable)
     if (!timeslotIsAvailable)
-      return res.status(400).json({
-        message: 'Timeslot Filled Up'
+      return res.status(409).json({
+        message: 'Timeslot Filled Up',
+        status: false
       })
 
     const foundHeldSlot = await HeldSlot.findOne({ heldSlotId })
@@ -46,12 +47,14 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
         )
         return res.status(200).json({
           message: 'Slot updated',
-          heldSlot: updatedHeldSlot ? updatedHeldSlot : foundHeldSlot
+          heldSlot: updatedHeldSlot ? updatedHeldSlot : foundHeldSlot,
+          status: true
         })
       } else
         return res.status(300).json({
           message: 'Slot already Updated',
-          heldSlot: foundHeldSlot
+          heldSlot: foundHeldSlot,
+          status: true
         })
     }
 
@@ -64,9 +67,11 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
       expiresAt
     })
 
-    res.status(201).json({ message: 'Slot  succesfully held', heldSlot })
+    res
+      .status(201)
+      .json({ message: 'Slot  succesfully held', heldSlot, status: true })
   } catch (error) {
-    res.status(400).json({ error: error.message })
+    res.status(400).json({ error: error.message, status: false })
   }
 })
 

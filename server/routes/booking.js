@@ -6,6 +6,8 @@ const { model } = require('mongoose')
 
 router.get('/:date/heldSlot/:id', booking_controller.timeslots_available)
 
+router.post('/isBookable', booking_controller.booking_available)
+
 router.post('/', booking_controller.booking_create)
 
 module.exports = router

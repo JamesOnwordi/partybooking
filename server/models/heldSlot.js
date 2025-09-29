@@ -12,7 +12,7 @@ const heldSlotSchema = new mongoose.Schema({
   },
   timeslot: {
     type: String,
-    enum: ['12PM', '2PM', '4PM', '6PM'],
+    enum: ['12SD', '2SD', '4SD', '6SD', '11WT', '2WT', '5WT'],
     required: true
   },
   noOfRooms: {

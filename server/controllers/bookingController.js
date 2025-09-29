@@ -1,20 +1,26 @@
 const Bookings = require('../models/booking')
 const HeldSlot = require('../models/heldSlot')
+const { DateTime } = require('luxon')
 
 const dayjs = require('dayjs')
 const customParseFormat = require('dayjs/plugin/customParseFormat')
 
 const asyncHandler = require('express-async-handler')
 const { default: mongoose } = require('mongoose')
+const {
+  WINTER_MONTHS,
+  WINTER_TIMESLOTS,
+  STANDARD_TIMESLOTS,
+  MAX_ROOMS_PER_TIMESLOT,
+  WEEKEND_DATE
+} = require('../utils/bookingUtils')
 
 dayjs.extend(customParseFormat)
 // constant value
-const MAX_ROOMS_PER_TIMESLOT = 2
-const TIMESLOTS = ['12PM', '2PM', '4PM', '6PM']
 
 // customer accessible routes
 // get available timeslots
-
+console.log(WINTER_MONTHS, STANDARD_TIMESLOTS)
 exports.timeslots_available = asyncHandler(async (req, res, next) => {
   try {
     console.log(req.params)
@@ -68,6 +74,19 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
     const sortedRoomsBooked = {}
     const sortedRoomsHeld = {}
     const timeslotAvailability = {}
+
+    const restoredDate = DateTime.fromISO(date, {
+      zone: 'America/Denver'
+    }).toJSDate()
+
+    const month = restoredDate.getMonth()
+    const day = restoredDate.getDay()
+
+    const TIMESLOTS =
+      WINTER_MONTHS.includes(month) && WEEKEND_DATE.includes(day)
+        ? WINTER_TIMESLOTS
+        : STANDARD_TIMESLOTS
+
     TIMESLOTS.forEach((slot) => {
       timeslotAvailability[slot] =
         MAX_ROOMS_PER_TIMESLOT -
@@ -92,7 +111,7 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
 })
 
 // create a new booking
-exports.booking_create = async (req, res) => {
+exports.booking_create = asyncHandler(async (req, res) => {
   const session = await mongoose.startSession()
   session.startTransaction()
 
@@ -127,7 +146,7 @@ exports.booking_create = async (req, res) => {
     console.error('Transaction failed:', error.message)
     res.status(500).json({ error: 'Booking failed. Try again.' })
   }
-}
+})
 
 // admin only routes
 // get all bookings
@@ -174,7 +193,7 @@ exports.booking_delete = asyncHandler(async (req, res, next) => {
 
 // check if timeslot choosen is available for booking
 exports.booking_available = asyncHandler(
-  async (date, timeslot, room, heldSlotId) => {
+  async (date, timeslot, noOfRooms, heldSlotId) => {
     const bookings = await Bookings.find(
       { date, timeslot },
       'reservation.noOfRooms'
@@ -195,14 +214,12 @@ exports.booking_available = asyncHandler(
       }, 0)
 
       const roomHeld = heldSlots.reduce((total, slot) => {
-        console.log('slot: ', slot)
         return (total += slot.noOfRooms)
       }, 0)
 
-      console.log(date, timeslot, room, heldSlotId)
-      console.log(bookings, heldSlots, roomBooked, roomHeld)
+      console.log(roomBooked, roomHeld)
 
-      return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= room
+      return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= noOfRooms
     } catch (err) {
       res.status(400).json({ error: error.message })
     }

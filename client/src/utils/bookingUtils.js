@@ -12,12 +12,29 @@ export const ADULTS_CAPACITY_RANGE = [1, 20, 40]
 export const MAX_CAPACITY = [20, 40]
 export const EXTRA_KIDS_PRICE = [20.95, 24.95, 28.5]
 export const EXTRA_ADULTS_PRICE = 5
-export const TIMESLOTS = {
-  '12PM': '12:00 PM - 1:30 PM',
-  '2PM': '2:00 PM - 3:30 PM',
-  '4PM': '4:00 PM - 5:30 PM',
-  '6PM': '6:00 PM - 7:30 PM'
+export const STANDARD_TIMESLOTS = {
+  '12SD': '12:00 PM - 1:30 PM',
+  '2SD': '2:00 PM - 3:30 PM',
+  '4SD': '4:00 PM - 5:30 PM',
+  '6SD': '6:00 PM - 7:30 PM'
 }
+export const WINTER_TIMESLOTS = {
+  '11WT': '11:30AM - 1:00PM',
+  '2WT': '2:30PM - 4:00PM',
+  '5WT': '5:30PM - 7:00PM'
+}
+export const TIMESLOTS = {
+  '12SD': '12:00 PM - 1:30 PM',
+  '2SD': '2:00 PM - 3:30 PM',
+  '4SD': '4:00 PM - 5:30 PM',
+  '6SD': '6:00 PM - 7:30 PM',
+  '11WT': '11:30AM - 1:00PM',
+  '2WT': '2:30PM - 4:00PM',
+  '5WT': '5:30PM - 7:00PM'
+}
+
+export const WINTER_MONTHS = [0, 1, 2, 11]
+export const WEEKEND_DATE = [0, 5, 6]
 export const GALAXY_PACKAGE_ADDONS = [
   { name: 'Pepperoni Pizza', tag: 'Galaxy' },
   { name: 'Cheese Pizza', tag: 'Galaxy' }
@@ -101,7 +118,23 @@ export async function getAvailability(availabilityData) {
   }
 }
 
-export async function createHold(data, setHeldSlotId) {
+// need to complete this, I need to adjust the date being sent to the backend to either.js format or string and make that global
+
+export async function isBookable(bookingData) {
+  console.log('hi', bookingData)
+  try {
+    const response = await axios
+      .post(`http://localhost:4000/isBookable`, bookingData)
+      .then(function (response) {
+        console.log(response)
+      })
+    console.log(response)
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export async function createHold(data, setHeldSlotId, setAvailability) {
   try {
     const heldSlotId = data.heldSlotId ? data.heldSlotId : nanoid(10)
 
@@ -124,8 +157,30 @@ export async function createHold(data, setHeldSlotId) {
     if (!data.heldSlotId) {
       setHeldSlotId(heldSlotId)
     }
+
     return response.data
   } catch (error) {
+    // return error
+    if (error.response.status === 409) {
+      console.warn('handleBooking:')
+      console.log('something is wrong')
+      console.log(data, error)
+
+      const newData = {
+        heldSlotId: data.heldSlotId,
+        date: data.date
+      }
+      console.log('got here')
+
+      console.log('av data', newData)
+
+      const availability = await getAvailability(newData)
+      console.log(availability)
+
+      setAvailability(availability)
+    }
+    return error.response.data
+
     console.log('Hold failed:', error.response?.data || error.message)
   }
 }
