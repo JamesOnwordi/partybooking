@@ -1,22 +1,31 @@
 'use client'
 
 import Calendar from 'react-calendar'
-import { useEffect, useState } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
+import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { DateTime } from 'luxon'
 import {
   calculatePrice,
   getAvailability,
-  TIMESLOTS,
+  WINTER_TIMESLOTS,
+  STANDARD_TIMESLOTS,
   PACKAGES,
   ROOMS,
-  createHold
+  createHold,
+  WINTER_MONTHS,
+  isBookable,
+  WEEKEND_DATE,
+  TAX,
+  ZONE
 } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
 
 export default function CalendarPage() {
   const [date, setDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState()
+  const [selectedDate, setSelectedDate] = useState(null)
   const [availableTimeslot, setAvailableTimeslot] = useState({})
+  const [availability, setAvailability] = useState({})
   const [heldTimeslot, setHeldTimeslot] = useState({})
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
@@ -24,22 +33,36 @@ export default function CalendarPage() {
   const [availableRoom, setAvailableRoom] = useState(0)
   const [packagePrice, setPackagePrice] = useState(0)
   const [guidingMessage, setGuidingMessage] = useState('')
-  const [numberOfRoom, setNumberOfRoom] = useState()
-  const [heldSlotId, setHeldSlotId] = useState()
-  const [heldSlotExpiration, setHeldSlotExpiration] = useState()
-  const [timeLeft, setTimeLeft] = useState()
+  const [numberOfRoom, setNumberOfRoom] = useState(null)
+  const [heldSlotId, setHeldSlotId] = useState(null)
+  const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [timeslot, setTimeslot] = useState(STANDARD_TIMESLOTS)
+  const [isRestored, setIsRestored] = useState(false)
+  const router = useRouter()
 
   // Load saved booking state from localStorage
   useEffect(() => {
+    console.log('1 call')
+    if (typeof window === 'undefined') return
     const saved = localStorage.getItem('initialBooking')
-    if (!saved) return
+    if (!saved) {
+      console.log('no saved value')
+      setIsRestored(true)
+      return
+    }
 
     const parsed = JSON.parse(saved)
-    if (!parsed.heldSlotId) return
+    if (!parsed.heldSlotId) {
+      console.log('no held value')
+      setIsRestored(true)
+      return
+    }
 
     const {
       selectedDate,
       selectedPackage,
+      selectedTimeslot,
       selectedRoom,
       heldSlotId,
       heldSlotExpiration
@@ -48,25 +71,21 @@ export default function CalendarPage() {
     // Restore date
     if (parsed.selectedDate) {
       const restoredDate = DateTime.fromISO(selectedDate, {
-        zone: 'America/Denver'
+        zone: ZONE
       }).toJSDate()
 
-      const currentDate = DateTime.now().setZone('America/Denver').toJSDate()
+      const currentDate = DateTime.now().setZone({ ZONE }).toJSDate()
 
       // If date is in the past, clear saved booking
       if (currentDate > restoredDate) {
         setGuidingMessage('Date Chosen Expired')
         localStorage.removeItem('initialBooking')
+        setIsRestored(true)
         return
       }
 
       setDate(restoredDate)
       setSelectedDate(selectedDate)
-
-      getAvailability({
-        date: selectedDate,
-        heldSlotId: heldSlotId
-      }).then(setAvailability)
     }
 
     setSelectedTimeslot(selectedTimeslot ?? null)
@@ -74,12 +93,35 @@ export default function CalendarPage() {
     setSelectedRoom(selectedRoom ?? null)
     setHeldSlotId(heldSlotId ?? null)
     setHeldSlotExpiration(heldSlotExpiration ?? null)
+    setIsRestored(true)
+
+    console.log(
+      'all data saved ',
+      parsed,
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom,
+      heldSlotId,
+      heldSlotExpiration,
+      heldSlotId
+    )
   }, [])
 
   // Save booking state to localStorage
   useEffect(() => {
+    if (!isRestored) return
+    console.log('2 call')
     if (typeof window === 'undefined') return
     const basePrice = packagePrice?.base ?? 0
+
+    console.log(
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom,
+      heldSlotId,
+      heldSlotExpiration,
+      heldSlotId
+    )
 
     localStorage.setItem(
       'initialBooking',
@@ -103,8 +145,50 @@ export default function CalendarPage() {
     heldSlotExpiration
   ])
 
+  useEffect(() => {
+    if (!isRestored) return
+    console.log('3  call')
+    console.log('3', availability, heldSlotId)
+    setAvailableTimeslot(availability.timeslotAvailability)
+    setHeldTimeslot(availability.roomsHeld)
+    if (availability.timeslotAvailability) {
+      setAvailableRoom(availability.timeslotAvailability[selectedTimeslot] ?? 0)
+    }
+    if (heldSlotId) {
+      console.log(heldSlotId)
+    } else {
+      setSelectedTimeslot(null)
+      setSelectedPackage(null)
+      setSelectedRoom(null)
+    }
+  }, [availability])
+
+  useEffect(() => {
+    console.log('3 call')
+    console.log(
+      'date',
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom,
+      heldSlotId,
+      heldSlotExpiration,
+      heldSlotId,
+
+      date.getMonth(),
+      WINTER_MONTHS.includes(date.getMonth()) &&
+        WEEKEND_DATE.includes(date.getDay())
+    )
+    if (
+      WINTER_MONTHS.includes(date.getMonth()) &&
+      WEEKEND_DATE.includes(date.getDay())
+    ) {
+      setTimeslot(WINTER_TIMESLOTS)
+    } else setTimeslot(STANDARD_TIMESLOTS)
+  }, [date])
+
   // Update guiding message whenever selection changes
   useEffect(() => {
+    console.log('5 call')
     if (!selectedDate) setGuidingMessage('Please Select a Date')
     else if (!selectedTimeslot) setGuidingMessage('Please Select a Timeslot')
     else if (!selectedPackage) setGuidingMessage('Please Select a Package')
@@ -122,17 +206,9 @@ export default function CalendarPage() {
     availableTimeslot
   ])
 
-  // Availability helper
-  const setAvailability = (availability) => {
-    setAvailableTimeslot(availability.timeslotAvailability)
-    setHeldTimeslot(availability.roomsHeld)
-    if (availability.timeslotAvailability) {
-      setAvailableRoom(availability.timeslotAvailability[selectedTimeslot] ?? 0)
-    }
-  }
-
   // Hold countdown timer
   const getTimeRemaining = () => {
+    if (!heldSlotExpiration) return { expired: true }
     const now = DateTime.now()
     const expiryDate = DateTime.fromISO(heldSlotExpiration)
     const diff = expiryDate.diff(now, ['minutes', 'seconds'])
@@ -146,6 +222,8 @@ export default function CalendarPage() {
   }
 
   useEffect(() => {
+    console.log(heldSlotId)
+    if (typeof window === 'undefined') return
     if (!heldSlotId) return
     const interval = setInterval(() => {
       const remaining = getTimeRemaining()
@@ -154,26 +232,42 @@ export default function CalendarPage() {
         clearInterval(interval)
         setHeldSlotId(null)
         localStorage.removeItem('initialBooking') // clear expired hold
+        requestAvailability(selectedDate)
       }
     }, 1000)
     return () => clearInterval(interval)
   }, [heldSlotId])
 
+  const requestAvailability = useCallback(
+    async (selectedDate) => {
+      console.log('2', availability, heldSlotId)
+      console.log('here')
+      await getAvailability({
+        date: selectedDate,
+        heldSlotId
+      }).then(setAvailability)
+    },
+    [heldSlotId]
+  )
+
+  useEffect(() => {
+    console.log(selectedDate, ' things have changed')
+    if (!selectedDate) return
+    requestAvailability(selectedDate)
+  }, [selectedDate, requestAvailability])
+
   // Date change handler
   const handleDateChange = async (newDate) => {
     const chosenDate = DateTime.fromJSDate(newDate, {
-      zone: 'America/Denver'
+      zone: ZONE
     })
       .toISO()
       .slice(0, 10)
     console.log('index:', newDate, chosenDate)
     setDate(newDate)
     setSelectedDate(chosenDate)
-    const availability = await getAvailability({
-      date: chosenDate,
-      heldSlotId
-    })
-    setAvailability(availability)
+    requestAvailability(chosenDate)
+
     setGuidingMessage('Please Select a Timeslot')
     setSelectedTimeslot(null)
     setSelectedPackage(null)
@@ -193,18 +287,35 @@ export default function CalendarPage() {
       noOfRooms: roomCount
     }
 
+    // need to complete this part
+
+    const newAvailability = await isBookable(data)
+    console.log(newAvailability)
+
     console.log('handleBookNowData:', data)
 
     try {
-      const heldSlotResponse = await createHold(data, setHeldSlotId)
-      const heldSlotData = heldSlotResponse.heldSlot
+      const heldSlotResponse = await createHold(
+        data,
+        setHeldSlotId,
+        setAvailability
+      )
+      console.log(heldSlotResponse)
+      const heldSlotData = heldSlotResponse?.heldSlot
 
       if (heldSlotData) {
         setHeldSlotExpiration(heldSlotData.expiresAt)
         setHeldSlotId(heldSlotData.heldSlotId)
       }
+      if (heldSlotResponse.status) {
+        console.log(heldSlotResponse)
+        router.push('booking/form')
+      } else {
+        toast.error(heldSlotResponse.message)
+      }
     } catch (error) {
-      setGuidingMessage('Timeslot already held or unavailable. Try again.')
+      console.log('error')
+      toast.error('Timeslot already held or unavailable. Try again.')
     }
   }
 
@@ -272,7 +383,7 @@ export default function CalendarPage() {
     })
 
   const renderTimeslots = () =>
-    Object.keys(TIMESLOTS).map((slot) => {
+    Object.keys(timeslot).map((slot) => {
       const openSlot = availableTimeslot?.[slot] ?? null
       const heldSlot = heldTimeslot?.[slot] ?? null
       const disabled = !openSlot
@@ -304,7 +415,7 @@ export default function CalendarPage() {
                 setSelectedRoom(null)
               }}
             >
-              {TIMESLOTS[slot]}
+              {timeslot[slot]}
             </button>
             <p className="text-sm text-gray-500 w-36">
               {openSlot === 0
@@ -347,7 +458,7 @@ export default function CalendarPage() {
         )}
         {packagePrice.tax > 0 && (
           <p>
-            Tax (5%): <strong>${packagePrice.tax.toFixed(2)}</strong>
+            Tax ({TAX}): <strong>${packagePrice.tax.toFixed(2)}</strong>
           </p>
         )}
         <p className="mt-1">
@@ -359,6 +470,7 @@ export default function CalendarPage() {
       </div>
     ) : null
   }
+  const notify = () => toast('Wow so easy !')
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -378,8 +490,10 @@ export default function CalendarPage() {
       {guidingMessage && (
         <p className="text-center text-purple-700 animate-pulse">
           {guidingMessage}
+          <button onClick={notify}>Notify !</button>
         </p>
       )}
+      <ToastContainer />
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Calendar */}
@@ -398,7 +512,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Timeslots */}
+        {/* timeslot */}
         <div className="w-full lg:w-1/3 p-4">
           <h2 className="text-lg font-semibold mb-4">Timeslot</h2>
           <div className="flex md:flex-col gap-3">{renderTimeslots()}</div>
@@ -443,7 +557,7 @@ export default function CalendarPage() {
           </p>
           <p className="text-sm text-gray-600">
             Selected timeslot:{' '}
-            <strong>{TIMESLOTS[selectedTimeslot] ?? 'None selected'}</strong>
+            <strong>{timeslot[selectedTimeslot] ?? 'None selected'}</strong>
           </p>
           <p className="text-sm text-gray-600">
             Selected package:{' '}

@@ -166,9 +166,11 @@ export default function Form() {
         } else return value
       }, 0)
       console.error(index)
-      const capacity = DEFAULT_CAPACITY[index] || 0
+      const capacity = DEFAULT_CAPACITY[index - 1] || 0
 
-      setNumberOfRooms(index !== -1 ? index : 0)
+      const roomIndex = index - 1
+
+      setNumberOfRooms(index !== -1 ? roomIndex : 0)
       setValue('kidsCapacity', capacity)
       setValue('adultsCapacity', capacity)
     }
@@ -266,31 +268,56 @@ export default function Form() {
   }, [kids, adults, addons])
 
   // Form submission handler
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log('Form Data:', data)
-    const booking = {
-      date: initialData.selectedDate,
-      timeslot: initialData.selectedTimeslot,
+
+    const {
+      partyTimeslot,
+      partyPackage,
+      firstName,
+      lastName,
+      phone,
+      email,
+      celebrantName,
+      gender,
+      age,
+      kidsCapacity,
+      adultsCapacity,
+      noOfRooms,
+      Galaxy_Cheese_Pizza,
+      Galaxy_Pepperoni_Pizza,
+      addons
+    } = data
+
+    const formData = {
+      date: date.toISOString().slice(0, 10),
+      timeslot: partyTimeslot,
       package: choosenPackage,
       customer: {
-        first_name: watchedValues.firstName,
-        last_name: watchedValues.lastName,
-        phone: watchedValues.phone,
-        email: watchedValues.email
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        email
       },
       celebrant: {
-        name: watchedValues.celebrantName,
-        gender: watchedValues.gender,
-        ageTurning: watchedValues.age
+        name: celebrantName,
+        gender,
+        age_turning: age
       },
       reservation: {
-        kids,
-        adults,
+        kids: kidsCapacity,
+        adults: adultsCapacity,
         noOfRooms: numberOfRooms + 1
+      },
+      packageAddons: {
+        'Cheese Pizza': Galaxy_Cheese_Pizza,
+        'Pepperoni Pizza': Galaxy_Pepperoni_Pizza
       },
       addons
     }
-    submitBooking(booking)
+
+    const submitedData = await submitBooking(formData)
+    console.log(submitedData)
     // localStorage.removeItem('initialBooking')
   }
 
