@@ -5,6 +5,8 @@ const { nanoid } = require('nanoid')
 export const ROOMS = { 1: 'Single', 2: 'Combined' }
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
+export const TAX = '5%'
+export const ZONE = 'America/Denver'
 export const AGE_RANGE = [1, 15]
 export const DEFAULT_CAPACITY = [8, 16]
 export const KIDS_CAPACITY_RANGE = [0, 19, 39]
@@ -99,7 +101,7 @@ export async function getAvailability(availabilityData) {
 
   try {
     const res = await axios.get(
-      `http://localhost:4000/${date}/heldSlot/${heldSlotId}`
+      `http://localhost:4000/booking/${date}/heldSlot/${heldSlotId}`
     )
     const { timeslotAvailability, roomsHeld } = res.data
 
@@ -162,20 +164,12 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
   } catch (error) {
     // return error
     if (error.response.status === 409) {
-      console.warn('handleBooking:')
-      console.log('something is wrong')
-      console.log(data, error)
-
       const newData = {
         heldSlotId: data.heldSlotId,
         date: data.date
       }
-      console.log('got here')
-
-      console.log('av data', newData)
 
       const availability = await getAvailability(newData)
-      console.log(availability)
 
       setAvailability(availability)
     }
@@ -188,7 +182,7 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
 export async function submitBooking(bookingData) {
   try {
     const res = await axios
-      .post(`http://localhost:4000`, bookingData)
+      .post(`http://localhost:4000/booking`, bookingData)
       .then(function (response) {
         console.log(response)
       })

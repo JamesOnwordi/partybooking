@@ -12,7 +12,8 @@ const {
   WINTER_TIMESLOTS,
   STANDARD_TIMESLOTS,
   MAX_ROOMS_PER_TIMESLOT,
-  WEEKEND_DATE
+  WEEKEND_DATE,
+  ZONE
 } = require('../utils/bookingUtils')
 
 dayjs.extend(customParseFormat)
@@ -30,12 +31,22 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
         .status(400)
         .json({ error: 'Invalid or missing date. Expected format: YYYY-MM-DD' })
     }
+
+    const bookingDate = DateTime.fromISO(date, {
+      zone: ZONE
+    }).toJSDate()
+
     const minDate = new Date(new Date().setDate(new Date().getDate() + 2))
     const maxDate = new Date(
       new Date().getFullYear(),
       new Date().getMonth() + 4,
       0
     )
+    console.log(date, bookingDate)
+    if (bookingDate < minDate > maxDate) {
+    }
+    console.log(minDate, bookingDate, maxDate)
+    console.log('date comparism', bookingDate < minDate, bookingDate > maxDate)
 
     if (
       date < minDate.toLocaleDateString() ||
@@ -46,6 +57,7 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
         .json({ error: 'Invalid Date. Cannot Book Date Requested' })
     }
     const excludeHeldSlotIds = id ? [id] : []
+
     const bookings = await Bookings.find(
       { date },
       'reservation.noOfRooms timeslot'
@@ -60,6 +72,8 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       },
       'noOfRooms timeslot'
     ).exec()
+
+    console.log('slots', bookings, heldSlots)
 
     const roomsBooked = {}
     bookings.forEach(({ reservation: { noOfRooms }, timeslot }) => {
@@ -112,18 +126,20 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
 
 // create a new booking
 exports.booking_create = asyncHandler(async (req, res) => {
+  console.log(req.body)
+
   const session = await mongoose.startSession()
   session.startTransaction()
 
   try {
     const bookingForm = req.body
 
-    const isAvailable = await bookingAvailable(
+    const isAvailable = await this.booking_available(
       bookingForm.date,
       bookingForm.timeslot,
-      bookingForm.reservation.noOfRooms,
-      session
+      bookingForm.reservation.noOfRooms
     )
+    console.log(bookingForm)
 
     if (!isAvailable) {
       await session.abortTransaction()
@@ -138,7 +154,8 @@ exports.booking_create = asyncHandler(async (req, res) => {
 
     res.status(201).json({
       message: 'Booking Created Succesfully',
-      createdBooking: createdBooking[0]
+      createdBooking: createdBooking[0],
+      status: true
     })
   } catch (error) {
     await session.abortTransaction()
@@ -199,25 +216,27 @@ exports.booking_available = asyncHandler(
       'reservation.noOfRooms'
     ).exec()
 
-    const heldSlots = await HeldSlot.find(
-      {
-        heldSlotId: { $nin: heldSlotId },
-        date,
-        timeslot
-      },
-      'noOfRooms'
-    ).exec()
+    let roomHeld = 0
+
+    if (heldSlotId) {
+      const heldSlots = await HeldSlot.find(
+        {
+          heldSlotId: { $nin: heldSlotId },
+          date,
+          timeslot
+        },
+        'noOfRooms'
+      ).exec()
+
+      roomHeld = heldSlots.reduce((total, slot) => {
+        return (total += slot.noOfRooms)
+      }, 0)
+    }
 
     try {
       const roomBooked = bookings.reduce((total, booking) => {
         return (total += booking.reservation.noOfRooms)
       }, 0)
-
-      const roomHeld = heldSlots.reduce((total, slot) => {
-        return (total += slot.noOfRooms)
-      }, 0)
-
-      console.log(roomBooked, roomHeld)
 
       return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= noOfRooms
     } catch (err) {

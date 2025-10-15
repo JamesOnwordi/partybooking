@@ -45,7 +45,7 @@ const bookingSchema = new Schema(
     packageAddons: {
       type: Object
     },
-    addons: [{ type: Object }]
+    addons: { type: Object }
   },
   {
     timestamps: true

@@ -20,7 +20,7 @@ app.use(cors())
 
 app.use('/heldSlots', heldSlotRouter)
 app.use('/admin', adminRouter)
-app.use('/', bookingsRouter)
+app.use('/booking', bookingsRouter)
 
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.message)
