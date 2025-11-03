@@ -13,7 +13,9 @@ const {
   STANDARD_TIMESLOTS,
   MAX_ROOMS_PER_TIMESLOT,
   WEEKEND_DATE,
-  ZONE
+  ZONE,
+  MINDATE,
+  MAXDATE
 } = require('../utils/bookingUtils')
 
 dayjs.extend(customParseFormat)
@@ -27,35 +29,26 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
     console.log(req.params)
     const { date, id } = req.params
     if (!date || !dayjs(date, 'YYYY-MM-DD', true).isValid()) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid or missing date. Expected format: YYYY-MM-DD' })
+      return res.status(400).json({
+        status: false,
+        message: 'Invalid or missing date. Expected format: YYYY-MM-DD'
+      })
     }
 
-    const bookingDate = DateTime.fromISO(date, {
-      zone: ZONE
-    }).toJSDate()
+    const minDate = dayjs(MINDATE)
+    const maxDate = dayjs(MAXDATE)
+    const currentDate = dayjs(date)
 
-    const minDate = new Date(new Date().setDate(new Date().getDate() + 2))
-    const maxDate = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth() + 4,
-      0
-    )
-    console.log(date, bookingDate)
-    if (bookingDate < minDate > maxDate) {
+    if (currentDate.diff(minDate) < 0 || currentDate.diff(maxDate) > 0) {
+      return res.status(400).json({
+        status: false,
+        message: 'Invalid Date. Cannot Book Date Requested'
+      })
     }
-    console.log(minDate, bookingDate, maxDate)
-    console.log('date comparism', bookingDate < minDate, bookingDate > maxDate)
 
-    if (
-      date < minDate.toLocaleDateString() ||
-      date > maxDate.toLocaleDateString()
-    ) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid Date. Cannot Book Date Requested' })
+    if (date < minDate || date > maxDate) {
     }
+
     const excludeHeldSlotIds = id ? [id] : []
 
     const bookings = await Bookings.find(
@@ -90,7 +83,7 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
     const timeslotAvailability = {}
 
     const restoredDate = DateTime.fromISO(date, {
-      zone: 'America/Denver'
+      zone: ZONE
     }).toJSDate()
 
     const month = restoredDate.getMonth()
@@ -111,16 +104,15 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
     })
 
     res.status(200).json({
-      message: `List of available timeslots for ${req.params.date}`,
+      status: true,
+      message: `List of available timeslots for ${date}`,
       roomsBooked: sortedRoomsBooked,
       roomsHeld: sortedRoomsHeld,
       timeslotAvailability
     })
-
-    console.log(`List of available timeslots for ${req.params.date}`)
   } catch (error) {
     console.error('Error finding date:', error)
-    res.status(400).json({ error: error.message })
+    res.status(400).json({ status: false, message: error.message })
   }
 })
 
@@ -144,7 +136,7 @@ exports.booking_create = asyncHandler(async (req, res) => {
     if (!isAvailable) {
       await session.abortTransaction()
       session.endSession()
-      res.status(400).json({ error: 'Exceeds room capacity' })
+      res.status(400).json({ status: false, message: 'Exceeds room capacity' })
     }
 
     const createdBooking = await Bookings.create([bookingForm], { session })
@@ -153,6 +145,7 @@ exports.booking_create = asyncHandler(async (req, res) => {
     session.endSession()
 
     res.status(201).json({
+      status: false,
       message: 'Booking Created Succesfully',
       createdBooking: createdBooking[0],
       status: true
@@ -161,51 +154,10 @@ exports.booking_create = asyncHandler(async (req, res) => {
     await session.abortTransaction()
     session.endSession()
     console.error('Transaction failed:', error.message)
-    res.status(500).json({ error: 'Booking failed. Try again.' })
+    res
+      .status(500)
+      .json({ status: false, message: 'Booking failed. Try again.' })
   }
-})
-
-// admin only routes
-// get all bookings
-exports.booking_list = asyncHandler(async (req, res, next) => {
-  try {
-    const bookings = await Bookings.find({})
-    res.status(200).json({
-      message: 'List of all bookings',
-      bookings
-    })
-  } catch (error) {
-    console.error('Error accessing all bookings:', error.message)
-    res.status(400).json({ error: error.message })
-  }
-})
-
-// get specific date booking
-exports.booking_get = asyncHandler(async (req, res, next) => {
-  try {
-    const bookings = await Bookings.find({ date: req.params.date })
-
-    res.status(200).json({
-      message: `List of bookings for ${req.params.date}`,
-      bookings
-    })
-  } catch (error) {
-    console.error(
-      `Couldn't get bookings for ${req.params.date}:`,
-      error.message
-    )
-    res.status(400).json({ error: error.message })
-  }
-})
-
-// edit a booking
-exports.booking_edit = asyncHandler(async (req, res, next) => {
-  res.send(` edited booking ${req.params.id}`)
-})
-
-// delete a booking
-exports.booking_delete = asyncHandler(async (req, res, next) => {
-  res.send(` deleted booking ${req.params.id}`)
 })
 
 // check if timeslot choosen is available for booking
@@ -240,7 +192,14 @@ exports.booking_available = asyncHandler(
 
       return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= noOfRooms
     } catch (err) {
-      res.status(400).json({ error: error.message })
+      res.status(400).json({ status: false, message: error.message })
     }
   }
 )
+
+// admin only routes
+
+// edit a booking
+exports.booking_edit = asyncHandler(async (req, res, next) => {
+  res.send(` edited booking ${req.params.id}`)
+})

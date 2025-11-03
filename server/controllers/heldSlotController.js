@@ -24,7 +24,7 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
     let updatedHeldSlot
 
     if (foundHeldSlot) {
-      const stringDate = foundHeldSlot.date.toISOString().slice(0, 10)
+      const stringDate = new Date(foundHeldSlot.date).toISOString().slice(0, 10)
       console.log(
         'found Heldslot: ',
         foundHeldSlot,
@@ -51,7 +51,7 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
           status: true
         })
       } else
-        return res.status(300).json({
+        return res.status(200).json({
           message: 'Slot already Updated',
           heldSlot: foundHeldSlot,
           status: true
@@ -75,17 +75,28 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
   }
 })
 
-exports.extend_held_slot = async (req, res) => {
+exports.extend_held_slot = asyncHandler(async (req, res) => {
   try {
     const { heldSlotId } = req.body
 
     const existingHold = await HeldSlot.findOne({ heldSlotId })
 
     if (!existingHold) {
-      return res.status(400).json({ message: 'Slot does not exist' })
+      return res.status(400).json({ message: 'Held Slot does not exist' })
     }
 
-    const newExpiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    const currentHoldTime = existingHold.expiresAt
+    console.log(
+      existingHold,
+      existingHold.expiresAt.getMilliseconds(),
+      currentHoldTime.getMilliseconds()
+    )
+    if (currentHoldTime < new Date()) {
+      return res.status(400).json({ message: 'Held Slot already Expired' })
+    }
+
+    const newExpiresAt = new Date(currentHoldTime.getTime() + 10 * 60 * 1000)
+    console.log(new Date(Date.now()).toISOString(), newExpiresAt.toISOString())
 
     const updatedHold = await HeldSlot.findOneAndUpdate(
       { heldSlotId },
@@ -93,14 +104,50 @@ exports.extend_held_slot = async (req, res) => {
       { new: true }
     )
     if (!updatedHold) {
-      return res.status(404).json({ error: 'Held Slot not found after update' })
+      return res.status(404).json({ error: 'Held Slot Expired' })
     }
-    res.status(200).json({ message: ' Hold extended', heldSlot: updatedHold })
+    return res
+      .status(200)
+      .json({ message: ' Hold extended', heldSlot: updatedHold })
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    return res.status(400).json({ message: error.message })
   }
-}
+})
 
+exports.get_held_slot = asyncHandler(async (req, res) => {
+  console.log('req.params', req.params)
+  const { heldSlotId } = req.params
+
+  const heldSlot = await HeldSlot.findOne({ heldSlotId: heldSlotId })
+
+  if (heldSlot) {
+    res.status(200).json({ message: 'retrieved held slot ', heldSlot })
+  } else {
+    res.status(400).json({ message: 'could not retrieve held slot ' })
+  }
+})
+
+exports.delete_held_slot = asyncHandler(async (req, res) => {
+  const { heldSlotId } = req.body
+  if (!heldSlotId)
+    return res.status(400).json({ message: 'heldSlotId is required' })
+  try {
+    const result = await HeldSlot.deleteOne({ heldSlotId: heldSlotId })
+
+    if (result.deletedCount) {
+      console.log('done', heldSlotId, result)
+      res.status(200).json({ status: true, message: 'held slot deleted' })
+    } else {
+      res
+        .status(400)
+        .json({ status: false, message: 'held slot does not exist' })
+    }
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message })
+  }
+})
+
+// should be deleted, don't need to confirm held slot
 exports.confirm_held_slot = async (req, res) => {
   const session = await mongoose.startSession()
   session.startTransaction()

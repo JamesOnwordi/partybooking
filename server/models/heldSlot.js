@@ -28,4 +28,8 @@ const heldSlotSchema = new mongoose.Schema({
 
 heldSlotSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
+heldSlotSchema.post('save', function (doc) {
+  console.log(`⏳ HeldSlot ${doc.heldSlotId} will expire at ${doc.expiresAt}`)
+})
+
 module.exports = mongoose.model('HeldSlot', heldSlotSchema)
