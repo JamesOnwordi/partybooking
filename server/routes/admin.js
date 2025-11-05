@@ -4,9 +4,11 @@ const admin_controller = require('../controllers/adminController')
 
 const booking_controller = require('../controllers/bookingController')
 
-router.get('/bookings', admin_controller.booking_list)
+router.get('/bookings', admin_controller.booking_upcoming)
 
-router.get('/bookings/:date', admin_controller.booking_get)
+router.get('/bookings/:date', admin_controller.booking_date)
+
+router.get('/bookings/:id', admin_controller.booking_get)
 
 router.put('/bookings/:id', admin_controller.booking_edit)
 

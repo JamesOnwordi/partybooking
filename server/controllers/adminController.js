@@ -1,70 +1,95 @@
 const Bookings = require('../models/booking')
 const asyncHandler = require('express-async-handler')
 
-// get all bookings
-exports.booking_list = asyncHandler(async (req, res, next) => {
+// list of upcoming bookings
+exports.booking_upcoming = asyncHandler(async (req, res, next) => {
   try {
-    const bookings = await Bookings.find({})
+    const bookings = await Bookings.find({ date: { $gte: new Date() } })
     res.status(200).json({
       status: true,
-      message: 'List of all bookings',
+      message: `List of all bookings`,
       bookings
     })
   } catch (error) {
-    res
-      .status(400)
-      .json({ status: false, message: 'Error retrieving bookings ' })
+    res.status(400).json({ status: false, message: error.message })
   }
 })
-
-// get specific date booking
-exports.booking_get = asyncHandler(async (res, req) => {
-  const { date } = req.params
+// get bookings for date
+exports.booking_date = asyncHandler(async (req, res, next) => {
   try {
+    const { date } = req.params
     const bookings = await Bookings.find({ date })
-
     res.status(200).json({
       status: true,
-      message: `List of bookings for ${date}`,
+      message: `List of  bookings for ${date}`,
       bookings
     })
   } catch (error) {
-    console.error(`Couldn't get bookings for ${date}:`, error.message)
     res.status(400).json({ status: false, message: error.message })
   }
 })
 
-exports.booking_edit = asyncHandler((res, req) => {
+// get specific booking by id
+exports.booking_get = asyncHandler(async (req, res) => {
   try {
-    const { _id } = req.params
-    console.log(req.params)
+    const { id } = req.params
+    const bookings = await Bookings.find({ _id: id })
 
-    const existingBooking = Bookings.exists(_id)
-    console.log(existingBooking)
-    res.send('succesful')
-    const updatedBooking = Bookings.findByIdAndUpdate(_id, req.body)
-  } catch (error) {}
+    if (!bookings)
+      return res
+        .status(400)
+        .json({ status: false, message: `Booking with ${id} does not exist` })
+
+    res.status(200).json({
+      status: true,
+      message: `Booking ${id}`,
+      bookings
+    })
+  } catch (error) {
+    res.status(400).json({ status: false, message: error.message })
+  }
+})
+
+exports.booking_edit = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params
+    const { bookingData } = req.body
+    console.log(bookingData)
+    const updatedBooking = await Bookings.findByIdAndUpdate(id, bookingData)
+    console.log(updatedBooking)
+    if (!updatedBooking)
+      return res
+        .status(400)
+        .json({ status: true, message: `Booking ${id} not found ` })
+
+    return res
+      .status(200)
+      .json({ status: true, message: `Booking ${id} updated successfully ` })
+  } catch (error) {
+    return res.status(400).json({ status: false, message: `${error.messgae}` })
+  }
+  console.log('something is wrong')
 })
 
 // delete a booking
-exports.booking_delete = asyncHandler((res, req) => {
+exports.booking_delete = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.body
-
-    const deletedBooking = Bookings.findByIdAndDelete(id)
-    console.log(deletedBooking)
-
-    if (!deletedBooking) {
+    const { id } = req.params
+    console.log(typeof id)
+    const bookingExist = await Bookings.exists({ _id: id })
+    console.log(bookingExist)
+    if (!bookingExist) {
       return res
         .status(400)
-        .json({ status: false, message: ' Booking not Deleted' })
+        .json({ status: false, message: ` Booking ${id} not found` })
     }
+    const deletedBooking = await Bookings.findByIdAndDelete(id)
+    console.log(deletedBooking)
+
     return res
       .status(200)
       .json({ status: true, message: 'Booking Deleted', deletedBooking })
   } catch (error) {
-    return res
-      .status(400)
-      .json({ status: false, message: ' Failed to Delete Booking' })
+    return res.status(400).json({ status: false, message: error.message })
   }
 })
