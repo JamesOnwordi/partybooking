@@ -1,10 +1,10 @@
 const Bookings = require('../models/booking')
 const asyncHandler = require('express-async-handler')
 
-// list of upcoming bookings
+// list of all bookings
 exports.booking_upcoming = asyncHandler(async (req, res, next) => {
   try {
-    const bookings = await Bookings.find({ date: { $gte: new Date() } })
+    const bookings = await Bookings.find()
     res.status(200).json({
       status: true,
       message: `List of all bookings`,
@@ -14,6 +14,18 @@ exports.booking_upcoming = asyncHandler(async (req, res, next) => {
     res.status(400).json({ status: false, message: error.message })
   }
 })
+// exports.booking_upcoming = asyncHandler(async (req, res, next) => {
+//   try {
+//     const bookings = await Bookings.find({ date: { $gte: new Date() } })
+//     res.status(200).json({
+//       status: true,
+//       message: `List of all bookings`,
+//       bookings
+//     })
+//   } catch (error) {
+//     res.status(400).json({ status: false, message: error.message })
+//   }
+// })
 // get bookings for date
 exports.booking_date = asyncHandler(async (req, res, next) => {
   try {

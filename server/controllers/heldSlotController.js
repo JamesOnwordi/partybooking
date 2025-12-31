@@ -5,11 +5,11 @@ const asyncHandler = require('express-async-handler')
 
 exports.start_slot_hold = asyncHandler(async (req, res) => {
   try {
-    const { heldSlotId, date, timeslot, noOfRooms } = req.body
+    const { heldSlotId, date, timeslot, room } = req.body
     const timeslotIsAvailable = await booking_controller.booking_available(
       date,
       timeslot,
-      noOfRooms,
+      room,
       heldSlotId
     )
 
@@ -33,16 +33,16 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
         heldSlotId,
         date,
         timeslot,
-        noOfRooms
+        room
       )
       if (
         foundHeldSlot.timeslot != timeslot ||
         stringDate != date ||
-        foundHeldSlot.noOfRooms != noOfRooms
+        foundHeldSlot.room != room
       ) {
         updatedHeldSlot = await HeldSlot.findOneAndUpdate(
           { heldSlotId },
-          { timeslot, date, noOfRooms },
+          { timeslot, date, room },
           { new: true }
         )
         return res.status(200).json({
@@ -63,7 +63,7 @@ exports.start_slot_hold = asyncHandler(async (req, res) => {
       heldSlotId,
       date,
       timeslot,
-      noOfRooms,
+      room,
       expiresAt
     })
 
@@ -166,7 +166,7 @@ exports.confirm_held_slot = async (req, res) => {
     const stillAvailable = await bookingAvailable(
       heldSlot.date,
       heldSlot.timeslot,
-      heldSlot.noOfRooms,
+      heldSlot.room,
       session
     )
 

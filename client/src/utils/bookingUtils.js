@@ -55,7 +55,14 @@ export const MAXDATE = new Date(
   new Date().getMonth() + 4,
   0
 )
-
+export const MINDATE_BIG_CALENDAR = new Date(
+  new Date().setDate(new Date().getDate() + 2)
+)
+export const MAXDATE_BIG_CALENDAR = new Date(
+  new Date().getFullYear(),
+  new Date().getMonth() + 4,
+  0
+)
 export const HOLIDAYS = []
 // days that require extra charges in cloudLand
 // days are in javascript.getDay() format
@@ -183,7 +190,7 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
       heldSlotId,
       date: data.date,
       timeslot: data.timeslot,
-      noOfRooms: data.noOfRooms
+      room: data.noOfRooms
     }
     console.log('Sending hold data:', holdData)
 
@@ -216,7 +223,7 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
 export async function submitBooking(bookingData) {
   try {
     const res = await axios
-      .post(`${BASE_URL}/booking`, bookingData)
+      .post(`${BASE_URL}/booking/create`, bookingData)
       .then(function (response) {
         console.log(response)
       })

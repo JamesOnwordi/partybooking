@@ -24,10 +24,19 @@ dayjs.extend(customParseFormat)
 // customer accessible routes
 // get available timeslots
 console.log(WINTER_MONTHS, STANDARD_TIMESLOTS)
+
+// get number of rooms booked
+const noOfRooms = (room) => {
+  console.log(room)
+  if (room === 3) return 2
+  else if (room === 1 || room === 2) return 1
+}
+
 exports.timeslots_available = asyncHandler(async (req, res, next) => {
   try {
     console.log(req.params)
     const { date, id } = req.params
+
     if (!date || !dayjs(date, 'YYYY-MM-DD', true).isValid()) {
       return res.status(400).json({
         status: false,
@@ -46,14 +55,11 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       })
     }
 
-    if (date < minDate || date > maxDate) {
-    }
-
     const excludeHeldSlotIds = id ? [id] : []
 
     const bookings = await Bookings.find(
       { date },
-      'reservation.noOfRooms timeslot'
+      'reservation.room timeslot'
     ).exec()
 
     const heldSlots = await HeldSlot.find(
@@ -63,19 +69,19 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
           heldSlotId: { $nin: excludeHeldSlotIds }
         })
       },
-      'noOfRooms timeslot'
+      'room timeslot'
     ).exec()
 
-    console.log('slots', bookings, heldSlots)
+    console.log('booked ---', bookings, 'held ----', heldSlots)
 
     const roomsBooked = {}
-    bookings.forEach(({ reservation: { noOfRooms }, timeslot }) => {
-      roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + noOfRooms
+    bookings.forEach(({ reservation: { room }, timeslot }) => {
+      roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + noOfRooms(room)
     })
 
     const roomsHeld = {}
-    heldSlots.forEach(({ noOfRooms, timeslot }) => {
-      roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + noOfRooms
+    heldSlots.forEach(({ room, timeslot }) => {
+      roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + noOfRooms(room)
     })
 
     const sortedRoomsBooked = {}
@@ -129,7 +135,7 @@ exports.booking_create = asyncHandler(async (req, res) => {
     const isAvailable = await this.booking_available(
       bookingForm.date,
       bookingForm.timeslot,
-      bookingForm.reservation.noOfRooms
+      bookingForm.reservation.room
     )
     console.log(bookingForm)
 
@@ -162,35 +168,50 @@ exports.booking_create = asyncHandler(async (req, res) => {
 
 // check if timeslot choosen is available for booking
 exports.booking_available = asyncHandler(
-  async (date, timeslot, noOfRooms, heldSlotId) => {
-    const bookings = await Bookings.find(
-      { date, timeslot },
-      'reservation.noOfRooms'
-    ).exec()
-
-    let roomHeld = 0
-
-    if (heldSlotId) {
-      const heldSlots = await HeldSlot.find(
-        {
-          heldSlotId: { $nin: heldSlotId },
-          date,
-          timeslot
-        },
-        'noOfRooms'
+  async (date, timeslot, room, heldSlotId) => {
+    try {
+      console.log(date, timeslot, room, heldSlotId)
+      const bookings = await Bookings.find(
+        { date, timeslot },
+        'reservation.room'
       ).exec()
 
-      roomHeld = heldSlots.reduce((total, slot) => {
-        return (total += slot.noOfRooms)
-      }, 0)
-    }
+      console.log('booking ----', bookings)
 
-    try {
+      let roomHeld = 0
+
+      if (heldSlotId) {
+        const heldSlots = await HeldSlot.find(
+          {
+            heldSlotId: { $nin: heldSlotId },
+            date,
+            timeslot
+          },
+          'room'
+        ).exec()
+
+        console.log('heldSlot ----', heldSlots)
+
+        if (heldSlots.length) {
+          roomHeld = heldSlots.reduce((total, slot) => {
+            return (total += noOfRooms(slot.room))
+          }, 0)
+        }
+      }
+
+      console.log('roomHeld', roomHeld)
+
       const roomBooked = bookings.reduce((total, booking) => {
-        return (total += booking.reservation.noOfRooms)
+        return (total += noOfRooms(booking.reservation.room))
       }, 0)
 
-      return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= noOfRooms
+      console.log(
+        'room booked',
+        MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld,
+        noOfRooms(room)
+      )
+
+      return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= room
     } catch (err) {
       res.status(400).json({ status: false, message: error.message })
     }

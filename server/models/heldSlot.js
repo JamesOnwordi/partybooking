@@ -15,10 +15,10 @@ const heldSlotSchema = new mongoose.Schema({
     enum: ['12SD', '2SD', '4SD', '6SD', '11WT', '2WT', '5WT'],
     required: true
   },
-  noOfRooms: {
+  room: {
     type: Number,
     required: true,
-    enum: [1, 2]
+    enum: [1, 2, 3]
   },
   expiresAt: {
     type: Date,

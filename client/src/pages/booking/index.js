@@ -319,7 +319,7 @@ export default function CalendarPage() {
       }
       if (heldSlotResponse.status) {
         console.log(heldSlotResponse)
-        // router.push('booking/form')
+        router.push('booking/form')
       } else {
         toast.error(heldSlotResponse.message)
       }
