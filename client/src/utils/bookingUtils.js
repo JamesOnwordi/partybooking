@@ -34,7 +34,7 @@ export const TIMESLOTS = {
   '2WT': '2:30PM - 4:00PM',
   '5WT': '5:30PM - 7:00PM'
 }
-
+export const TIMER_POPUP = 5
 export const WINTER_MONTHS = [0, 1, 2, 11]
 export const WEEKEND_DATE = [0, 5, 6]
 export const GALAXY_PACKAGE_ADDONS = [
@@ -49,7 +49,20 @@ export const ADDONS = [
   { id: 'goody_bags', name: 'Goody Bags', price: 9.95, max: 40 },
   { id: 'grip_socks', name: 'Grip Socks', price: 2.95, max: 40 }
 ]
-
+export const MINDATE = new Date(new Date().setDate(new Date().getDate() + 2))
+export const MAXDATE = new Date(
+  new Date().getFullYear(),
+  new Date().getMonth() + 4,
+  0
+)
+export const MINDATE_BIG_CALENDAR = new Date(
+  new Date().setDate(new Date().getDate() + 2)
+)
+export const MAXDATE_BIG_CALENDAR = new Date(
+  new Date().getFullYear(),
+  new Date().getMonth() + 4,
+  0
+)
 export const HOLIDAYS = []
 // days that require extra charges in cloudLand
 // days are in javascript.getDay() format
@@ -95,13 +108,15 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
 
 export function calaculateTotalPrice({ basePrice }) {}
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+
 export async function getAvailability(availabilityData) {
   console.log(availabilityData)
   const { date, heldSlotId } = availabilityData
 
   try {
     const res = await axios.get(
-      `http://localhost:4000/booking/${date}/heldSlot/${heldSlotId}`
+      `${BASE_URL}/booking/${date}/heldSlot/${heldSlotId}`
     )
     const { timeslotAvailability, roomsHeld } = res.data
 
@@ -126,7 +141,7 @@ export async function isBookable(bookingData) {
   console.log('hi', bookingData)
   try {
     const response = await axios
-      .post(`http://localhost:4000/isBookable`, bookingData)
+      .get(`${BASE_URL}/isBookable`, bookingData)
       .then(function (response) {
         console.log(response)
       })
@@ -134,6 +149,35 @@ export async function isBookable(bookingData) {
   } catch (error) {
     console.log(error)
   }
+}
+
+export async function getHeldSlot(heldSlotId) {
+  if (!heldSlotId) return
+  console.log(heldSlotId)
+  try {
+    const response = await axios.get(`${BASE_URL}/heldSlots/${heldSlotId}`)
+    console.log(response.data)
+    const { expiresAt } = response.data.heldSlot
+    return expiresAt
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export async function extendHeldSlot(heldSlotId) {
+  if (!heldSlotId) return
+  console.log(heldSlotId)
+
+  try {
+    const response = await axios.post(`${BASE_URL}/heldSlots/extend`, {
+      heldSlotId
+    })
+
+    const { expiresAt } = response.data.heldSlot
+    console.log(expiresAt)
+    return expiresAt
+    return response.data
+  } catch (error) {}
 }
 
 export async function createHold(data, setHeldSlotId, setAvailability) {
@@ -146,14 +190,11 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
       heldSlotId,
       date: data.date,
       timeslot: data.timeslot,
-      noOfRooms: data.noOfRooms
+      room: data.noOfRooms
     }
     console.log('Sending hold data:', holdData)
 
-    const response = await axios.post(
-      `http://localhost:4000/heldSlots/start`,
-      holdData
-    )
+    const response = await axios.post(`${BASE_URL}/heldSlots/start`, holdData)
 
     console.log(response.data)
     if (!data.heldSlotId) {
@@ -182,7 +223,7 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
 export async function submitBooking(bookingData) {
   try {
     const res = await axios
-      .post(`http://localhost:4000/booking`, bookingData)
+      .post(`${BASE_URL}/booking/create`, bookingData)
       .then(function (response) {
         console.log(response)
       })

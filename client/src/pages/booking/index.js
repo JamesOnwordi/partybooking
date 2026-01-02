@@ -17,7 +17,12 @@ import {
   isBookable,
   WEEKEND_DATE,
   TAX,
-  ZONE
+  ZONE,
+  MINDATE,
+  MAXDATE,
+  getHeldSlot,
+  extendHeldSlot,
+  TIMER_POPUP
 } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
 
@@ -39,6 +44,7 @@ export default function CalendarPage() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [timeslot, setTimeslot] = useState(STANDARD_TIMESLOTS)
   const [isRestored, setIsRestored] = useState(false)
+  const [extendButton, setExtendButton] = useState(false)
   const router = useRouter()
 
   // Load saved booking state from localStorage
@@ -209,9 +215,12 @@ export default function CalendarPage() {
   // Hold countdown timer
   const getTimeRemaining = () => {
     if (!heldSlotExpiration) return { expired: true }
+    // console.log(' in get remaining', heldSlotExpiration)
     const now = DateTime.now()
     const expiryDate = DateTime.fromISO(heldSlotExpiration)
     const diff = expiryDate.diff(now, ['minutes', 'seconds'])
+    let timeExtendable = diff.values.minutes < TIMER_POPUP
+    setExtendButton(timeExtendable)
 
     if (diff.toMillis() <= 0) return { expired: true }
     return {
@@ -224,10 +233,13 @@ export default function CalendarPage() {
   useEffect(() => {
     console.log(heldSlotId)
     if (typeof window === 'undefined') return
+
     if (!heldSlotId) return
     const interval = setInterval(() => {
       const remaining = getTimeRemaining()
       setTimeLeft(remaining)
+      console.log(heldSlotExpiration)
+      // console.log('in here the missing')
       if (remaining.expired) {
         clearInterval(interval)
         setHeldSlotId(null)
@@ -236,7 +248,7 @@ export default function CalendarPage() {
       }
     }, 1000)
     return () => clearInterval(interval)
-  }, [heldSlotId])
+  }, [heldSlotId, heldSlotExpiration])
 
   const requestAvailability = useCallback(
     async (selectedDate) => {
@@ -246,6 +258,9 @@ export default function CalendarPage() {
         date: selectedDate,
         heldSlotId
       }).then(setAvailability)
+      const heldSlotData = await getHeldSlot(heldSlotId)
+      console.warn('heldSlotData', heldSlotData)
+      setHeldSlotExpiration(heldSlotData)
     },
     [heldSlotId]
   )
@@ -286,11 +301,6 @@ export default function CalendarPage() {
       timeslot: selectedTimeslot,
       noOfRooms: roomCount
     }
-
-    // need to complete this part
-
-    const newAvailability = await isBookable(data)
-    console.log(newAvailability)
 
     console.log('handleBookNowData:', data)
 
@@ -479,18 +489,34 @@ export default function CalendarPage() {
       </h1>
 
       {heldSlotId && (
-        <p className="text-center text-pink-700 animate-pulse">
-          {'Hold Time: '}
-          {timeLeft && !timeLeft.expired
-            ? `${timeLeft.minutes}m ${timeLeft.seconds}s`
-            : 'No active hold'}
-        </p>
+        <div className="flex items-end justify-center flex-col">
+          {' '}
+          <div className="bg-yellow-50  ">
+            {' '}
+            <p className="text-cnter text-pink-700 animate-">
+              {'Hold Time: '}
+              {timeLeft && !timeLeft.expired
+                ? `${timeLeft.minutes}m ${timeLeft.seconds}s`
+                : 'No active hold'}
+            </p>
+            {extendButton && (
+              <button
+                className={` px-2 text-sm py-2 rounded justify-center items-center transition bg-fuchsia-700 text-white hover:bg-purple-700`}
+                onClick={async () => {
+                  setHeldSlotExpiration(await extendHeldSlot(heldSlotId))
+                }}
+              >
+                {' '}
+                Extend{' '}
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {guidingMessage && (
         <p className="text-center text-purple-700 animate-pulse">
           {guidingMessage}
-          <button onClick={notify}>Notify !</button>
         </p>
       )}
       <ToastContainer />
@@ -502,10 +528,8 @@ export default function CalendarPage() {
           <div className="flex justify-center">
             <Calendar
               onChange={handleDateChange}
-              minDate={new Date(new Date().setDate(new Date().getDate() + 2))}
-              maxDate={
-                new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)
-              }
+              minDate={MINDATE}
+              maxDate={MAXDATE}
               value={date}
               className="react-calendar"
             />

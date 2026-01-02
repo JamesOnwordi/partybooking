@@ -21,6 +21,9 @@ app.use(cors())
 app.use('/heldSlots', heldSlotRouter)
 app.use('/admin', adminRouter)
 app.use('/booking', bookingsRouter)
+app.get('/', (req, res) => {
+  res.json({ message: 'Cloud Land Party Booking API is running' })
+})
 
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.message)

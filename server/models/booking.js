@@ -36,9 +36,9 @@ const bookingSchema = new Schema(
     reservation: {
       kids: { type: Number, default: 0 },
       adults: { type: Number, default: 0 },
-      noOfRooms: {
+      room: {
         type: Number,
-        enum: [1, 2],
+        enum: [1, 2, 3],
         required: true
       }
     },

@@ -15,10 +15,10 @@ const heldSlotSchema = new mongoose.Schema({
     enum: ['12SD', '2SD', '4SD', '6SD', '11WT', '2WT', '5WT'],
     required: true
   },
-  noOfRooms: {
+  room: {
     type: Number,
     required: true,
-    enum: [1, 2]
+    enum: [1, 2, 3]
   },
   expiresAt: {
     type: Date,
@@ -27,5 +27,9 @@ const heldSlotSchema = new mongoose.Schema({
 })
 
 heldSlotSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+
+heldSlotSchema.post('save', function (doc) {
+  console.log(`⏳ HeldSlot ${doc.heldSlotId} will expire at ${doc.expiresAt}`)
+})
 
 module.exports = mongoose.model('HeldSlot', heldSlotSchema)

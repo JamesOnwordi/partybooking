@@ -23,7 +23,8 @@ import {
   AGE_RANGE,
   KIDS_CAPACITY_RANGE,
   ADULTS_CAPACITY_RANGE,
-  GALAXY_PACKAGE_ADDONS
+  GALAXY_PACKAGE_ADDONS,
+  MINDATE
 } from '@/utils/bookingUtils'
 import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
@@ -47,6 +48,7 @@ export default function Form() {
       celebrantName: '',
       kidsCapacity: 0,
       adultsCapacity: 0,
+      room: 3,
       addons: {},
       pizzaDeliveryTime: ''
     }
@@ -82,7 +84,9 @@ export default function Form() {
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
   const [maxPepperoni, setMaxPepperoni] = useState(2)
   const [maxCheese, setMaxCheese] = useState(2)
+  const [room, setRoom] = useState(1)
   const [numberOfRooms, setNumberOfRooms] = useState(0)
+  const [isCombined, setIsCombined] = useState(true)
   const [initialData, setInitialData] = useState(null)
   const [spaceRemaining, setSpaceRemaining] = useState(0)
   const [showAlert, setShowAlert] = useState(false)
@@ -149,6 +153,7 @@ export default function Form() {
       // Automatically add Galaxy package addons
       if (selectedPackage === PACKAGES[1]) {
         setGalaxyPackage(true)
+
         // setValue(ADDONS[0].name, 1)
         // setValue(ADDONS[1].name, 1)
       }
@@ -165,7 +170,10 @@ export default function Form() {
           return room
         } else return value
       }, 0)
-      console.error(index)
+      // if room is combined make room value 3
+      if (index === 2) {
+        setRoom(3)
+      } else setIsCombined(false)
       const capacity = DEFAULT_CAPACITY[index - 1] || 0
 
       const roomIndex = index - 1
@@ -283,7 +291,7 @@ export default function Form() {
       age,
       kidsCapacity,
       adultsCapacity,
-      noOfRooms,
+      room,
       Galaxy_Cheese_Pizza,
       Galaxy_Pepperoni_Pizza,
       addons
@@ -307,7 +315,7 @@ export default function Form() {
       reservation: {
         kids: kidsCapacity,
         adults: adultsCapacity,
-        noOfRooms: numberOfRooms + 1
+        room: room
       },
       packageAddons: {
         'Cheese Pizza': Galaxy_Cheese_Pizza,
@@ -663,116 +671,147 @@ export default function Form() {
         </section>
 
         {/* Capacity Control */}
-        <section>
-          <h2 className="text-lg font-semibold">Capacity Details</h2>
-          <p className="text-gray-600">
-            Provide contact information for confirmation and communication.
-          </p>
+        <div className="flex">
+          <section>
+            <h2 className="text-lg font-semibold">Capacity Details</h2>
+            <p className="text-gray-600">
+              Provide contact information for confirmation and communication.
+            </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mt-4">
-            <div>
-              <div className="mb-4">
-                <p className="text-sm">
-                  Total Capacity: {MAX_CAPACITY[numberOfRooms]}
-                </p>
-                <p className="text-sm">Spots Left: {spaceRemaining}</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mt-4">
+              <div>
+                <div className="mb-4">
+                  <p className="text-sm">
+                    Total Capacity: {MAX_CAPACITY[numberOfRooms]}
+                  </p>
+                  <p className="text-sm">Spots Left: {spaceRemaining}</p>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Number of Kids */}
-                <FormField label="Number of Kids">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      min={KIDS_CAPACITY_RANGE[0]}
-                      max={maxKids}
-                      {...register('kidsCapacity', {
-                        valueAsNumber: true,
-                        required: 'Number of kids is required',
-                        min: {
-                          value: KIDS_CAPACITY_RANGE[0],
-                          message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid(s)`
-                        },
-                        max: {
-                          value: maxKids,
-                          message: `Cannot exceed ${maxKids} kids for selected room`
-                        }
-                      })}
-                      onBlur={(e) => {
-                        const numberOfKids = Number(e.currentTarget.value)
-                        const clamped = Math.min(
-                          maxKids,
-                          Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
-                        )
-                        e.currentTarget.value = clamped
-                        setValue('kidsCapacity', clamped)
-                      }}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      aria-invalid={!!errors.kidsCapacity}
-                      aria-describedby="kidsCapacityError"
-                    />
-                    <Modal
-                      message={`👶 Kids Capacity Information:\n\nThe number of kids is:`}
-                    />
-                  </div>
-                  {errors.kidsCapacity && (
-                    <p
-                      id="kidsCapacityError"
-                      className="text-red-500 text-sm mt-1"
-                    >
-                      {errors.kidsCapacity.message}
-                    </p>
-                  )}
-                </FormField>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Number of Kids */}
+                  <FormField label="Number of Kids">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        min={KIDS_CAPACITY_RANGE[0]}
+                        max={maxKids}
+                        {...register('kidsCapacity', {
+                          valueAsNumber: true,
+                          required: 'Number of kids is required',
+                          min: {
+                            value: KIDS_CAPACITY_RANGE[0],
+                            message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid(s)`
+                          },
+                          max: {
+                            value: maxKids,
+                            message: `Cannot exceed ${maxKids} kids for selected room`
+                          }
+                        })}
+                        onBlur={(e) => {
+                          const numberOfKids = Number(e.currentTarget.value)
+                          const clamped = Math.min(
+                            maxKids,
+                            Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
+                          )
+                          e.currentTarget.value = clamped
+                          setValue('kidsCapacity', clamped)
+                        }}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        aria-invalid={!!errors.kidsCapacity}
+                        aria-describedby="kidsCapacityError"
+                      />
+                      <Modal
+                        message={`👶 Kids Capacity Information:\n\nThe number of kids is:`}
+                      />
+                    </div>
+                    {errors.kidsCapacity && (
+                      <p
+                        id="kidsCapacityError"
+                        className="text-red-500 text-sm mt-1"
+                      >
+                        {errors.kidsCapacity.message}
+                      </p>
+                    )}
+                  </FormField>
 
-                {/* Number of Adults */}
-                <FormField label="Number of Adults">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      min={ADULTS_CAPACITY_RANGE[0]}
-                      max={maxAdults}
-                      {...register('adultsCapacity', {
-                        valueAsNumber: true,
-                        min: {
-                          value: ADULTS_CAPACITY_RANGE[0],
-                          message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult(s)`
-                        },
-                        max: {
-                          value: maxAdults,
-                          message: `Cannot exceed ${maxAdults} adults for selected room`
-                        }
-                      })}
-                      onBlur={(e) => {
-                        const numberOfAdults = Number(e.currentTarget.value)
-                        const clamped = Math.min(
-                          Math.max(numberOfAdults, ADULTS_CAPACITY_RANGE[0]),
-                          maxAdults
-                        )
-                        e.currentTarget.value = clamped
-                        setValue('adultsCapacity', clamped)
-                      }}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      aria-invalid={!!errors.adultsCapacity}
-                      aria-describedby="adultsCapacityError"
-                    />
-                    <Modal
-                      message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
-                    />
-                  </div>
-                  {errors.adultsCapacity && (
-                    <p
-                      id="adultsCapacityError"
-                      className="text-red-500 text-sm mt-1"
-                    >
-                      {errors.adultsCapacity.message}
-                    </p>
-                  )}
-                </FormField>
+                  {/* Number of Adults */}
+                  <FormField label="Number of Adults">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        min={ADULTS_CAPACITY_RANGE[0]}
+                        max={maxAdults}
+                        {...register('adultsCapacity', {
+                          valueAsNumber: true,
+                          min: {
+                            value: ADULTS_CAPACITY_RANGE[0],
+                            message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult(s)`
+                          },
+                          max: {
+                            value: maxAdults,
+                            message: `Cannot exceed ${maxAdults} adults for selected room`
+                          }
+                        })}
+                        onBlur={(e) => {
+                          const numberOfAdults = Number(e.currentTarget.value)
+                          const clamped = Math.min(
+                            Math.max(numberOfAdults, ADULTS_CAPACITY_RANGE[0]),
+                            maxAdults
+                          )
+                          e.currentTarget.value = clamped
+                          setValue('adultsCapacity', clamped)
+                        }}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        aria-invalid={!!errors.adultsCapacity}
+                        aria-describedby="adultsCapacityError"
+                      />
+                      <Modal
+                        message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
+                      />
+                    </div>
+                    {errors.adultsCapacity && (
+                      <p
+                        id="adultsCapacityError"
+                        className="text-red-500 text-sm mt-1"
+                      >
+                        {errors.adultsCapacity.message}
+                      </p>
+                    )}
+                  </FormField>
+                </div>
               </div>
             </div>
+          </section>
+
+          <div>
+            <h2 className="text-lg font-semibold">Room Selection </h2>
+            <p className="text-gray-600">
+              Please Select a room that you would want you party.
+            </p>
+
+            <div className="flex gap-10">
+              <section>
+                <label for="room1">Room1</label>
+                <input
+                  type="radio"
+                  {...register('room')}
+                  id="room1"
+                  value="1"
+                ></input>
+              </section>
+
+              <section>
+                <label for="room2">Room2</label>
+                <input
+                  type="radio"
+                  {...register('room')}
+                  id="room2"
+                  value="2"
+                ></input>{' '}
+              </section>
+            </div>
           </div>
-        </section>
+        </div>
 
         {/* Addons */}
         {/* Addons Section */}

@@ -1,16 +1,17 @@
 const express = require('express')
 const router = express.Router()
+const admin_controller = require('../controllers/adminController')
 
 const booking_controller = require('../controllers/bookingController')
 
-router.get('/', booking_controller.booking_list)
+router.get('/bookings', admin_controller.booking_upcoming)
 
-// router.get('/:id', booking_controller.bo)
+router.get('/bookings/:date', admin_controller.booking_date)
 
-router.get('/:date', booking_controller.booking_get)
+router.get('/bookings/:id', admin_controller.booking_get)
 
-router.put('/:id', booking_controller.booking_edit)
+router.put('/bookings/:id', admin_controller.booking_edit)
 
-router.delete('/:id', booking_controller.booking_delete)
+router.delete('/bookings/:id', admin_controller.booking_delete)
 
 module.exports = router
