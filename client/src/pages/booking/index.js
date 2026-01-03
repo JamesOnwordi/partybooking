@@ -36,6 +36,7 @@ export default function CalendarPage() {
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [availableRoom, setAvailableRoom] = useState(0)
+  const [roomAvailable, setRoomAvailable] = useState(0)
   const [packagePrice, setPackagePrice] = useState(0)
   const [guidingMessage, setGuidingMessage] = useState('')
   const [numberOfRoom, setNumberOfRoom] = useState(null)
@@ -202,6 +203,7 @@ export default function CalendarPage() {
     else setGuidingMessage('Proceed to Form!')
 
     if (availableTimeslot) {
+      console.log('availableTimeslot', availableTimeslot)
       setAvailableRoom(availableTimeslot[selectedTimeslot] ?? 0)
     }
   }, [
@@ -394,6 +396,7 @@ export default function CalendarPage() {
 
   const renderTimeslots = () =>
     Object.keys(timeslot).map((slot) => {
+      console.log('renderTimeslots', slot, availableTimeslot, heldTimeslot)
       const openSlot = availableTimeslot?.[slot] ?? null
       const heldSlot = heldTimeslot?.[slot] ?? null
       const disabled = !openSlot

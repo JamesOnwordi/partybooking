@@ -30,6 +30,7 @@ const noOfRooms = (room) => {
   console.log(room)
   if (room === 3) return 2
   else if (room === 1 || room === 2) return 1
+  else return 0
 }
 
 exports.timeslots_available = asyncHandler(async (req, res, next) => {
@@ -74,15 +75,22 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
 
     console.log('booked ---', bookings, 'held ----', heldSlots)
 
-    const roomsBooked = {}
-    bookings.forEach(({ reservation: { room }, timeslot }) => {
-      roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + noOfRooms(room)
-    })
 
+    // count of rooms booked per timeslot
+    const roomsBooked = {}
+    console.log('bookings', bookings)
+    bookings.forEach(({ reservation: { room }, timeslot }) => {
+      roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + room
+    })
+    console.log('roomsBooked', roomsBooked)
+
+    // count of rooms held per timeslot
     const roomsHeld = {}
     heldSlots.forEach(({ room, timeslot }) => {
-      roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + noOfRooms(room)
+      roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + room
     })
+
+    
 
     const sortedRoomsBooked = {}
     const sortedRoomsHeld = {}
@@ -103,7 +111,7 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
     TIMESLOTS.forEach((slot) => {
       timeslotAvailability[slot] =
         MAX_ROOMS_PER_TIMESLOT -
-        ((roomsBooked[slot] || 0) + (roomsHeld[slot] || 0))
+        noOfRooms((roomsBooked[slot] || 0) + (roomsHeld[slot] || 0))
 
       sortedRoomsBooked[slot] = roomsBooked[slot] || 0
       sortedRoomsHeld[slot] = roomsHeld[slot] || 0

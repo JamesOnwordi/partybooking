@@ -2,7 +2,7 @@
 
 import axios from 'axios'
 const { nanoid } = require('nanoid')
-export const ROOMS = { 1: 'Single', 2: 'Combined' }
+export const ROOMS = { 1: 'Room 1', 2: 'Room 2', 3: 'Combined' }
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
 export const TAX = '5%'
@@ -61,7 +61,7 @@ export const MINDATE_BIG_CALENDAR = new Date(
 export const MAXDATE_BIG_CALENDAR = new Date(
   new Date().getFullYear(),
   new Date().getMonth() + 4,
-  0
+  
 )
 export const HOLIDAYS = []
 // days that require extra charges in cloudLand
