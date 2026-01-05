@@ -118,7 +118,7 @@ export async function getAvailability(availabilityData) {
     const res = await axios.get(
       `${BASE_URL}/booking/${date}/heldSlot/${heldSlotId}`
     )
-    const { timeslotAvailability, roomsHeld } = res.data
+    const { timeslotAvailability, roomsHeld, roomsBooked } = res.data
 
     console.log('Fetched timeslot data:', date, res.data)
 
@@ -127,7 +127,7 @@ export async function getAvailability(availabilityData) {
       timeslotAvailability !== null &&
       typeof roomsHeld === 'object' &&
       roomsHeld !== null
-      ? { timeslotAvailability, roomsHeld }
+      ? { timeslotAvailability, roomsHeld, roomsBooked  }
       : {}
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)

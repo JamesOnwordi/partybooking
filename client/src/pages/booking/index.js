@@ -36,7 +36,7 @@ export default function CalendarPage() {
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [availableRoom, setAvailableRoom] = useState(0)
-  const [roomAvailable, setRoomAvailable] = useState(0)
+  const [roomAvailable, setRoomAvailable] = useState([])
   const [packagePrice, setPackagePrice] = useState(0)
   const [guidingMessage, setGuidingMessage] = useState('')
   const [numberOfRoom, setNumberOfRoom] = useState(null)
@@ -160,15 +160,31 @@ export default function CalendarPage() {
     setHeldTimeslot(availability.roomsHeld)
     if (availability.timeslotAvailability) {
       setAvailableRoom(availability.timeslotAvailability[selectedTimeslot] ?? 0)
+      console.log('room booeked', availability, selectedTimeslot)
+      let roomBooked = availability.roomsBooked[selectedTimeslot]
+      console.error('room booeked', roomBooked)
+      if (selectedTimeslot){
+        if(roomBooked === 0){
+          setRoomAvailable([1,2,3])
+        }
+         else if(roomBooked === 1){
+          setRoomAvailable([2])
+        }else if(roomBooked === 2){
+          setRoomAvailable([1])
+        }else if(roomBooked === 3){
+          setRoomAvailable([])
+        }
+        console.log('room booeked', roomBooked, selectedTimeslot, roomAvailable)
+      }
     }
-    if (heldSlotId) {
-      console.log(heldSlotId)
-    } else {
-      setSelectedTimeslot(null)
-      setSelectedPackage(null)
-      setSelectedRoom(null)
-    }
-  }, [availability])
+    // if (heldSlotId) {
+    //   console.log(heldSlotId)
+    // } else {
+    //   setSelectedTimeslot(null)
+    //   setSelectedPackage(null)
+    //   setSelectedRoom(null)
+    // }
+  }, [availability, selectedTimeslot])
 
   useEffect(() => {
     console.log('3 call')
@@ -364,14 +380,15 @@ export default function CalendarPage() {
   const renderRooms = () =>
     Object.keys(ROOMS).map((room) => {
       const numericRoom = Number(room)
+      console.warn('numvericRoom', roomAvailable, numericRoom,roomAvailable.includes(numericRoom))
       const isSelected = selectedRoom === ROOMS[room]
       const disabled =
-        !selectedPackage || (availableRoom && numericRoom > availableRoom)
+        !selectedPackage || (roomAvailable.includes(numericRoom)? false : true)
 
       let baseClass = !selectedPackage
         ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
         : 'text-green-800 hover:bg-green-100 cursor-pointer'
-      if (numericRoom > availableRoom) {
+      if (roomAvailable.includes(numericRoom)?false:true) {
         baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
       }
       const selectedClass = isSelected

@@ -117,6 +117,10 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
       sortedRoomsHeld[slot] = roomsHeld[slot] || 0
     })
 
+    console.log('sortedRoomsBooked', sortedRoomsBooked)
+    console.log('sortedRoomsHeld', sortedRoomsHeld)
+    console.log('timeslotAvailability', timeslotAvailability)
+
     res.status(200).json({
       status: true,
       message: `List of available timeslots for ${date}`,
