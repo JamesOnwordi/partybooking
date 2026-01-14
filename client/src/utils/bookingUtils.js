@@ -2,7 +2,7 @@
 
 import axios from 'axios'
 const { nanoid } = require('nanoid')
-export const ROOMS = { 1: 'Room 1', 2: 'Room 2', 3: 'Combined' }
+export const ROOMS = { 'Room 1': 1, 'Room 2': 2, Combined: 3 }
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
 export const TAX = '5%'
@@ -60,8 +60,7 @@ export const MINDATE_BIG_CALENDAR = new Date(
 )
 export const MAXDATE_BIG_CALENDAR = new Date(
   new Date().getFullYear(),
-  new Date().getMonth() + 4,
-  
+  new Date().getMonth() + 4
 )
 export const HOLIDAYS = []
 // days that require extra charges in cloudLand
@@ -76,12 +75,12 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   if (!selectedPackage || !selectedRoom || !date) return null
 
   const day = new Date(date).getDay()
-  const cleaningFee = selectedRoom === ROOMS[1] ? 40 : 60
+  let cleaningFee = 40
   const taxRate = 0.05
 
   if (selectedPackage === PACKAGES[0]) {
     let basePrice =
-      selectedRoom === ROOMS[2]
+      selectedRoom === 'Combined'
         ? day >= 1 && day <= 4
           ? 295 * 1.7
           : 395 * 1.7
@@ -89,14 +88,17 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
         ? 295
         : 395
 
-    const tax = (basePrice + cleaningFee) * taxRate
+    const additionalFee = selectedRoom === 'Combined' ? cleaningFee * 0.7 : 0
+    cleaningFee = cleaningFee + additionalFee
+    console.warn('cleaning fee', cleaningFee)
+    const tax = (basePrice + cleaningFee + additionalFee) * taxRate
     const total = basePrice + cleaningFee + tax
 
     return { base: basePrice, cleaning: cleaningFee, tax, total }
   }
 
   if (selectedPackage === PACKAGES[1]) {
-    let basePrice = selectedRoom === ROOMS[2] ? 495 * 1.7 : 495
+    let basePrice = selectedRoom === 'Combined' ? 495 * 1.7 : 495
     const tax = basePrice * taxRate
     const total = basePrice + tax
 
@@ -127,7 +129,7 @@ export async function getAvailability(availabilityData) {
       timeslotAvailability !== null &&
       typeof roomsHeld === 'object' &&
       roomsHeld !== null
-      ? { timeslotAvailability, roomsHeld, roomsBooked  }
+      ? { timeslotAvailability, roomsHeld, roomsBooked }
       : {}
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)
@@ -190,7 +192,7 @@ export async function createHold(data, setHeldSlotId, setAvailability) {
       heldSlotId,
       date: data.date,
       timeslot: data.timeslot,
-      room: data.noOfRooms
+      room: data.room
     }
     console.log('Sending hold data:', holdData)
 

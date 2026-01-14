@@ -48,7 +48,6 @@ export default function Form() {
       celebrantName: '',
       kidsCapacity: 0,
       adultsCapacity: 0,
-      room: 3,
       addons: {},
       pizzaDeliveryTime: ''
     }
@@ -84,9 +83,7 @@ export default function Form() {
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
   const [maxPepperoni, setMaxPepperoni] = useState(2)
   const [maxCheese, setMaxCheese] = useState(2)
-  const [room, setRoom] = useState(1)
-  const [numberOfRooms, setNumberOfRooms] = useState(0)
-  const [isCombined, setIsCombined] = useState(true)
+  const [bookingIndex, setBookingIndex] = useState(0)
   const [initialData, setInitialData] = useState(null)
   const [spaceRemaining, setSpaceRemaining] = useState(0)
   const [showAlert, setShowAlert] = useState(false)
@@ -166,19 +163,23 @@ export default function Form() {
     if (selectedRoom) {
       const index = Object.keys(ROOMS).reduce((value, room) => {
         console.warn(ROOMS[room], selectedRoom)
-        if (ROOMS[room] === selectedRoom) {
-          return room
+        if (ROOMS[room] === ROOMS[selectedRoom]) {
+          return ROOMS[room]
         } else return value
       }, 0)
-      // if room is combined make room value 3
-      if (index === 2) {
-        setRoom(3)
-      } else setIsCombined(false)
-      const capacity = DEFAULT_CAPACITY[index - 1] || 0
 
-      const roomIndex = index - 1
+      console.log('index', index)
 
-      setNumberOfRooms(index !== -1 ? roomIndex : 0)
+      let capacity = 0
+
+      if (index === 3) {
+        setBookingIndex(1)
+        capacity = DEFAULT_CAPACITY[1]
+      } else {
+        setBookingIndex(0)
+        capacity = DEFAULT_CAPACITY[0]
+      }
+
       setValue('kidsCapacity', capacity)
       setValue('adultsCapacity', capacity)
     }
@@ -186,7 +187,7 @@ export default function Form() {
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
-    const roomCap = MAX_CAPACITY[numberOfRooms] || MAX_CAPACITY[0]
+    const roomCap = MAX_CAPACITY[bookingIndex] || MAX_CAPACITY[0]
 
     const kidsCapacity = Math.max(KIDS_CAPACITY_RANGE[0], kids)
     const adultsCapacity = Math.max(ADULTS_CAPACITY_RANGE[0], adults)
@@ -239,7 +240,7 @@ export default function Form() {
     const addonsPrice = addons.reduce((acc, addon) => {
       return acc + addon.quantity * addon.price
     }, 0)
-    const defaultCapacity = DEFAULT_CAPACITY[numberOfRooms]
+    const defaultCapacity = DEFAULT_CAPACITY[bookingIndex]
 
     let additionalKids = kids - defaultCapacity
     let additionalKidsPrice = 0
@@ -331,7 +332,7 @@ export default function Form() {
 
   const pizzaDeliveryTime = () => {
     console.log('Pizza Delivery Time:', partyTimeslot)
-    const timeslot = partyTimeslot.split('PM')[0]
+    const timeslot = partyTimeslot.slice(0, -2)
     const pickupTime = ['00', '15', '30', '45']
 
     return pickupTime.map((time) => {
@@ -682,7 +683,7 @@ export default function Form() {
               <div>
                 <div className="mb-4">
                   <p className="text-sm">
-                    Total Capacity: {MAX_CAPACITY[numberOfRooms]}
+                    Total Capacity: {MAX_CAPACITY[bookingIndex]}
                   </p>
                   <p className="text-sm">Spots Left: {spaceRemaining}</p>
                 </div>
@@ -766,7 +767,7 @@ export default function Form() {
                         aria-describedby="adultsCapacityError"
                       />
                       <Modal
-                        message={`${DEFAULT_CAPACITY[numberOfRooms]} adult admissions included for free`}
+                        message={`${DEFAULT_CAPACITY[bookingIndex]} adult admissions included for free`}
                       />
                     </div>
                     {errors.adultsCapacity && (
@@ -782,35 +783,6 @@ export default function Form() {
               </div>
             </div>
           </section>
-
-          <div>
-            <h2 className="text-lg font-semibold">Room Selection </h2>
-            <p className="text-gray-600">
-              Please Select a room that you would want you party.
-            </p>
-
-            <div className="flex gap-10">
-              <section>
-                <label for="room1">Room1</label>
-                <input
-                  type="radio"
-                  {...register('room')}
-                  id="room1"
-                  value="1"
-                ></input>
-              </section>
-
-              <section>
-                <label for="room2">Room2</label>
-                <input
-                  type="radio"
-                  {...register('room')}
-                  id="room2"
-                  value="2"
-                ></input>{' '}
-              </section>
-            </div>
-          </div>
         </div>
 
         {/* Addons */}

@@ -159,19 +159,16 @@ export default function CalendarPage() {
     setAvailableTimeslot(availability.timeslotAvailability)
     setHeldTimeslot(availability.roomsHeld)
     if (availability.timeslotAvailability) {
-      setAvailableRoom(availability.timeslotAvailability[selectedTimeslot] ?? 0)
-      console.log('room booeked', availability, selectedTimeslot)
       let roomBooked = availability.roomsBooked[selectedTimeslot]
       console.error('room booeked', roomBooked)
-      if (selectedTimeslot){
-        if(roomBooked === 0){
-          setRoomAvailable([1,2,3])
-        }
-         else if(roomBooked === 1){
+      if (selectedTimeslot) {
+        if (roomBooked === 0) {
+          setRoomAvailable([1, 2, 3])
+        } else if (roomBooked === 1) {
           setRoomAvailable([2])
-        }else if(roomBooked === 2){
+        } else if (roomBooked === 2) {
           setRoomAvailable([1])
-        }else if(roomBooked === 3){
+        } else if (roomBooked === 3) {
           setRoomAvailable([])
         }
         console.log('room booeked', roomBooked, selectedTimeslot, roomAvailable)
@@ -309,15 +306,13 @@ export default function CalendarPage() {
 
   // Booking handler
   const handleBookNow = async () => {
-    const roomCount = Object.keys(ROOMS).find(
-      (room) => ROOMS[room] === selectedRoom
-    )
+    console.log(selectedRoom)
 
     const data = {
       heldSlotId,
       date: selectedDate,
       timeslot: selectedTimeslot,
-      noOfRooms: roomCount
+      room: ROOMS[selectedRoom]
     }
 
     console.log('handleBookNowData:', data)
@@ -379,16 +374,24 @@ export default function CalendarPage() {
 
   const renderRooms = () =>
     Object.keys(ROOMS).map((room) => {
-      const numericRoom = Number(room)
-      console.warn('numvericRoom', roomAvailable, numericRoom,roomAvailable.includes(numericRoom))
-      const isSelected = selectedRoom === ROOMS[room]
+      const numericRoom = Number(ROOMS[room])
+      console.warn(
+        'numvericRoom',
+        roomAvailable,
+        numericRoom,
+        roomAvailable.includes(numericRoom),
+        room,
+        ROOMS[room],
+        selectedRoom
+      )
+      const isSelected = selectedRoom === room
       const disabled =
-        !selectedPackage || (roomAvailable.includes(numericRoom)? false : true)
+        !selectedPackage || (roomAvailable.includes(numericRoom) ? false : true)
 
       let baseClass = !selectedPackage
         ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
         : 'text-green-800 hover:bg-green-100 cursor-pointer'
-      if (roomAvailable.includes(numericRoom)?false:true) {
+      if (roomAvailable.includes(numericRoom) ? false : true) {
         baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
       }
       const selectedClass = isSelected
@@ -401,11 +404,11 @@ export default function CalendarPage() {
             className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${baseClass} ${selectedClass}`}
             disabled={disabled}
             onClick={() => {
-              setSelectedRoom(ROOMS[room])
+              setSelectedRoom(room)
               setNumberOfRoom(numericRoom)
             }}
           >
-            {ROOMS[room]}
+            {room}
           </button>
         </div>
       )
@@ -585,10 +588,10 @@ export default function CalendarPage() {
             <p className="text-gray-800">
               Number of Rooms:{' '}
               <strong>
-                {selectedRoom === ROOMS[1]
-                  ? 1
-                  : selectedRoom === ROOMS[2]
-                  ? 2
+                {selectedRoom
+                  ? ROOMS[selectedRoom] === 3
+                    ? 2
+                    : 1
                   : 'Select a Room'}
               </strong>
             </p>

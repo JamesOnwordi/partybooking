@@ -9,6 +9,7 @@ const asyncHandler = require('express-async-handler')
 const { default: mongoose } = require('mongoose')
 const {
   WINTER_MONTHS,
+  ROOMS,
   WINTER_TIMESLOTS,
   STANDARD_TIMESLOTS,
   MAX_ROOMS_PER_TIMESLOT,
@@ -28,8 +29,8 @@ console.log(WINTER_MONTHS, STANDARD_TIMESLOTS)
 // get number of rooms booked
 const noOfRooms = (room) => {
   console.log(room)
-  if (room === 3) return 2
-  else if (room === 1 || room === 2) return 1
+  if (room == 3) return 2
+  else if (room == 1 || room == 2) return 1
   else return 0
 }
 
@@ -75,7 +76,6 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
 
     console.log('booked ---', bookings, 'held ----', heldSlots)
 
-
     // count of rooms booked per timeslot
     const roomsBooked = {}
     console.log('bookings', bookings)
@@ -89,8 +89,6 @@ exports.timeslots_available = asyncHandler(async (req, res, next) => {
     heldSlots.forEach(({ room, timeslot }) => {
       roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + room
     })
-
-    
 
     const sortedRoomsBooked = {}
     const sortedRoomsHeld = {}
@@ -182,7 +180,12 @@ exports.booking_create = asyncHandler(async (req, res) => {
 exports.booking_available = asyncHandler(
   async (date, timeslot, room, heldSlotId) => {
     try {
+      console.log('In booking availability')
+
+      room = parseInt(room)
+
       console.log(date, timeslot, room, heldSlotId)
+
       const bookings = await Bookings.find(
         { date, timeslot },
         'reservation.room'
@@ -206,24 +209,29 @@ exports.booking_available = asyncHandler(
 
         if (heldSlots.length) {
           roomHeld = heldSlots.reduce((total, slot) => {
-            return (total += noOfRooms(slot.room))
+            return (total += slot.room)
           }, 0)
         }
       }
 
-      console.log('roomHeld', roomHeld)
-
       const roomBooked = bookings.reduce((total, booking) => {
-        return (total += noOfRooms(booking.reservation.room))
+        return (total += booking.reservation.room)
       }, 0)
 
       console.log(
         'room booked',
-        MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld,
-        noOfRooms(room)
+        roomBooked,
+        'room held',
+        roomHeld,
+        'room to be booked',
+        room
       )
+      const reservedRoom = roomBooked + roomHeld
 
-      return MAX_ROOMS_PER_TIMESLOT - roomBooked - roomHeld >= room
+      if (reservedRoom === 0) return true
+      if (reservedRoom === 3) return false
+
+      return room === (reservedRoom === 1 ? 2 : 1)
     } catch (err) {
       res.status(400).json({ status: false, message: error.message })
     }

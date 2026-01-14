@@ -1,5 +1,7 @@
 const MAX_ROOMS_PER_TIMESLOT = 2
 
+const ROOMS = [1, 2, 3]
+
 const STANDARD_TIMESLOTS = ['12SD', '2SD', '4SD', '6SD']
 
 const WINTER_TIMESLOTS = ['11WT', '2WT', '5WT']
@@ -20,6 +22,7 @@ const MAXDATE = new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)
 
 module.exports = {
   MAX_ROOMS_PER_TIMESLOT,
+  ROOMS,
   STANDARD_TIMESLOTS,
   WINTER_TIMESLOTS,
   WINTER_MONTHS,
