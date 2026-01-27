@@ -13,6 +13,8 @@ Settings.defaultZone = ZONE
 const Dashboard = () => {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
+  const [room1Booking, setRoom1Booking] = useState([])
+  const [room2Booking, setRoom2Booking] = useState([])
   const calendar1Ref = useRef(null)
   const calendar2Ref = useRef(null)
 
@@ -33,10 +35,15 @@ const Dashboard = () => {
     fetchBookings()
   }, [])
 
-  const bookingsEvent = bookings.map((booking) => ({
+  const bookingsEvent1 = room1Booking.map((booking) => ({
     title: `${booking.customer.first_name} ${booking.customer.last_name}`,
     start: new Date(booking.date)
   }))
+  const bookingsEvent2 = room2Booking.map((booking) => ({
+    title: `${booking.customer.first_name} ${booking.customer.last_name}`,
+    start: new Date(booking.date)
+  }))
+
   //   <td className="p-2 border">{}</td>
   //   <td className="p-2 border">{booking.timeslot}</td>
   //   </td>new Date(booking.date).toDateString()
@@ -62,6 +69,19 @@ const Dashboard = () => {
     console.log('partyCalendar')
     console.log(bookingsEvent)
   }
+  const sortBooking = bookings.map((booking) => {
+    const room = booking.reservation.room
+    console.log(booking)
+
+    if (room == 1) {
+      room1Booking.push(booking)
+    } else if (room == 2) {
+      room2Booking.push(booking)
+    } else {
+      room1Booking.push(booking)
+      room2Booking.push(booking)
+    }
+  })
   const handleEventClick = () => {
     console.log('partyCalendar')
     console.log(bookingsEvent)
@@ -110,6 +130,7 @@ const Dashboard = () => {
             expandRows={true}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
+            events={bookingsEvent1}
             moreLinkClick={'week'}
             dayMaxEventRows={true}
             headerToolbar={{ start: 'title', center: '', end: '' }}
@@ -129,7 +150,7 @@ const Dashboard = () => {
             dateClick={handleDateClick}
             eventClick={handleEventClick}
             moreLinkClick={'week'}
-            events={bookingsEvent}
+            events={bookingsEvent2}
             dayMaxEventRows={true}
             datesSet={(dateInfo) => {
               handleDateSet(dateInfo, 2)
@@ -163,7 +184,7 @@ const Dashboard = () => {
                 {b.customer.first_name} {b.customer.last_name}
               </td>
               <td className="p-2 border">{b.package}</td>
-              <td className="p-2 border">{b.reservation.noOfRooms}</td>
+              <td className="p-2 border">{b.reservation.room}</td>
               <td className="p-2 border flex gap-2">
                 <button className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
                   Edit

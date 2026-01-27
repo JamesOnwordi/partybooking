@@ -8,6 +8,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import {
   MAX_CAPACITY,
   ROOMS,
@@ -31,6 +32,7 @@ import Modal from '@/components/Modal'
 import { DateTime, Zone } from 'luxon'
 
 export default function Form() {
+  const router = useRouter()
   const {
     register,
     handleSubmit,
@@ -161,6 +163,7 @@ export default function Form() {
 
     // Set room and capacities
     if (selectedRoom) {
+      setValue('partyRoom', selectedRoom)
       const index = Object.keys(ROOMS).reduce((value, room) => {
         console.warn(ROOMS[room], selectedRoom)
         if (ROOMS[room] === ROOMS[selectedRoom]) {
@@ -292,7 +295,7 @@ export default function Form() {
       age,
       kidsCapacity,
       adultsCapacity,
-      room,
+      partyRoom,
       Galaxy_Cheese_Pizza,
       Galaxy_Pepperoni_Pizza,
       addons
@@ -316,7 +319,7 @@ export default function Form() {
       reservation: {
         kids: kidsCapacity,
         adults: adultsCapacity,
-        room: room
+        room: ROOMS[partyRoom]
       },
       packageAddons: {
         'Cheese Pizza': Galaxy_Cheese_Pizza,
@@ -325,9 +328,14 @@ export default function Form() {
       addons
     }
 
+    console.log(formData)
+
     const submitedData = await submitBooking(formData)
     console.log(submitedData)
-    // localStorage.removeItem('initialBooking')
+    localStorage.removeItem('initialData')
+    localStorage.setItem('bookingData', JSON.stringify(formData))
+
+    router.push('review')
   }
 
   const pizzaDeliveryTime = () => {
@@ -361,7 +369,7 @@ export default function Form() {
         onSubmit={handleSubmit(onSubmit)}
         className="bg-white p-6 rounded shadow-md space-y-8"
       >
-        {/* Party Details */}
+        Party Details
         <section>
           <h2 className="text-lg font-semibold">Party Details</h2>
           <p className="text-gray-600">
@@ -432,7 +440,6 @@ export default function Form() {
             </FormField>
           </div>
         </section>
-
         {/* Customer Details */}
         <section>
           <h2 className="text-lg font-semibold">Booking Details</h2>
@@ -670,7 +677,6 @@ export default function Form() {
             )}
           </div>
         </section>
-
         {/* Capacity Control */}
         <div className="flex">
           <section>
@@ -784,7 +790,6 @@ export default function Form() {
             </div>
           </section>
         </div>
-
         {/* Addons */}
         {/* Addons Section */}
         <section>
@@ -826,7 +831,6 @@ export default function Form() {
             ))}
           </div>
         </section>
-
         {/* Review Message */}
         <div className="text-gray-600 mt-6">
           <p className="text-sm">
@@ -834,7 +838,6 @@ export default function Form() {
             make changes, you can go back to the booking page.
           </p>
         </div>
-
         {/* Back and Submit Buttons */}
         <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center mt-4 gap-4">
           <Link href="/booking/" passHref>
