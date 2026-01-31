@@ -22,9 +22,11 @@ import {
   MAXDATE,
   getHeldSlot,
   extendHeldSlot,
-  TIMER_POPUP
+  TIMER_POPUP,
+  getTimeRemaining
 } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
+import Timer from '@/components/Timer'
 
 export default function CalendarPage() {
   const [date, setDate] = useState(new Date())
@@ -42,7 +44,7 @@ export default function CalendarPage() {
   const [numberOfRoom, setNumberOfRoom] = useState(null)
   const [heldSlotId, setHeldSlotId] = useState(null)
   const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
-  const [timeLeft, setTimeLeft] = useState(0)
+
   const [timeslot, setTimeslot] = useState(STANDARD_TIMESLOTS)
   const [isRestored, setIsRestored] = useState(false)
   const [extendButton, setExtendButton] = useState(false)
@@ -228,42 +230,10 @@ export default function CalendarPage() {
   ])
 
   // Hold countdown timer
-  const getTimeRemaining = () => {
-    if (!heldSlotExpiration) return { expired: true }
-    // console.log(' in get remaining', heldSlotExpiration)
-    const now = DateTime.now()
-    const expiryDate = DateTime.fromISO(heldSlotExpiration)
-    const diff = expiryDate.diff(now, ['minutes', 'seconds'])
-    let timeExtendable = diff.values.minutes < TIMER_POPUP
-    setExtendButton(timeExtendable)
-
-    if (diff.toMillis() <= 0) return { expired: true }
-    return {
-      minutes: Math.floor(diff.minutes),
-      seconds: Math.floor(diff.seconds),
-      expired: false
-    }
-  }
-
-  useEffect(() => {
-    console.log(heldSlotId)
-    if (typeof window === 'undefined') return
-
-    if (!heldSlotId) return
-    const interval = setInterval(() => {
-      const remaining = getTimeRemaining()
-      setTimeLeft(remaining)
-      console.log(heldSlotExpiration)
-      // console.log('in here the missing')
-      if (remaining.expired) {
-        clearInterval(interval)
-        setHeldSlotId(null)
-        localStorage.removeItem('initialBooking') // clear expired hold
-        requestAvailability(selectedDate)
-      }
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [heldSlotId, heldSlotExpiration])
+  // to be added
+  // const getTimeRemaining = () => {
+  //   setExtendButton(timeExtendable)
+  // }
 
   const requestAvailability = useCallback(
     async (selectedDate) => {
@@ -512,29 +482,11 @@ export default function CalendarPage() {
       </h1>
 
       {heldSlotId && (
-        <div className="flex items-end justify-center flex-col">
-          {' '}
-          <div className="bg-yellow-50  ">
-            {' '}
-            <p className="text-cnter text-pink-700 animate-">
-              {'Hold Time: '}
-              {timeLeft && !timeLeft.expired
-                ? `${timeLeft.minutes}m ${timeLeft.seconds}s`
-                : 'No active hold'}
-            </p>
-            {extendButton && (
-              <button
-                className={` px-2 text-sm py-2 rounded justify-center items-center transition bg-fuchsia-700 text-white hover:bg-purple-700`}
-                onClick={async () => {
-                  setHeldSlotExpiration(await extendHeldSlot(heldSlotId))
-                }}
-              >
-                {' '}
-                Extend{' '}
-              </button>
-            )}
-          </div>
-        </div>
+        <Timer
+          heldSlotId={heldSlotId}
+          heldSlotExpiration={heldSlotExpiration}
+          setHeldSlotId
+        />
       )}
 
       {guidingMessage && (
@@ -633,12 +585,12 @@ export default function CalendarPage() {
             {!selectedDate
               ? 'Please Select a Date'
               : !selectedTimeslot
-              ? 'Please Select a Timeslot'
-              : !selectedPackage
-              ? 'Please Select a Package'
-              : !selectedRoom
-              ? 'Please Select a Room'
-              : 'Book Now'}
+                ? 'Please Select a Timeslot'
+                : !selectedPackage
+                  ? 'Please Select a Package'
+                  : !selectedRoom
+                    ? 'Please Select a Room'
+                    : 'Book Now'}
           </button>
         </div>
       </div>

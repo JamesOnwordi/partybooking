@@ -1,6 +1,7 @@
 // utils/bookingUtils.js
 
 import axios from 'axios'
+import { DateTime } from 'luxon'
 const { nanoid } = require('nanoid')
 export const ROOMS = { 'Room 1': 1, 'Room 2': 2, Combined: 3 }
 export const PACKAGES = ['Solar', 'Galaxy']
@@ -85,8 +86,8 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
           ? 295 * 1.7
           : 395 * 1.7
         : day >= 1 && day <= 4
-        ? 295
-        : 395
+          ? 295
+          : 395
 
     const additionalFee = selectedRoom === 'Combined' ? cleaningFee * 0.7 : 0
     cleaningFee = cleaningFee + additionalFee
@@ -231,5 +232,21 @@ export async function submitBooking(bookingData) {
       })
   } catch (error) {
     console.log(error)
+  }
+}
+
+export const getTimeRemaining = (heldSlotExpiration) => {
+  if (!heldSlotExpiration) return { expired: true }
+  // console.log(' in get remaining', heldSlotExpiration)
+  const now = DateTime.now()
+  const expiryDate = DateTime.fromISO(heldSlotExpiration)
+  const diff = expiryDate.diff(now, ['minutes', 'seconds'])
+  let timeExtendable = diff.values.minutes < TIMER_POPUP
+
+  if (diff.toMillis() <= 0) return { expired: true }
+  return {
+    minutes: Math.floor(diff.minutes),
+    seconds: Math.floor(diff.seconds),
+    expired: false
   }
 }

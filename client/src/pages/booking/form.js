@@ -30,6 +30,7 @@ import {
 import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
 import { DateTime, Zone } from 'luxon'
+import Timer from '@/components/Timer'
 
 export default function Form() {
   const router = useRouter()
@@ -92,6 +93,8 @@ export default function Form() {
   const [partyPrice, setPartyPrice] = useState(0)
   const [totalPrice, setTotalPrice] = useState(0)
   const [galaxyPackage, setGalaxyPackage] = useState(false)
+  const [heldSlotId, setHeldSlotId] = useState(null)
+  const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
 
   // Restore form state from localStorage
   useEffect(() => {
@@ -114,8 +117,14 @@ export default function Form() {
       selectedTimeslot,
       selectedPackage,
       selectedRoom,
-      basePrice
+      basePrice,
+      heldSlotId,
+      heldSlotExpiration
     } = initialData
+
+    if (heldSlotId) setHeldSlotId(heldSlotId)
+
+    if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
 
     // Set party date
     if (selectedDate) {
@@ -369,9 +378,15 @@ export default function Form() {
         onSubmit={handleSubmit(onSubmit)}
         className="bg-white p-6 rounded shadow-md space-y-8"
       >
-        Party Details
         <section>
-          <h2 className="text-lg font-semibold">Party Details</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Party Details</h2>
+            <Timer
+              heldSlotId={heldSlotId}
+              heldSlotExpiration={heldSlotExpiration}
+            />
+          </div>
+
           <p className="text-gray-600">
             To modify any details, please go back to the booking page.
           </p>
