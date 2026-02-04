@@ -14,16 +14,12 @@ import {
   ROOMS,
   createHold,
   WINTER_MONTHS,
-  isBookable,
   WEEKEND_DATE,
   TAX,
   ZONE,
   MINDATE,
   MAXDATE,
-  getHeldSlot,
-  extendHeldSlot,
-  TIMER_POPUP,
-  getTimeRemaining
+  getHeldSlot
 } from '@/utils/bookingUtils'
 import 'react-calendar/dist/Calendar.css'
 import Timer from '@/components/Timer'
@@ -37,33 +33,28 @@ export default function CalendarPage() {
   const [selectedTimeslot, setSelectedTimeslot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
-  const [availableRoom, setAvailableRoom] = useState(0)
   const [roomAvailable, setRoomAvailable] = useState([])
   const [packagePrice, setPackagePrice] = useState(0)
   const [guidingMessage, setGuidingMessage] = useState('')
-  const [numberOfRoom, setNumberOfRoom] = useState(null)
   const [heldSlotId, setHeldSlotId] = useState(null)
   const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
-
   const [timeslot, setTimeslot] = useState(STANDARD_TIMESLOTS)
   const [isRestored, setIsRestored] = useState(false)
-  const [extendButton, setExtendButton] = useState(false)
   const router = useRouter()
 
   // Load saved booking state from localStorage
   useEffect(() => {
-    console.log('1 call')
+    console.log('runs at the start of app')
     if (typeof window === 'undefined') return
     const saved = localStorage.getItem('initialBooking')
+
     if (!saved) {
-      console.log('no saved value')
       setIsRestored(true)
       return
     }
 
     const parsed = JSON.parse(saved)
     if (!parsed.heldSlotId) {
-      console.log('no held value')
       setIsRestored(true)
       return
     }
@@ -78,7 +69,7 @@ export default function CalendarPage() {
     } = parsed
 
     // Restore date
-    if (parsed.selectedDate) {
+    if (selectedDate) {
       const restoredDate = DateTime.fromISO(selectedDate, {
         zone: ZONE
       }).toJSDate()
@@ -122,15 +113,6 @@ export default function CalendarPage() {
     console.log('2 call')
     if (typeof window === 'undefined') return
     const basePrice = packagePrice?.base ?? 0
-
-    console.log(
-      selectedTimeslot,
-      selectedPackage,
-      selectedRoom,
-      heldSlotId,
-      heldSlotExpiration,
-      heldSlotId
-    )
 
     localStorage.setItem(
       'initialBooking',
@@ -176,13 +158,6 @@ export default function CalendarPage() {
         console.log('room booeked', roomBooked, selectedTimeslot, roomAvailable)
       }
     }
-    // if (heldSlotId) {
-    //   console.log(heldSlotId)
-    // } else {
-    //   setSelectedTimeslot(null)
-    //   setSelectedPackage(null)
-    //   setSelectedRoom(null)
-    // }
   }, [availability, selectedTimeslot])
 
   useEffect(() => {
@@ -216,11 +191,6 @@ export default function CalendarPage() {
     else if (!selectedPackage) setGuidingMessage('Please Select a Package')
     else if (!selectedRoom) setGuidingMessage('Please Select a Room')
     else setGuidingMessage('Proceed to Form!')
-
-    if (availableTimeslot) {
-      console.log('availableTimeslot', availableTimeslot)
-      setAvailableRoom(availableTimeslot[selectedTimeslot] ?? 0)
-    }
   }, [
     selectedDate,
     selectedTimeslot,
@@ -375,7 +345,6 @@ export default function CalendarPage() {
             disabled={disabled}
             onClick={() => {
               setSelectedRoom(room)
-              setNumberOfRoom(numericRoom)
             }}
           >
             {room}
@@ -485,7 +454,7 @@ export default function CalendarPage() {
         <Timer
           heldSlotId={heldSlotId}
           heldSlotExpiration={heldSlotExpiration}
-          setHeldSlotId
+          setHeldSlotId={setHeldSlotId}
         />
       )}
 

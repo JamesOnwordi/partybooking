@@ -1,5 +1,5 @@
 'use client'
-import { TIMESLOTS } from '@/utils/bookingUtils'
+import { submitBooking, TIMESLOTS } from '@/utils/bookingUtils'
 import { useEffect, useState } from 'react'
 
 export default function ConfirmationPage() {
@@ -13,6 +13,40 @@ export default function ConfirmationPage() {
       console.log(JSON.parse(saved))
     }
   }, [])
+
+  const onSubmit = async () => {
+    const formData = {
+      date: date.toISOString().slice(0, 10),
+      timeslot: partyTimeslot,
+      package: choosenPackage,
+      customer: {
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        email
+      },
+      celebrant: {
+        name: celebrantName,
+        gender,
+        age_turning: age
+      },
+      reservation: {
+        kids: kidsCapacity,
+        adults: adultsCapacity,
+        room: ROOMS[partyRoom]
+      },
+      packageAddons: {
+        'Cheese Pizza': Galaxy_Cheese_Pizza,
+        'Pepperoni Pizza': Galaxy_Pepperoni_Pizza
+      },
+      addons
+    }
+
+    console.log(formData)
+    const submitedData = await submitBooking(formData)
+    localStorage.removeItem('initialData')
+    console.log(submitedData)
+  }
 
   if (!booking) {
     return <p>No booking found.</p>

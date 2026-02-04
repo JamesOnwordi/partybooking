@@ -87,7 +87,8 @@ export default function Form() {
   const [maxPepperoni, setMaxPepperoni] = useState(2)
   const [maxCheese, setMaxCheese] = useState(2)
   const [bookingIndex, setBookingIndex] = useState(0)
-  const [initialData, setInitialData] = useState(null)
+  const [savedBookingData, setSavedBookingData] = useState(null)
+  const [savedFormData, setSavedFormData] = useState(null)
   const [spaceRemaining, setSpaceRemaining] = useState(0)
   const [showAlert, setShowAlert] = useState(false)
   const [partyPrice, setPartyPrice] = useState(0)
@@ -100,32 +101,68 @@ export default function Form() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const initial = localStorage.getItem('initialBooking')
-    console.log(initial)
-    if (initial) {
-      setInitialData(JSON.parse(initial))
+    const bookingData = localStorage.getItem('initialBooking')
+    const formData = localStorage.getItem('formData')
+
+    console.log(bookingData, formData)
+    if (bookingData) {
+      setSavedBookingData(JSON.parse(bookingData))
+    }
+    if (formData) {
+      setSavedFormData(JSON.parse(formData))
     }
   }, [])
 
   // Set initial values from restored booking
   useEffect(() => {
-    if (!initialData) return
-    console.log(initialData)
+    if (savedFormData) {
+      const {
+        date,
+        timeslot,
+        packageInfo,
+        customer,
+        celebrant,
+        reservation,
+        packageAddons,
+        addons
+      } = savedFormData
 
-    const {
-      selectedDate,
-      selectedTimeslot,
-      selectedPackage,
-      selectedRoom,
-      basePrice,
-      heldSlotId,
-      heldSlotExpiration
-    } = initialData
+      const bookingData = {
+        selectedDate: date,
+        timeslot,
+        selectedPackage: savedFormData.package,
+        room: savedBookingData.selectedRoom
+      }
 
-    if (heldSlotId) setHeldSlotId(heldSlotId)
+      setPartyDetails(bookingData)
 
-    if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
+      console.log(savedFormData)
+    }
+    if (savedBookingData) {
+      console.log(savedBookingData)
 
+      const bookingData = {
+        selectedDate: savedBookingData.selectedDate,
+        timeslot: savedBookingData.selectedTimeslot,
+        selectedPackage: savedBookingData.selectedPackage,
+        room: savedBookingData.selectedRoom
+      }
+
+      setPartyDetails(bookingData)
+
+      const { basePrice, heldSlotId, heldSlotExpiration } = savedBookingData
+
+      if (heldSlotId) setHeldSlotId(heldSlotId)
+
+      if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
+
+      // Set price
+      basePrice && setPartyPrice(basePrice)
+    }
+  }, [savedBookingData, savedFormData])
+
+  const setPartyDetails = (data) => {
+    const { selectedDate, timeslot, selectedPackage, room } = data
     // Set party date
     if (selectedDate) {
       const JSDate = DateTime.fromISO(selectedDate, {
@@ -137,9 +174,9 @@ export default function Form() {
     }
 
     // Set timeslot
-    if (selectedTimeslot) {
-      setPartyTimeslot(selectedTimeslot)
-      setValue('partyTimeslot', selectedTimeslot)
+    if (timeslot) {
+      setPartyTimeslot(timeslot)
+      setValue('partyTimeslot', timeslot)
     }
 
     // Set package and possible addons
@@ -167,15 +204,12 @@ export default function Form() {
       }
     }
 
-    // Set price
-    basePrice && setPartyPrice(basePrice)
-
     // Set room and capacities
-    if (selectedRoom) {
-      setValue('partyRoom', selectedRoom)
+    if (room) {
+      setValue('partyRoom', room)
       const index = Object.keys(ROOMS).reduce((value, room) => {
-        console.warn(ROOMS[room], selectedRoom)
-        if (ROOMS[room] === ROOMS[selectedRoom]) {
+        console.warn(ROOMS[room], room)
+        if (ROOMS[room] === ROOMS[room]) {
           return ROOMS[room]
         } else return value
       }, 0)
@@ -195,7 +229,7 @@ export default function Form() {
       setValue('kidsCapacity', capacity)
       setValue('adultsCapacity', capacity)
     }
-  }, [initialData])
+  }
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
@@ -292,59 +326,9 @@ export default function Form() {
   const onSubmit = async (data) => {
     console.log('Form Data:', data)
 
-    const {
-      partyTimeslot,
-      partyPackage,
-      firstName,
-      lastName,
-      phone,
-      email,
-      celebrantName,
-      gender,
-      age,
-      kidsCapacity,
-      adultsCapacity,
-      partyRoom,
-      Galaxy_Cheese_Pizza,
-      Galaxy_Pepperoni_Pizza,
-      addons
-    } = data
+    localStorage.setItem('formData', JSON.stringify(data))
 
-    const formData = {
-      date: date.toISOString().slice(0, 10),
-      timeslot: partyTimeslot,
-      package: choosenPackage,
-      customer: {
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        email
-      },
-      celebrant: {
-        name: celebrantName,
-        gender,
-        age_turning: age
-      },
-      reservation: {
-        kids: kidsCapacity,
-        adults: adultsCapacity,
-        room: ROOMS[partyRoom]
-      },
-      packageAddons: {
-        'Cheese Pizza': Galaxy_Cheese_Pizza,
-        'Pepperoni Pizza': Galaxy_Pepperoni_Pizza
-      },
-      addons
-    }
-
-    console.log(formData)
-
-    const submitedData = await submitBooking(formData)
-    console.log(submitedData)
-    localStorage.removeItem('initialData')
-    localStorage.setItem('bookingData', JSON.stringify(formData))
-
-    router.push('review')
+    // router.push('review')
   }
 
   const pizzaDeliveryTime = () => {
@@ -401,7 +385,8 @@ export default function Form() {
                 <Modal
                   message={
                     <p>
-                      Selected Party Date: {initialData?.selectedDate} <br />
+                      Selected Party Date: {savedBookingData?.selectedDate}{' '}
+                      <br />
                       <span>To change date go back to previous page.</span>
                     </p>
                   }
@@ -413,13 +398,13 @@ export default function Form() {
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
-                  value={TIMESLOTS[initialData?.selectedTimeslot] || ''}
+                  value={TIMESLOTS[savedBookingData?.selectedTimeslot] || ''}
                   disabled
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
                   message={`🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
-                    ${initialData?.selectedTimeslot}`}
+                    ${savedBookingData?.selectedTimeslot}`}
                 />
               </div>
             </FormField>
@@ -428,13 +413,13 @@ export default function Form() {
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
-                  value={initialData?.selectedPackage || ''}
+                  value={savedBookingData?.selectedPackage || ''}
                   disabled
                   {...register('partyPackage')}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${initialData?.selectedPackage}`}
+                  message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${savedBookingData?.selectedPackage}`}
                 />
               </div>
             </FormField>
@@ -443,13 +428,13 @@ export default function Form() {
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
-                  value={initialData?.selectedRoom || ''}
+                  value={savedBookingData?.selectedRoom || ''}
                   disabled
                   {...register('partyRoom')}
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${initialData?.selectedRoom}`}
+                  message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${savedBookingData?.selectedRoom}`}
                 />
               </div>
             </FormField>
@@ -875,7 +860,7 @@ export default function Form() {
               type="submit"
               className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
             >
-              Submit Booking
+              Confirm Booking
             </button>
           </div>
         </div>
