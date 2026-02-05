@@ -47,6 +47,7 @@ export default function CalendarPage() {
     console.log('runs at the start of app')
     if (typeof window === 'undefined') return
     const saved = localStorage.getItem('initialBooking')
+    localStorage.removeItem('formData')
 
     if (!saved) {
       setIsRestored(true)

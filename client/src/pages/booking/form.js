@@ -96,6 +96,7 @@ export default function Form() {
   const [galaxyPackage, setGalaxyPackage] = useState(false)
   const [heldSlotId, setHeldSlotId] = useState(null)
   const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
+  const [isRestored, setIsRestored] = useState(false)
 
   // Restore form state from localStorage
   useEffect(() => {
@@ -111,60 +112,35 @@ export default function Form() {
     if (formData) {
       setSavedFormData(JSON.parse(formData))
     }
+    setIsRestored(true)
   }, [])
 
   // Set initial values from restored booking
   useEffect(() => {
-    if (savedFormData) {
-      const {
-        date,
-        timeslot,
-        packageInfo,
-        customer,
-        celebrant,
-        reservation,
-        packageAddons,
-        addons
-      } = savedFormData
+    if (typeof window === 'undefined' || !isRestored) return
 
-      const bookingData = {
-        selectedDate: date,
-        timeslot,
-        selectedPackage: savedFormData.package,
-        room: savedBookingData.selectedRoom
-      }
+    console.log(savedBookingData, savedFormData, isRestored)
 
-      setPartyDetails(bookingData)
+    const {
+      selectedDate,
+      selectedTimeslot,
+      selectedPackage,
+      selectedRoom,
+      basePrice,
+      heldSlotId,
+      heldSlotExpiration
+    } = savedBookingData
 
-      console.log(savedFormData)
-    }
-    if (savedBookingData) {
-      console.log(savedBookingData)
+    if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
+      router.replace('/booking')
 
-      const bookingData = {
-        selectedDate: savedBookingData.selectedDate,
-        timeslot: savedBookingData.selectedTimeslot,
-        selectedPackage: savedBookingData.selectedPackage,
-        room: savedBookingData.selectedRoom
-      }
+    console.log(savedFormData)
+    console.log(savedBookingData)
 
-      setPartyDetails(bookingData)
+    if (!savedBookingData) return
 
-      const { basePrice, heldSlotId, heldSlotExpiration } = savedBookingData
-
-      if (heldSlotId) setHeldSlotId(heldSlotId)
-
-      if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
-
-      // Set price
-      basePrice && setPartyPrice(basePrice)
-    }
-  }, [savedBookingData, savedFormData])
-
-  const setPartyDetails = (data) => {
-    const { selectedDate, timeslot, selectedPackage, room } = data
-    // Set party date
     if (selectedDate) {
+      // Set party date
       const JSDate = DateTime.fromISO(selectedDate, {
         zone: 'America/Denver'
       }).toJSDate()
@@ -174,18 +150,19 @@ export default function Form() {
     }
 
     // Set timeslot
-    if (timeslot) {
-      setPartyTimeslot(timeslot)
-      setValue('partyTimeslot', timeslot)
+    if (selectedTimeslot) {
+      setValue('partyTimeslot', selectedTimeslot)
+      setPartyTimeslot(selectedTimeslot)
     }
 
     // Set package and possible addons
     if (selectedPackage) {
-      setPartyPackage(selectedPackage)
       setValue('partyPackage', selectedPackage)
+      setPartyPackage(selectedPackage)
 
       if (selectedPackage === PACKAGES[1]) {
         setChoosenPackage(PARTY_PACKAGES[2])
+        setGalaxyPackage(true)
       } else if (
         partyPackage === PACKAGES[0] &&
         EXCLUSIVE_DAYS.includes(date.getDay())
@@ -194,31 +171,18 @@ export default function Form() {
       } else {
         setChoosenPackage(PARTY_PACKAGES[0])
       }
-
-      // Automatically add Galaxy package addons
-      if (selectedPackage === PACKAGES[1]) {
-        setGalaxyPackage(true)
-
-        // setValue(ADDONS[0].name, 1)
-        // setValue(ADDONS[1].name, 1)
-      }
     }
 
     // Set room and capacities
-    if (room) {
-      setValue('partyRoom', room)
-      const index = Object.keys(ROOMS).reduce((value, room) => {
-        console.warn(ROOMS[room], room)
-        if (ROOMS[room] === ROOMS[room]) {
-          return ROOMS[room]
-        } else return value
-      }, 0)
+    if (selectedRoom) {
+      setValue('partyRoom', selectedRoom)
+      const roomIndex = ROOMS[selectedRoom]
 
-      console.log('index', index)
+      console.log('roomIndex', roomIndex)
 
       let capacity = 0
 
-      if (index === 3) {
+      if (roomIndex === 3) {
         setBookingIndex(1)
         capacity = DEFAULT_CAPACITY[1]
       } else {
@@ -229,7 +193,47 @@ export default function Form() {
       setValue('kidsCapacity', capacity)
       setValue('adultsCapacity', capacity)
     }
-  }
+
+    if (heldSlotId) setHeldSlotId(heldSlotId)
+
+    if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
+
+    // Set price
+    basePrice && setPartyPrice(basePrice)
+
+    // form
+    if (!savedFormData) return
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      age,
+      gender,
+      celebrantName,
+      kidsCapacity,
+      adultsCapacity,
+      addons,
+      pizzaDeliveryTime,
+      Galaxy_Cheese_Pizza,
+      Galaxy_Pepperoni_Pizza
+    } = savedFormData
+    if (firstName) {
+      setValue('firstName', firstName)
+    }
+    if (lastName) setValue('lastName', lastName)
+    if (email) setValue('email', email)
+    if (phone) setValue('phone', phone)
+    if (celebrantName) setValue('celebrantName', celebrantName)
+    if (age) setValue('age', age)
+    if (gender) setValue('gender', gender)
+    if (addons) setValue('addons', addons)
+    if (Galaxy_Cheese_Pizza)
+      setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
+    if (Galaxy_Pepperoni_Pizza)
+      setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
+    if (pizzaDeliveryTime) ('pizzaDeliveryTime', pizzaDeliveryTime)
+  }, [savedBookingData, savedFormData])
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
@@ -328,7 +332,7 @@ export default function Form() {
 
     localStorage.setItem('formData', JSON.stringify(data))
 
-    // router.push('review')
+    router.push('review')
   }
 
   const pizzaDeliveryTime = () => {
