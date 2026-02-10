@@ -627,28 +627,32 @@ export default function Form() {
             {/* Galaxy Package Add-ons */}
             {galaxyPackage && (
               <div>
-                <div className="md:col-span-2 space-y-6">
-                  <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3  md:gap-6">
-                    {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
-                      <FormField key={addon.name} label={addon.name}>
-                        <input
-                          type="number"
-                          min={0}
-                          max={index === 0 ? maxPepperoni : maxCheese}
-                          defaultValue={1}
-                          {...register(
-                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
-                            {
-                              min: 0,
-                              max: index === 0 ? maxPepperoni : maxCheese
-                            }
-                          )}
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </FormField>
-                    ))}
+                <div className="md:col-span-2 space-y-1">
+                  <div className="flex space-x-2">
+                    <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3 w-full md:gap-6">
+                      {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
+                        <FormField
+                          key={`${addon.tag}_${addon.name.replace(/\s+/g, '_')}`}
+                          label={`${addon.tag} ${addon.name.replace(/\s+/g, ' ')}`}
+                        >
+                          <input
+                            type="number"
+                            min={0}
+                            max={index === 0 ? maxPepperoni : maxCheese}
+                            defaultValue={1}
+                            {...register(
+                              `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
+                              {
+                                min: 0,
+                                max: index === 0 ? maxPepperoni : maxCheese,
+                                required: `Pizza's choice is required`
+                              }
+                            )}
+                            className="w-full p-2 border rounded-md"
+                          />
+                        </FormField>
+                      ))}
 
-                    <div className="flex justify-between gap-2 ">
                       <FormField label="Delivery Time" required>
                         <select
                           {...register('pizzaDeliveryTime', {
@@ -659,21 +663,31 @@ export default function Form() {
                           {pizzaDeliveryTime()}
                         </select>
                       </FormField>
-                      <Modal
-                        message={
-                          <p>
-                            You have 2 pizzas included in this package. <br />
-                            You can select up to 2 pizzas of each type. <br />
-                            You can also select a delivery time for the pizzas.
-                          </p>
-                        }
-                      />
                     </div>
+                    <Modal
+                      message={
+                        <p>
+                          You have 2 pizzas included in this package. <br />
+                          You can select up to 2 pizzas of each type. <br />
+                          You can also select a delivery time for the pizzas.
+                        </p>
+                      }
+                    />
                   </div>
 
-                  {errors.pizzaDeliveryTime && (
+                  {(errors.pizzaDeliveryTime ||
+                    GALAXY_PACKAGE_ADDONS.some(
+                      (addon) =>
+                        errors[
+                          `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
+                        ]
+                    )) && (
                     <p className="text-red-500 text-sm">
-                      {errors.pizzaDeliveryTime.message}
+                      {GALAXY_PACKAGE_ADDONS.reduce((addon) => {
+                        return errors[
+                          `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
+                        ]
+                      }).message || errors.pizzaDeliveryTime?.message}
                     </p>
                   )}
                 </div>
