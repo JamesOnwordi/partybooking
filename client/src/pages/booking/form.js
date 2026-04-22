@@ -649,19 +649,63 @@ export default function Form() {
                               }
                             )}
                             className="w-full p-2 border rounded-md"
+                            onBlur={(e) => {
+                              const numberOfPizza = Number(
+                                e.currentTarget.value
+                              )
+                              console.warn(
+                                e.currentTarget.value,
+                                maxPepperoni,
+                                maxCheese,
+                                cheesePizza,
+                                pepperoniPizza,
+                                index
+                              )
+                              const clamped = Math.min(
+                                index === 0
+                                  ? cheesePizza + numberOfPizza <= 2
+                                    ? numberOfPizza
+                                    : 2 - cheesePizza
+                                  : pepperoniPizza + numberOfPizza <= 2
+                                    ? numberOfPizza
+                                    : 2 - pepperoniPizza,
+                                Math.max(numberOfPizza, 0)
+                              )
+                              e.currentTarget.value = clamped
+                              setValue(
+                                `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`,
+                                clamped
+                              )
+                            }}
                           />
+                          {errors[
+                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
+                          ] && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {
+                                errors[
+                                  `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
+                                ].message
+                              }
+                            </p>
+                          )}
                         </FormField>
                       ))}
 
                       <FormField label="Delivery Time" required>
                         <select
                           {...register('pizzaDeliveryTime', {
-                            required: 'Pizza delivery time is required'
+                            required: 'Delivery time is required'
                           })}
                           className="w-full p-2 border rounded-md"
                         >
                           {pizzaDeliveryTime()}
                         </select>
+                        {errors.pizzaDeliveryTime && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.pizzaDeliveryTime?.message}
+                          </p>
+                        )}
                       </FormField>
                     </div>
                     <Modal
@@ -674,22 +718,6 @@ export default function Form() {
                       }
                     />
                   </div>
-
-                  {(errors.pizzaDeliveryTime ||
-                    GALAXY_PACKAGE_ADDONS.some(
-                      (addon) =>
-                        errors[
-                          `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
-                        ]
-                    )) && (
-                    <p className="text-red-500 text-sm">
-                      {GALAXY_PACKAGE_ADDONS.reduce((addon) => {
-                        return errors[
-                          `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
-                        ]
-                      }).message || errors.pizzaDeliveryTime?.message}
-                    </p>
-                  )}
                 </div>
               </div>
             )}
