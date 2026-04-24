@@ -4,92 +4,127 @@
 
 # 1. Product Overview
 
-The Party Room Booking System is a self-service platform that allows parents to book party rooms at a playground without needing to contact staff directly.
+The Party Room Booking System is a self-service web application that allows customers to book party rooms at a playground without staff assistance.
 
-It replaces manual booking methods (calls/messages) with a structured digital system that provides:
-
+The system replaces manual booking workflows with a structured, rule-based system that ensures:
 - Real-time availability
-- Standardized booking rules
-- Reduced staff workload
-- Controlled scheduling logic
-
-The system supports two roles:
-- Parents (customers)
-- Staff (administrators)
+- No double bookings
+- Consistent booking rules
+- Reduced operational overhead
 
 ---
 
-# 2. Problem Statement
+# 2. Users
 
-Current booking operations are manual and result in:
-
-- Slow response times
-- Double bookings and human error
-- High staff workload during peak periods
-- No real-time visibility of availability
-
----
-
-# 3. Goals & Objectives
-
-## Primary Goals
-- Enable self-service booking for parents
-- Prevent double bookings through system enforcement
-- Provide real-time availability
-- Standardize booking rules and packages
-
-## Secondary Goals
-- Reduce staff workload
-- Improve operational efficiency
-- Support future expansion (payments, notifications, analytics)
-
----
-
-# 4. User Roles
-
-## 4.1 Parent (Customer)
-Parents can:
-- View available dates, rooms, and time slots
+## 2.1 Customer (Parent)
+Customers can:
+- Browse availability
 - Create bookings
-- Submit personal and event details
-- Receive booking confirmations (future feature)
+- Enter event details
 
-## 4.2 Staff (Admin)
-Staff can:
+## 2.2 Admin (Staff)
+Admins can:
 - View all bookings
-- Create bookings for customers
-- Modify or cancel bookings
-- Manage daily operations
-- Monitor occupancy and availability
+- Create/edit/cancel bookings
+- Manage booking statuses
+- Monitor daily occupancy
 
 ---
 
-# 5. Core User Flows
+# 3. Core Concepts
+
+## 3.1 Time Slots (Fixed for MVP)
+
+| Slot ID | Time        |
+|--------|-------------|
+| 11-1   | 11:00–13:00 |
+| 2-4    | 14:00–16:00 |
+| 5-7    | 17:00–19:00 |
 
 ---
 
-# 5.1 Customer Booking Flow
+## 3.2 Rooms
 
-## Step 1: Date Selection
-- Calendar shows next 4 months only
-- Past dates are disabled
+- Room 1  
+- Room 2  
 
 ---
 
-## Step 2: Availability Selection
+## 3.3 Booking Status
 
-System displays:
-- Time slots
-- Room 1 and Room 2 availability
+| Status     | Meaning |
+|------------|--------|
+| HELD       | Temporary reservation during checkout (system only) |
+| PENDING    | Submitted but unpaid |
+| CONFIRMED  | Paid and finalized |
+| CANCELLED  | Cancelled manually |
+| EXPIRED    | Timed out (unpaid) |
 
-### Fixed Time Slots
-- 11:00 – 13:00
-- 14:00 – 16:00
-- 17:00 – 19:00
+---
 
-### Rules
-- Each room allows 1 booking per time slot per day
+## 3.4 Active Booking Definition
 
+A slot is considered **unavailable** if there exists:
+
+- A non-expired HELD slot  
+- OR a booking with status:
+  - `PENDING`
+  - `CONFIRMED`
+
+---
+
+# 4. Booking Rules
+
+## 4.1 Uniqueness Constraint (Critical)
+
+Only **one active booking** is allowed per:
+This must be enforced at the **database level**.
+
+---
+
+## 4.2 Capacity Limits
+
+- Max 10 children  
+- Max 10 adults  
+
+Validation must occur server-side.
+
+---
+
+## 4.3 Package Rules
+
+### Packages
+
+- Solar (Mon–Thu, non-holidays)
+- Solar (Fri–Sun + holidays)
+- Galaxy (all days)
+
+---
+
+### Galaxy Package Requirements
+
+If `package = Galaxy`:
+
+Required fields:
+- pizza1: `"cheese"` | `"pepperoni"`
+- pizza2: `"cheese"` | `"pepperoni"`
+
+Rules:
+- Both fields are required
+- Must be valid values
+- Must be `null` for non-Galaxy bookings
+
+---
+
+# 5. Booking Flow (Customer)
+
+## Step 1: Select Date
+- Show next 4 months only
+- Disable past dates
+
+---
+
+## Step 2: Select Slot
 User selects:
 - Date
 - Time slot
@@ -97,226 +132,164 @@ User selects:
 
 System validates:
 - Slot exists
-- Date is valid
-- Room is available
+- Slot is not already active
 
 ---
 
 ## Step 3: Package Selection
-
-Available packages:
-
-- Solar Package (Mon–Thu, excluding holidays)
-- Solar Package (Fri–Sun and holidays)
-- Galaxy Package (all days)
-
-System displays:
-- Base price
-- Taxes (GST)
-- Optional add-ons (future)
+- Show available packages
+- Calculate price + GST
 
 ---
 
-## Step 4: Booking Hold
+## Step 4: Slot Hold
 
 When user proceeds:
 
-- Booking is created with status `HELD`
-- Slot is temporarily reserved
-- Hold expires after 10–15 minutes if not completed
+- System creates a **HELD slot**
+- Expires in **10–15 minutes**
+
+### Behavior:
+- HELD slots block availability
+- Expired HELD slots are ignored
 
 ---
 
-## Step 5: Customer Information
+## Step 5: Enter Details
 
 User provides:
-- Name
-- Contact details
-- Number of children
-- Number of adults
-- Special requests (optional)
-
-### Validation Rules
-- All required fields must be completed
-- Maximum capacity:
-  - 10 children (including birthday child)
-  - 10 adults
-
----
-
-## Step 6: Confirmation
-
-Upon submission:
-- Booking status becomes `CONFIRMED`
-- Slot is permanently reserved
-- Confirmation is displayed
-
----
-
-## Step 7: Notifications (Future)
-- Email/SMS confirmation
-- Staff dashboard updates
-
----
-
-# 5.2 Staff Flow
-
-## 1. Dashboard Overview
-Staff can view:
-- All bookings
-- Filters: date, room, status
-- Daily occupancy grid
-
----
-
-## 2. Manual Booking Creation
-
-Steps:
-1. Select date
-2. Select room and time slot
-3. Validate availability
-4. Enter customer details
-5. Create a booking as:
-   - CONFIRMED (default)
-   - PENDING (if required)
-
-Note: Staff-created bookings bypass HELD and are directly created in PENDING or CONFIRMED state.
-
----
-
-## 3. Booking Management
-
-### View Details
 - Customer info
-- Room and slot
-- Package
-- Status
+- Celebrant info
+- Guest counts
+- Optional notes
 
-### Modify Booking
-- Change date
-- Change room
-- Update details
+System validates:
+- Required fields
+- Capacity limits
+- Package rules
 
-### Cancel Booking
+---
+
+## Step 6: Submit Booking
+
+On submission:
+
+- HELD slot is consumed
+- Booking is created with:
+  - `status = PENDING`
+- Slot becomes reserved
+
+---
+
+## Step 7: Expiration
+
+- PENDING bookings expire after **3 days**
+- System sets status → `EXPIRED`
+- Slot becomes available again
+
+---
+
+# 6. Admin Flow
+
+## 6.1 Dashboard
+
+Displays:
+- Booking list
+- Filters (date, room, status)
+- Daily grid view
+
+---
+
+## 6.2 Create Booking
+
+Admin can:
+- Select slot
+- Input customer data
+- Create booking as:
+  - `CONFIRMED` (default)
+  - `PENDING`
+
+System must:
+- Validate availability
+
+---
+
+## 6.3 Modify Booking
+
+Editable fields:
+- Date
+- Time slot
+- Room
+- Customer details
+
+Rules:
+- Must revalidate availability
+- Cannot create conflicts unless override is enabled
+
+---
+
+## 6.4 Cancel Booking
+
 - Status → `CANCELLED`
-- Slot becomes available again
+- Slot becomes available
 
 ---
 
-## 4. Daily Operations View
+## 6.5 Status Updates
 
-Grid view:
-- Rows = time slots
-- Columns = Room 1 / Room 2
+Allowed transitions:
 
-Status per cell:
-- Available
-- Pending
-- Confirmed
+| From → To |
+|----------|
+| PENDING → CONFIRMED |
+| PENDING → CANCELLED |
+| PENDING → EXPIRED |
+| CONFIRMED → CANCELLED |
 
----
-
-## 5. Status Management
-
-Staff can update booking status at any time, including:
-
-- PENDING → CONFIRMED
-- PENDING → CANCELLED
-- CONFIRMED → CANCELLED
-- CONFIRMED → PENDING (if correction is needed)
-- PENDING → EXPIRED (system or manual override)
-
-All status changes must:
-- be logged for audit purposes (later)
-- trigger availability recalculation
-- HELD status is system-managed only and cannot be created or modified manually by staff.
+All changes must:
+- Trigger availability recalculation
 
 ---
 
-# 6. Business Rules
+# 7. Availability Logic
 
-## Booking Rules
+## 7.1 Slot is UNAVAILABLE if:
 
-An ACTIVE booking is any booking with status:
-- HELD
-- PENDING
-- CONFIRMED
-
-Only one ACTIVE booking is allowed per room per time slot per date.
-
-Any ACTIVE booking blocks availability.
+- A non-expired HELD slot  
+- OR a booking with:
+  - `PENDING`
+  - `CONFIRMED`
 
 ---
 
-## Capacity Rules
-- Max 10 children per booking
-- Max 10 adults per booking
+## 7.2 Priority (for UI)
 
----
+| Priority | State |
+|---------|------|
+| 1 | CONFIRMED |
+| 2 | PENDING |
+| 3 | HELD |
+| 4 | AVAILABLE |
 
-## Package Rules
-
-### Galaxy Package
-
-When `package = "Galaxy"`:
-
-- Customer receives 2 pizzas total
-- For EACH pizza, the customer must choose:
-  - Cheese OR Pepperoni
-
-### Required Inputs
-- pizza1: "cheese" or "pepperoni"
-- pizza2: "cheese" or "pepperoni"
-
-### Rules:
-- Both fields must be either:
-  - "cheese"
-  - "pepperoni"
-- Fields must be null for non-Galaxy packages
-
----
-
-# 7. Booking Lifecycle
-
-## HELD
-- Temporary system lock while the customer is completing the booking form
-- Prevents double selection of the same slot
-- Expires automatically after 10–15 minutes
-- If expired → slot becomes available again
-
-## PENDING
-- Booking has been created, but the deposit has not been paid yet
-- Can be cancelled or expire if payment is not completed within the allowed time window (3 days)
-
-## CONFIRMED
-- Deposit paid and booking is finalized
-- Slot is permanently reserved
-
-## CANCELLED
-- Booking is manually or automatically cancelled
-- Slot becomes available again
-
-## (Future) EXPIRED
-- PENDING bookings that were not completed in time
 ---
 
 # 8. Data Model (MVP)
 
 ```js
 Booking {
+  id: string,
+
   date: Date,
-
   timeSlot: "11-1" | "2-4" | "5-7",
-
   room: 1 | 2,
 
   package: "SolarMT" | "SolarFS" | "Galaxy",
 
-  status: "HELD" | "PENDING" | "CONFIRMED" | "CANCELLED" | "EXPIRED",
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "EXPIRED",
 
   customer: {
-    first_name: string,
-    last_name: string,
+    firstName: string,
+    lastName: string,
     phone: string,
     email: string
   },
@@ -337,74 +310,103 @@ Booking {
     pizza2: "cheese" | "pepperoni" | null
   },
 
+  paymentDueAt: Date,
+
   createdAt: Date,
   updatedAt: Date
+}
+
+HeldSlot {
+  id: string,
+
+  date: Date,
+  timeSlot: "11-1" | "2-4" | "5-7",
+  room: 1 | 2,
+
+  expiresAt: Date
+}
+
 }
 ```
 
 ---
 
-# 9. Availability Logic
+# 9. System Constraints (Critical)
 
-A room slot is considered available if no booking exists with the status:
-- HELD
-- PENDING
-- CONFIRMED
+## 9.1 Atomic Booking Creation
 
-### Notes:
-- HELD blocks the slot temporarily during form completion
-- PENDING reserves the slot after submission but before payment
-- CONFIRMED permanently reserves the slot
+Booking creation must:
+
+- Run inside a database transaction  
+- Recheck availability before insert  
 
 ---
 
-## 10. System Constraints and Consistency
+## 9.2 Database Constraint
 
-To prevent race conditions and inconsistent states:
+The system must enforce a uniqueness constraint to prevent double bookings:
 
-- Booking creation must be atomic
-- Only one CONFIRMED booking is allowed per combination of:
-  room + timeSlot + date
-- Server must validate availability before creating a booking
-- Validation must be performed inside a transaction to prevent race conditions
+```sql
+UNIQUE(date, timeSlot, room)
+WHERE status IN ('PENDING', 'CONFIRMED')
+```
 
----
+## 9.3 Expiration Jobs
 
-## 11. MVP Scope
+### HeldSlot Handling
 
-### Included in MVP
-- View availability
-- Create bookings
-- Enforce the no double booking rule
-- Fixed rooms and time slots
-
-### Not included in MVP
-- Payments
-- Notifications (email/SMS)
-- Waitlists
-- Advanced add-ons/customizations (beyond fixed packages)
+- Expired HeldSlots must be ignored in availability queries  
+- Optional: run a background cleanup job to delete expired records  
 
 ---
 
-## 12. Future Improvements
+### Booking Expiration
 
-### Payments & Revenue
-- Payment integration (deposits and refunds)
+- Identify PENDING bookings where `paymentDueAt < now`  
+- Update status → `EXPIRED`  
+- Expired bookings must release the reserved slot  
 
-### Communication
-- Email/SMS notifications
+---
 
-### Operations
-- Waitlist system for full slots
-- Admin dashboard improvements
+# 10. MVP Scope
 
-### UX Enhancements
-- Calendar-based UI (weekly/monthly view)
+## Included
 
-### Analytics
-- Booking analytics for staff
+- Availability view  
+- Booking creation  
+- Admin management  
+- Conflict prevention  
 
-### Data model
-- paymentStatus
-- heldExpiresAt
-- paymentDueAt
+---
+
+## Not Included
+
+- Payments  
+- Notifications  
+- Waitlist  
+- Add-ons  
+
+---
+
+# 11. Future Enhancements
+
+## Payments & Revenue
+
+- Payment integration (deposits and refunds)  
+
+## Communication
+
+- Email notifications  
+- SMS notifications  
+
+## Operations
+
+- Waitlist system  
+
+## Analytics
+
+- Analytics dashboard  
+
+## Flexibility
+
+- Configurable/flexible time slots  
