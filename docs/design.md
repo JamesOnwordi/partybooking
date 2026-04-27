@@ -151,7 +151,7 @@ When user proceeds:
 
 ### Behavior:
 - HELD slots block availability
-- Expired HELD slots are ignored
+- Expired HELD slots are deleted
 
 ---
 
@@ -174,7 +174,7 @@ System validates:
 
 On submission:
 
-- HELD slot is consumed
+- HELD slot is deleted
 - Booking is created with:
   - `status = PENDING`
 - Slot becomes reserved
@@ -356,7 +356,7 @@ WHERE status IN ('PENDING', 'CONFIRMED')
 ### HeldSlot Handling
 
 - Expired HeldSlots must be ignored in availability queries  
-- Optional: run a background cleanup job to delete expired records  
+- A background cleanup job to delete expired records  
 
 ---
 
