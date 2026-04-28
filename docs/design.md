@@ -144,9 +144,10 @@ System validates:
 
 ## Step 4: Slot Hold
 
-When user proceeds:
+When the user proceeds:
 
-- System creates a **HELD slot**
+- Booking is created with:
+  - `status = HELD`
 - Expires in **10–15 minutes**
 
 ### Behavior:
@@ -174,9 +175,7 @@ System validates:
 
 On submission:
 
-- HELD slot is deleted
-- Booking is created with:
-  - `status = PENDING`
+- System sets status → `PENDING`
 - Slot becomes reserved
 
 ---
@@ -206,9 +205,9 @@ Admin can:
 - Select slot
 - Input customer data
 - Create booking as:
-  - `CONFIRMED` (default)
-  - `PENDING`
-
+  - `PENDING` (default)
+  - `CONFIRMED`
+    
 System must:
 - Validate availability
 
@@ -285,7 +284,7 @@ Booking {
 
   package: "SolarMT" | "SolarFS" | "Galaxy",
 
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "EXPIRED",
+  status: "HELD" | "PENDING" | "CONFIRMED" | "CANCELLED" | "EXPIRED",
 
   customer: {
     firstName: string,
@@ -348,7 +347,7 @@ The system must enforce a uniqueness constraint to prevent double bookings:
 
 ```sql
 UNIQUE(date, timeSlot, room)
-WHERE status IN ('PENDING', 'CONFIRMED')
+WHERE status IN ('HELD', 'PENDING', 'CONFIRMED')
 ```
 
 ## 9.3 Expiration Jobs
