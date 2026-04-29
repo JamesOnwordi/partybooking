@@ -119,7 +119,7 @@ Rules:
 # 5. Booking Flow (Customer)
 
 ## Step 1: Select Date
-- Show next 4 months only
+- Show next 3 months only
 - Disable past dates
 
 ---
@@ -129,22 +129,18 @@ User selects:
 - Date
 - Time slot
 - Room
-
-System validates:
-- Slot exists
-- Slot is not already active
-
----
-
-## Step 3: Package Selection
-- Show available packages
+- packages
 - Calculate price + GST
 
 ---
 
-## Step 4: Slot Hold
+## Step 3: Slot Hold
 
 When the user proceeds:
+
+System validates:
+- Slot exists
+- Slot is not already active
 
 - Booking is created with:
   - `status = HELD`
@@ -152,17 +148,17 @@ When the user proceeds:
 
 ### Behavior:
 - HELD slots block availability
-- Expired HELD slots are deleted
+- Expired HELD slots are deleted asynchronously (daily)
 
 ---
 
-## Step 5: Enter Details
+## Step 4: Enter Details
 
 User provides:
 - Customer info
 - Celebrant info
-- Guest counts
-- Optional notes
+- Booking info
+- Optional notes (later)
 
 System validates:
 - Required fields
@@ -171,7 +167,7 @@ System validates:
 
 ---
 
-## Step 6: Submit Booking
+## Step 5: Submit Booking
 
 On submission:
 
@@ -180,7 +176,7 @@ On submission:
 
 ---
 
-## Step 7: Expiration
+## Step 6: Expiration
 
 - PENDING bookings expire after **3 days**
 - System sets status → `EXPIRED`
@@ -313,18 +309,6 @@ Booking {
 
   createdAt: Date,
   updatedAt: Date
-}
-
-HeldSlot {
-  id: string,
-
-  date: Date,
-  timeSlot: "11-1" | "2-4" | "5-7",
-  room: 1 | 2,
-
-  expiresAt: Date
-}
-
 }
 ```
 
