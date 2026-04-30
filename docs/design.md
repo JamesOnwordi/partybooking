@@ -66,10 +66,21 @@ Admins can:
 
 A slot is considered **unavailable** if there exists:
 
-- A non-expired HELD slot  
+- A booking where:
+  - `status = HELD` AND `expiresAt > now`
 - OR a booking with status:
   - `PENDING`
   - `CONFIRMED`
+ 
+---
+ 
+## 3.5 Booking Window
+
+- Maximum booking window: **3 months in advance**
+
+Definition:
+- Customers can only create bookings for dates within 3 months from the `startTime >= now + 2 days`
+- Admins can only create bookings for dates within 3 months from the current `startTime >= now `
 
 ---
 
@@ -119,7 +130,7 @@ Rules:
 # 5. Booking Flow (Customer)
 
 ## Step 1: Select Date
-- Show next 3 months only
+- Show next 3 months only (based on booking window constraint)
 - Disable past dates
 
 ---
@@ -148,7 +159,11 @@ System validates:
 
 ### Behavior:
 - HELD slots block availability
-- Expired HELD slots are deleted asynchronously (daily)
+- HELD bookings include `expiresAt`
+- A HELD booking is only valid if `expiresAt > now`
+- Expired HELD bookings:
+  - Must be ignored in availability queries
+  - May be cleaned up asynchronously (optional, not required for correctness)
 
 ---
 
@@ -190,7 +205,7 @@ On submission:
 
 Displays:
 - Booking list
-- Filters (date, room, status)
+- Filters (startTime, endTime, status)
 - Daily grid view
 
 ---
@@ -236,6 +251,8 @@ Allowed transitions:
 
 | From → To |
 |----------|
+| HELD → PENDING |
+| HELD → EXPIRED |
 | PENDING → CONFIRMED |
 | PENDING → CANCELLED |
 | PENDING → EXPIRED |
@@ -274,8 +291,10 @@ All changes must:
 Booking {
   id: string,
 
-  date: Date,
-  timeSlot: "11-1" | "2-4" | "5-7",
+  startTime: Date,  // stored in UTC
+
+  endTime: Date, // stored in UTC
+
   room: 1 | 2,
 
   package: "SolarMT" | "SolarFS" | "Galaxy",
@@ -305,16 +324,21 @@ Booking {
     pizza2: "cheese" | "pepperoni" | null
   },
 
+  expiresAt: Date,
+
   paymentDueAt: Date,
 
+  idempotencyKey: string, // unique per booking submission attempt
+
   createdAt: Date,
+
   updatedAt: Date
 }
 ```
 
 ---
 
-# 9. System Constraints (Critical)
+# 9. System Constraints
 
 ## 9.1 Atomic Booking Creation
 
@@ -330,24 +354,139 @@ Booking creation must:
 The system must enforce a uniqueness constraint to prevent double bookings:
 
 ```sql
-UNIQUE(date, timeSlot, room)
+UNIQUE(startTime, endTime, room)
 WHERE status IN ('HELD', 'PENDING', 'CONFIRMED')
 ```
 
-## 9.3 Expiration Jobs
+Implementation Note (MongoDB)
 
-### HeldSlot Handling
+Since MongoDB does not support traditional SQL partial constraints, this must be enforced using a partial unique index:
 
-- Expired HeldSlots must be ignored in availability queries  
-- A background cleanup job to delete expired records  
+```sql
+bookingSchema.index(
+  { startTime: 1, endTime: 1, room: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ["HELD", "PENDING", "CONFIRMED"] }
+    }
+  }
+)
+```
+This index is the primary mechanism that guarantees:
+
+No double booking
+No concurrent slot conflicts
+Atomic enforcement at the database level
 
 ---
 
-### Booking Expiration
+## 9.3 Expiration Jobs
 
-- Identify PENDING bookings where `paymentDueAt < now`  
-- Update status → `EXPIRED`  
-- Expired bookings must release the reserved slot  
+### Held Slot Handling
+
+- HELD bookings include `expiresAt`
+- A HELD booking is **only active if**:
+  - `expiresAt > now`
+
+- Expired HELD bookings:
+  - Must be ignored in availability queries
+  - Are automatically removed via TTL index (see Section 9.4)
+
+---
+
+### Booking Expiration (PENDING → EXPIRED)
+
+- Identify PENDING bookings where:
+  - `paymentDueAt < now`
+
+- Update:
+  - `status → EXPIRED`
+
+---
+
+### Rules
+
+- Expired bookings must:
+  - Release the reserved slot immediately
+
+- Expired bookings:
+  - **Must NOT be deleted**
+  - Must remain for admin visibility and reporting
+
+---
+
+## 9.4 TTL Indexes (MongoDB)
+
+```mongodb
+bookingSchema.index(
+  { expiresAt: 1 },
+  { expireAfterSeconds: 0 }
+)
+```
+Notes:
+- Applies to HELD bookings only
+- Used for automatic cleanup
+- NOT used for availability logic
+- Expired HELD bookings must still be ignored via:
+  - `expiresAt > now`
+
+---
+
+## 9.5 Idempotency (Duplicate Submission Protection)
+
+To prevent duplicate bookings caused by repeated client requests:
+
+### Requirements
+
+- Each booking request must include a unique `idempotencyKey` (UUID)
+- The key is generated on the frontend per submission attempt
+
+### Backend Behavior
+
+- Before creating a booking:
+  - Check if a booking exists with the same `idempotencyKey`
+
+- If found:
+  - Return the existing booking (do NOT create a new one)
+
+- If not found:
+  - Proceed with normal booking creation
+
+### Database Constraint
+
+- `idempotencyKey` must be unique
+
+```js
+bookingSchema.index(
+  { idempotencyKey: 1 },
+  { unique: true }
+)
+```
+
+Notes
+- Prevents duplicate bookings from:
+  - Double-clicks
+  - Network retries
+  - Client timeouts
+- Works alongside (not instead of) the slot uniqueness constraint
+
+---
+
+## 9.6 Booking Window Constraint
+
+### Rules
+
+- A booking date must satisfy:
+  - `startTime >= today + 2 days`
+  - `startTime <= today + 3 months`
+
+### Enforcement
+
+- Must be validated on the server before booking creation
+- Applies to:
+  - Customer bookings
+  - Admin bookings
 
 ---
 
