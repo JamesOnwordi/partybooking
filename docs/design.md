@@ -41,14 +41,10 @@ Admins can:
 | 2-4    | 14:00–16:00 |
 | 5-7    | 17:00–19:00 |
 
----
-
 ## 3.2 Rooms
 
 - Room 1  
 - Room 2  
-
----
 
 ## 3.3 Booking Status
 
@@ -59,8 +55,6 @@ Admins can:
 | CONFIRMED  | Paid and finalized |
 | CANCELLED  | Cancelled manually |
 | EXPIRED    | Timed out (unpaid) |
-
----
 
 ## 3.4 Active Booking Definition
 
@@ -85,8 +79,6 @@ A slot is considered **unavailable** if there exists:
   ]
 }
 ```
-
----
  
 ## 3.5 Booking Window
 
@@ -105,16 +97,12 @@ Definition:
 Only **one active booking** is allowed per:
 This must be enforced at the **database level**.
 
----
-
 ## 4.2 Capacity Limits
 
 - Max 10 children  
 - Max 10 adults  
 
 Validation must occur server-side.
-
----
 
 ## 4.3 Package Rules
 
@@ -123,8 +111,6 @@ Validation must occur server-side.
 - Solar (Mon–Thu, non-holidays)
 - Solar (Fri–Sun + holidays)
 - Galaxy (all days)
-
----
 
 ### Galaxy Package Requirements
 
@@ -147,8 +133,6 @@ Rules:
 - Show next 3 months only (based on booking window constraint)
 - Disable past dates
 
----
-
 ## Step 2: Select Slot
 User selects:
 - Date
@@ -156,8 +140,6 @@ User selects:
 - Room
 - packages
 - Calculate price + GST
-
----
 
 ## Step 3: Slot Hold
 
@@ -179,8 +161,6 @@ System validates:
   - Must be ignored in availability queries
   - May be cleaned up asynchronously (optional, not required for correctness)
 
----
-
 ## Step 4: Enter Details
 
 User provides:
@@ -194,16 +174,12 @@ System validates:
 - Capacity limits
 - Package rules
 
----
-
 ## Step 5: Submit Booking
 
 On submission:
 
 - System sets status → `PENDING`
 - Slot becomes reserved
-
----
 
 ## Step 6: Expiration
 
@@ -222,8 +198,6 @@ Displays:
 - Filters (startTime, endTime, status)
 - Daily grid view
 
----
-
 ## 6.2 Create Booking
 
 Admin can:
@@ -235,8 +209,6 @@ Admin can:
     
 System must:
 - Validate availability
-
----
 
 ## 6.3 Modify Booking
 
@@ -250,14 +222,10 @@ Rules:
 - Must revalidate availability
 - Cannot create conflicts unless override is enabled
 
----
-
 ## 6.4 Cancel Booking
 
 - Status → `CANCELLED`
 - Slot becomes available
-
----
 
 ## 6.5 Status Updates
 
@@ -285,8 +253,6 @@ All changes must:
 - OR a booking with:
   - `PENDING`
   - `CONFIRMED`
-
----
 
 ## 7.2 Priority (for UI)
 
@@ -374,8 +340,6 @@ If booking creation fails due to a uniqueness conflict:
   - Refresh availability
   - Prompt user to select another slot
 
----
-
 ## 9.2 Database Constraint
 
 The system must enforce a uniqueness constraint to prevent double bookings:
@@ -406,8 +370,6 @@ No double booking
 No concurrent slot conflicts
 Atomic enforcement at the database level
 
----
-
 ## 9.3 Expiration Jobs
 
 ### Held Slot Handling
@@ -419,8 +381,6 @@ Atomic enforcement at the database level
 - Expired HELD bookings:
   - Must be ignored in availability queries
   - Are automatically removed via TTL index (see Section 9.4)
-
----
 
 ### Booking Expiration (PENDING → EXPIRED)
 
@@ -441,8 +401,6 @@ Atomic enforcement at the database level
   - **Must NOT be deleted**
   - Must remain for admin visibility and reporting
 
----
-
 ## 9.4 TTL Indexes (MongoDB)
 
 ```mongodb
@@ -459,8 +417,6 @@ Notes:
 - NOT used for availability logic
 - Expired HELD bookings must still be ignored via:
   - `expiresAt > now`
-
----
 
 ## 9.5 Idempotency (Duplicate Submission Protection)
 
@@ -500,8 +456,6 @@ Notes
   - Client timeouts
 - Works alongside (not instead of) the slot uniqueness constraint
 
----
-
 ## 9.6 Booking Window Constraint
 
 ### Rules
@@ -523,8 +477,6 @@ Both:
 - Applies to:
   - Customer bookings
   - Admin bookings
-
----
 
 ## 9.7 Indexing Strategy
 The following indexes must be created for performance:
@@ -548,8 +500,6 @@ bookingSchema.index(
 - Booking creation  
 - Admin management  
 - Conflict prevention  
-
----
 
 ## Not Included
 
