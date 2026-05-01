@@ -92,9 +92,9 @@ Definition:
 
 # 4. Booking Rules
 
-## 4.1 Uniqueness Constraint (Critical)
+## 4.1 Uniqueness Constraint
 
-Only **one active booking** is allowed per:
+Only **one active booking** is allowed per room in a timeslot:
 This must be enforced at the **database level**.
 
 ## 4.2 Capacity Limits
@@ -139,7 +139,8 @@ User selects:
 - Time slot
 - Room
 - packages
-- Calculate price + GST
+  
+Calculate price + GST
 
 ## Step 3: Slot Hold
 
@@ -463,13 +464,10 @@ Notes
 A booking date must satisfy:
   
 Customers:
-- startTime >= today + 2 days
+- today + 2 days <= startTime <= today + 3 months
 
 Admins:
-- startTime >= today
-
-Both:
-- startTime <= today + 3 months
+- today <= startTime <= today + 3 months
 
 ### Enforcement
 
@@ -485,8 +483,10 @@ The following indexes must be created for performance:
 
 ```js
 bookingSchema.index(
-  { idempotencyKey: 1 },
-  { unique: true }
+  { startTime: 1 }
+  { status: 1 }
+  { paymentDueAt: 1 }
+  { room: 1, startTime: 1 }
 )
 ```
 
