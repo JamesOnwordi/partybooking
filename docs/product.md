@@ -27,7 +27,7 @@ Parents need a way to book party rooms without having to call or message staff.
 
 * No double booking
 * Cannot book in the past
-* Cannot book > 4 months ahead
+* Cannot book > 3 months ahead
 * Booking must be tied to a valid fixed time slot
 * Only confirmed bookings reduce availability
 * A room can only have one CONFIRMED booking per time slot
