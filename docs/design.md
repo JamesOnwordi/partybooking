@@ -72,6 +72,20 @@ A slot is considered **unavailable** if there exists:
   - `PENDING`
   - `CONFIRMED`
  
+```js
+{
+  startTime,
+  room,
+  $or: [
+  { status: { $in: ["PENDING", "CONFIRMED"] } },
+    {
+      status: "HELD",
+      expiresAt: { $gt: now }
+    }
+  ]
+}
+```
+
 ---
  
 ## 3.5 Booking Window
@@ -342,10 +356,23 @@ Booking {
 
 ## 9.1 Atomic Booking Creation
 
-Booking creation must:
+Booking creation must rely on database-level enforcement, not pre-checks.
 
-- Run inside a database transaction  
-- Recheck availability before insert  
+- The system must attempt to **insert the booking directly**
+- The **database constraint must enforce uniqueness**
+- If a conflict occurs:
+  - The database will throw a **duplicate key error**
+
+### Conflict Handling
+
+If booking creation fails due to a uniqueness conflict:
+
+- Return a clear error:
+  "This slot was just booked by another user."
+
+- Client should:
+  - Refresh availability
+  - Prompt user to select another slot
 
 ---
 
@@ -425,7 +452,9 @@ bookingSchema.index(
 )
 ```
 Notes:
-- Applies to HELD bookings only
+- TTL index applies to all documents with `expiresAt`
+- Only HELD bookings should have `expiresAt` set
+- Other bookings must have `expiresAt = null`
 - Used for automatic cleanup
 - NOT used for availability logic
 - Expired HELD bookings must still be ignored via:
@@ -477,9 +506,16 @@ Notes
 
 ### Rules
 
-- A booking date must satisfy:
-  - `startTime >= today + 2 days`
-  - `startTime <= today + 3 months`
+A booking date must satisfy:
+  
+Customers:
+- startTime >= today + 2 days
+
+Admins:
+- startTime >= today
+
+Both:
+- startTime <= today + 3 months
 
 ### Enforcement
 
@@ -487,6 +523,20 @@ Notes
 - Applies to:
   - Customer bookings
   - Admin bookings
+
+---
+
+## 9.7 Indexing Strategy
+The following indexes must be created for performance:
+
+```js
+
+```js
+bookingSchema.index(
+  { idempotencyKey: 1 },
+  { unique: true }
+)
+```
 
 ---
 
