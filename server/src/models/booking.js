@@ -1,52 +1,116 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 const { Schema } = mongoose
 
 const bookingSchema = new Schema(
   {
-    date: { type: Date, required: true },
-    timeslot: {
-      type: String,
-      enum: ['12SD', '2SD', '4SD', '6SD', '11WT', '2WT', '5WT'],
+    startTime: {
+      type: Date,
+      required: true,
+      index: true
+    },
+
+    endTime: {
+      type: Date,
       required: true
     },
+
     package: {
       type: String,
-      enum: ['SolarMT', 'SolarFS', 'Galaxy'],
-      required: true
+      enum: ['Solar', 'Galaxy'],
+      required: true,
+      index: true
     },
+
+    room: {
+      type: Number,
+      enum: [1, 2],
+      required: true,
+      index: true
+    },
+
+    status: {
+      type: String,
+      enum: ['HELD', 'PENDING', 'CONFIRMED', 'CANCELLED', 'EXPIRED'],
+      default: 'HELD',
+      index: true
+    },
+
     customer: {
-      first_name: { type: String, required: true, maxLength: 100 },
-      last_name: { type: String, required: true, maxLength: 100 },
+      firstName: { type: String, required: true, trim: true },
+      lastName: { type: String, required: true, trim: true },
       phone: {
         type: String,
-        required: true,
-        match: [/^\+?\d{10,15}$/, 'Please enter a valid phone number']
+        required: true
+        // match: [/^\+?\d{10,15}$/, 'Please enter a valid phone number']
       },
       email: {
         type: String,
         required: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
+        lowercase: true
+        // match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
       }
     },
+
     celebrant: {
-      name: { type: String },
-      gender: { type: String, enum: ['Male', 'Female'] },
-      ageTurning: { type: Number }
-    },
-    reservation: {
-      kids: { type: Number, default: 0 },
-      adults: { type: Number, default: 0 },
-      room: {
-        type: Number,
-        enum: [1, 2, 3],
+      name: { type: String, required: true },
+      gender: {
+        type: String,
+        enum: ['Male', 'Female'],
         required: true
+      },
+      ageTurning: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 120
       }
     },
-    packageAddons: {
-      type: Object
+
+    guests: {
+      kids: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 20
+      },
+      adults: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 20
+      }
     },
-    addons: { type: Object }
+
+    galaxyExtras: {
+      pizza1: {
+        type: String,
+        enum: ['cheese', 'pepperoni', null],
+        default: null
+      },
+      pizza2: {
+        type: String,
+        enum: ['cheese', 'pepperoni', null],
+        default: null
+      }
+    },
+
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: { expires: 0 } // TTL index (auto-delete at date)
+    },
+
+    paymentDueAt: {
+      type: Date,
+      required: true
+    },
+
+    idempotencyKey: {
+      type: String,
+      required: true
+    }
   },
+
   {
     timestamps: true
   }
