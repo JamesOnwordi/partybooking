@@ -141,11 +141,7 @@ Rules:
 
 # 5. Booking Flow (Customer)
 
-## Step 1: Select Date
-- Show next 3 months only (based on booking window constraint)
-- Disable past dates
-
-## Step 2: Select Slot
+## Step 1: Select Slot
 User selects:
 - Date
 - Time slot
@@ -154,7 +150,7 @@ User selects:
   
 Calculate price + GST
 
-## Step 3: Slot Hold
+## Step 2: Slot Hold
 
 When the user proceeds:
 
@@ -174,7 +170,7 @@ System validates:
   - Must be ignored in availability queries
   - May be cleaned up asynchronously (optional, not required for correctness)
 
-## Step 4: Enter Details
+## Step 3: Enter Details
 
 User provides:
 - Customer info
@@ -187,14 +183,14 @@ System validates:
 - Capacity limits
 - Package rules
 
-## Step 5: Submit Booking
+## Step 4: Submit Booking
 
 On submission:
 
 - System sets status → `PENDING`
 - Slot becomes reserved
 
-## Step 6: Expiration
+## Step 5: Expiration
 
 - PENDING bookings expire after **3 days**
 - System sets status → `EXPIRED`
