@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 const { Schema } = mongoose
 
-const bookingSchema = new Schema(
+const bookingSchema = new mongoose.Schema(
   {
     startTime: {
       type: Date,
@@ -14,16 +14,16 @@ const bookingSchema = new Schema(
       required: true
     },
 
-    package: {
-      type: String,
-      enum: ['Solar', 'Galaxy'],
+    bookingPackage: {
+      type: Schema.Types.ObjectId,
+      ref: 'Package',
       required: true,
       index: true
     },
 
     room: {
-      type: Number,
-      enum: [1, 2],
+      type: Schema.Types.ObjectId,
+      ref: 'Room',
       required: true,
       index: true
     },
@@ -81,17 +81,9 @@ const bookingSchema = new Schema(
       }
     },
 
-    galaxyExtras: {
-      pizza1: {
-        type: String,
-        enum: ['cheese', 'pepperoni', null],
-        default: null
-      },
-      pizza2: {
-        type: String,
-        enum: ['cheese', 'pepperoni', null],
-        default: null
-      }
+    addon: {
+      type: Schema.Types.ObjectId,
+      ref: 'Addon'
     },
 
     expiresAt: {
