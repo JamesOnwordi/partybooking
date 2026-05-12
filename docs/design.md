@@ -35,11 +35,23 @@ Admins can:
 
 ## 3.1 Time Slots (Fixed for MVP)
 
-| Slot ID | Time        |
-|--------|-------------|
-| 11-1   | 11:00–13:00 |
-| 2-4    | 14:00–16:00 |
-| 5-7    | 17:00–19:00 |
+The system defines availability using configurable time rules, not hardcoded slots.
+
+```javascript
+availabilityRules: [
+  { start: "11:00", end: "13:00" },
+  { start: "14:00", end: "16:00" },
+  { start: "17:00", end: "19:00" }
+]
+```
+
+Storage location:
+Admin dashboard (preferred)
+database config collection (MVP)
+
+Key principle:
+
+Business can modify availability rules without code changes or schema updates.
 
 ## 3.2 Rooms
 
@@ -58,13 +70,13 @@ Admins can:
 
 ## 3.4 Active Booking Definition
 
-A slot is considered **unavailable** if there exists:
+A slot is considered **available** if there exists:
 
-- A booking where:
-  - `status = HELD` AND `expiresAt > now`
-- OR a booking with status:
+- A booking where status:
   - `PENDING`
   - `CONFIRMED`
+- OR a booking with :
+  - `status = HELD` AND `expiresAt > now`
  
 ```js
 {
@@ -129,11 +141,7 @@ Rules:
 
 # 5. Booking Flow (Customer)
 
-## Step 1: Select Date
-- Show next 3 months only (based on booking window constraint)
-- Disable past dates
-
-## Step 2: Select Slot
+## Step 1: Select Slot
 User selects:
 - Date
 - Time slot
@@ -142,7 +150,7 @@ User selects:
   
 Calculate price + GST
 
-## Step 3: Slot Hold
+## Step 2: Slot Hold
 
 When the user proceeds:
 
@@ -162,7 +170,7 @@ System validates:
   - Must be ignored in availability queries
   - May be cleaned up asynchronously (optional, not required for correctness)
 
-## Step 4: Enter Details
+## Step 3: Enter Details
 
 User provides:
 - Customer info
@@ -175,14 +183,14 @@ System validates:
 - Capacity limits
 - Package rules
 
-## Step 5: Submit Booking
+## Step 4: Submit Booking
 
 On submission:
 
 - System sets status → `PENDING`
 - Slot becomes reserved
 
-## Step 6: Expiration
+## Step 5: Expiration
 
 - PENDING bookings expire after **3 days**
 - System sets status → `EXPIRED`
@@ -321,55 +329,79 @@ Booking {
 
 # 9. System Constraints
 
-## 9.1 Atomic Booking Creation
+## 9.1 Booking Creation Strategy
 
-Booking creation must rely on database-level enforcement, not pre-checks.
+Booking creation must ensure correctness using:
 
-- The system must attempt to **insert the booking directly**
-- The **database constraint must enforce uniqueness**
-- If a conflict occurs:
-  - The database will throw a **duplicate key error**
+- Business rule validation
+- Application-level conflict detection
+- Atomic database writes (for race condition safety)
 
-### Conflict Handling
+Step 1: Business Rule Validation
 
-If booking creation fails due to a uniqueness conflict:
+Validate:
+-booking is within availabilityRules
+-booking is within booking window
+-package rules
 
-- Return a clear error:
-  "This slot was just booked by another user."
+Step 2: Conflict Detection (Application Layer)
 
-- Client should:
-  - Refresh availability
-  - Prompt user to select another slot
+A booking is considered conflicting if:
 
-## 9.2 Database Constraint
-
-The system must enforce a uniqueness constraint to prevent double bookings:
-
-```sql
-UNIQUE(startTime, endTime, room)
-WHERE status IN ('HELD', 'PENDING', 'CONFIRMED')
+```js
+existing.startTime < newEnd &&
+existing.endTime > newStart
+```
+Query:
+```js
+await Booking.findOne({
+  room,
+  status: { $in: ["HELD", "PENDING", "CONFIRMED"] },
+  startTime: { $lt: newEnd },
+  endTime: { $gt: newStart },
+});
 ```
 
-Implementation Note (MongoDB)
+Step 3: Atomic Booking Insert (Race Condition Handling)
 
-Since MongoDB does not support traditional SQL partial constraints, this must be enforced using a partial unique index:
+To prevent double booking under concurrency:
 
-```sql
-bookingSchema.index(
-  { startTime: 1, endTime: 1, room: 1 },
-  {
-    unique: true,
-    partialFilterExpression: {
-      status: { $in: ["HELD", "PENDING", "CONFIRMED"] }
-    }
-  }
-)
+- Use transaction OR retry-safe insert
+- Do NOT rely on uniqueness constraints for time ranges
+
+```js
+await Booking.create({
+  room,
+  startTime,
+  endTime,
+  status: "HELD",
+  expiresAt,
+  idempotencyKey
+});
 ```
-This index is the primary mechanism that guarantees:
 
-No double booking
-No concurrent slot conflicts
-Atomic enforcement at the database level
+If a conflict is detected:
+- return error
+- client retries or refreshes availability
+
+Step 4: System Guarantees
+
+The system guarantees:
+
+- No double booking via application checks
+- No duplicate requests via idempotency key
+- No stale holds via TTL expiration
+
+## 9.2 Data Integrity Strategy
+
+MongoDB does not support range-based uniqueness constraints.
+
+Therefore, data integrity is ensured using:
+
+- application-level overlap detection
+- idempotency key uniqueness
+- atomic document writes
+- TTL-based lifecycle cleanup
 
 ## 9.3 Expiration Jobs
 
@@ -482,12 +514,13 @@ The following indexes must be created for performance:
 ```js
 
 ```js
-bookingSchema.index(
-  { startTime: 1 }
-  { status: 1 }
-  { paymentDueAt: 1 }
-  { room: 1, startTime: 1 }
-)
+bookingSchema.index({ room: 1, startTime: 1, endTime: 1 });
+
+bookingSchema.index({ idempotencyKey: 1 }, { unique: true });
+
+bookingSchema.index({ status: 1, expiresAt: 1 });
+
+bookingSchema.index({ room: 1, status: 1, startTime: 1, endTime: 1 });
 ```
 
 ---
