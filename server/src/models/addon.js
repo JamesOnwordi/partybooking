@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 
 const addonSchema = new mongoose.Schema(
   {
@@ -26,4 +26,4 @@ const addonSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-module.exports = mongoose.model('Addon', addonSchema)
+export default mongoose.model('Addon', addonSchema)

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 const { Schema } = mongoose
 
-const bookingSchema = new mongoose.Schema(
+const bookingSchema = new Schema(
   {
     startTime: {
       type: Date,
@@ -61,8 +61,7 @@ const bookingSchema = new mongoose.Schema(
       ageTurning: {
         type: Number,
         required: true,
-        min: 1,
-        max: 120
+        min: 1
       }
     },
 
@@ -81,10 +80,12 @@ const bookingSchema = new mongoose.Schema(
       }
     },
 
-    addon: {
-      type: Schema.Types.ObjectId,
-      ref: 'Addon'
-    },
+    addon: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Addon'
+      }
+    ],
 
     expiresAt: {
       type: Date,
@@ -100,6 +101,11 @@ const bookingSchema = new mongoose.Schema(
     idempotencyKey: {
       type: String,
       required: true
+    },
+
+    isActive: {
+      type: Boolean,
+      required: true
     }
   },
 
@@ -107,6 +113,25 @@ const bookingSchema = new mongoose.Schema(
     timestamps: true
   }
 )
+
+// compound index for booking with specific startime, room, and status
+bookingSchema.index(
+  {
+    room: 1,
+    startTime: 1
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      isActive: true
+    }
+  }
+)
+
+bookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+
+// FOR PRODUCTION
+// bookingSchema.set({ autoIndex: false })
 
 // Virtual: Customer full name
 bookingSchema.virtual('customerFullName').get(function () {
@@ -120,30 +145,5 @@ bookingSchema.virtual('customerFullName').get(function () {
 bookingSchema.virtual('reservation.totalGuests').get(function () {
   return (this.reservation.kids || 0) + (this.reservation.adults || 0)
 })
-
-// Pre-save hook: Default kids if not set, and validate capacity
-// bookingSchema.pre('save', function (next) {
-//   const totalCapacity = this.reservation.noOfRoom === 2 ? 40 : 20
-//   const defaultCapacity = this.reservation.noOfRooms === 2 ? 16 : 8
-
-//   // Set default kids if not provided
-//   if (this.reservation.kids == null && this.reservation.adults == null) {
-//     this.reservation.kids = defaultCapacity
-//     this.reservation.adults = defaultCapacity
-//   }
-
-//   const totalGuests =
-//     (this.reservation.kids || 0) + (this.reservation.adults || 0)
-//   console.log(totalGuests, totalCapacity)
-//   if (totalGuests > totalCapacity) {
-//     return next(
-//       new Error(
-//         'Total guests exceed the allowed capacity for selected room count.'
-//       )
-//     )
-//   }
-
-//   next()
-// })
 
 module.exports = mongoose.model('Booking', bookingSchema)

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
+const { Schema } = mongoose
 
-const packageSchema = new mongoose.Schema(
+const packageSchema = new Schema(
   {
     code: {
       type: String,
@@ -59,20 +60,22 @@ const packageSchema = new mongoose.Schema(
         type: Number,
         required: true
       },
-      additionalAdultPrice: {
+      adultPrice: {
         type: Number,
         required: true
       },
-      additionalChildPrice: {
+      childPrice: {
         type: Number,
         required: true
       }
     },
 
-    addOns: {
-      type: Schema.Types.ObjectId,
-      ref: 'Addon'
-    }
+    addOns: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Addon'
+      }
+    ]
   },
   {
     timestamps: true
