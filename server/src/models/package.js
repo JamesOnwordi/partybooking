@@ -3,12 +3,6 @@ const { Schema } = mongoose
 
 const packageSchema = new Schema(
   {
-    code: {
-      type: String,
-      required: true,
-      unique: true
-    },
-
     name: {
       type: String,
       required: true
@@ -60,11 +54,11 @@ const packageSchema = new Schema(
         type: Number,
         required: true
       },
-      adultPrice: {
+      additionalAdultPrice: {
         type: Number,
         required: true
       },
-      childPrice: {
+      additionalChildPrice: {
         type: Number,
         required: true
       }
@@ -82,4 +76,4 @@ const packageSchema = new Schema(
   }
 )
 
-module.exports = mongoose.model('Package', packageSchema)
+export default mongoose.model('Package', packageSchema)

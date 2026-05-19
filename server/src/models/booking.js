@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { BOOKING_STATUS } from '../utils/bookingUtils'
 const { Schema } = mongoose
 
 const bookingSchema = new Schema(
@@ -11,7 +12,12 @@ const bookingSchema = new Schema(
 
     endTime: {
       type: Date,
-      required: true
+      required: true,
+      validate: {
+        validator: function (value) {
+          return value > this.startTime
+        }
+      }
     },
 
     bookingPackage: {
@@ -30,8 +36,7 @@ const bookingSchema = new Schema(
 
     status: {
       type: String,
-      enum: ['HELD', 'PENDING', 'CONFIRMED', 'CANCELLED', 'EXPIRED'],
-      default: 'HELD',
+      enum: Object.values(BOOKING_STATUS),
       index: true
     },
 
@@ -87,12 +92,6 @@ const bookingSchema = new Schema(
       }
     ],
 
-    expiresAt: {
-      type: Date,
-      required: true,
-      index: { expires: 0 } // TTL index (auto-delete at date)
-    },
-
     paymentDueAt: {
       type: Date,
       required: true
@@ -100,12 +99,13 @@ const bookingSchema = new Schema(
 
     idempotencyKey: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     },
 
     isActive: {
       type: Boolean,
-      required: true
+      default: true
     }
   },
 
@@ -128,22 +128,20 @@ bookingSchema.index(
   }
 )
 
-bookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
-
 // FOR PRODUCTION
 // bookingSchema.set({ autoIndex: false })
 
 // Virtual: Customer full name
-bookingSchema.virtual('customerFullName').get(function () {
-  if (this.customer?.first_name && this.customer?.last_name) {
-    return `${this.customer.first_name} ${this.customer.last_name}`
-  }
-  return ''
-})
+// bookingSchema.virtual('customerFullName').get(function () {
+//   if (this.customer?.first_name && this.customer?.last_name) {
+//     return `${this.customer.first_name} ${this.customer.last_name}`
+//   }
+//   return ''
+// })
 
 // Virtual: Total guests (kids + adults)
-bookingSchema.virtual('reservation.totalGuests').get(function () {
-  return (this.reservation.kids || 0) + (this.reservation.adults || 0)
-})
+// bookingSchema.virtual('reservation.totalGuests').get(function () {
+//   return (this.reservation.kids || 0) + (this.reservation.adults || 0)
+// })
 
-module.exports = mongoose.model('Booking', bookingSchema)
+export default mongoose.model('Booking', bookingSchema)

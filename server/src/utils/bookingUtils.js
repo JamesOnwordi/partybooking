@@ -1,14 +1,11 @@
 const MAX_ROOMS_PER_TIMESLOT = 2
 
-const ROOMS = [1, 2, 3]
-
-const STANDARD_TIMESLOTS = ['12SD', '2SD', '4SD', '6SD']
-
-const WINTER_TIMESLOTS = ['11WT', '2WT', '5WT']
-
-const WINTER_MONTHS = [0, 1, 2, 11]
-
-const WEEKEND_DATE = [0, 5, 6]
+const BOOKING_STATUS = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED'
+}
 
 const ZONE = 'America/Denver'
 
@@ -29,5 +26,6 @@ module.exports = {
   WEEKEND_DATE,
   ZONE,
   MINDATE,
-  MAXDATE
+  MAXDATE,
+  BOOKING_STATUS
 }

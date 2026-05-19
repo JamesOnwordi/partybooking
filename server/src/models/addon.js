@@ -16,7 +16,7 @@ const addonSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      default: 'general'
+      required: true
     },
     available: {
       type: Boolean,
