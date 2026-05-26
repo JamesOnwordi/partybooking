@@ -17,7 +17,7 @@ const MAXDATE = new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0)
   .toISOString()
   .slice(0, 10)
 
-module.exports = {
+export default {
   MAX_ROOMS_PER_TIMESLOT,
   ROOMS,
   STANDARD_TIMESLOTS,

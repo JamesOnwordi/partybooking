@@ -1,188 +1,214 @@
-export const getAvailability = () => {}
+// import Booking from '../models/booking.js'
+// import heldSlots from '../models/heldslot.js'
 
-export const createBooking = () => {}
+const getAvailability = async (data) => {
+  console.log(data)
 
-const isAvailable = await this.booking_available(
-  bookingForm.date,
-  bookingForm.timeslot,
-  bookingForm.reservation.room
-)
-console.log(bookingForm)
+  const bookings = await Bookings.find(
+    { date },
+    'reservation.room timeslot'
+  ).exec()
 
-if (!isAvailable) {
-  await session.abortTransaction()
-  session.endSession()
-  res.status(400).json({ status: false, message: 'Exceeds room capacity' })
+  // const heldSlots = await HeldSlot.find(
+  //   {
+  //     // date,
+  //     // ...(excludeHeldSlotIds.length && {
+  //     //   heldSlotId: { $nin: excludeHeldSlotIds }
+  //     })
+  //   },
+  //   'room timeslot'
+  // ).exec()
 }
 
-const createdBooking = await Bookings.create([bookingForm], { session })
+const createBooking = () => {}
 
-await session.commitTransaction()
-session.endSession()
+const bookingService = {
+  getAvailability,
+  createBooking
+}
+export default bookingService
 
-res.status(201).json({
-  status: false,
-  message: 'Booking Created Succesfully',
-  createdBooking: createdBooking[0],
-  status: true
-})
+// const isAvailable = await this.booking_available(
+//   bookingForm.date,
+//   bookingForm.timeslot,
+//   bookingForm.reservation.room
+// )
+// console.log(bookingForm)
 
-// check if timeslot choosen is available for booking
-exports.booking_available = asyncHandler(
-  async (date, timeslot, room, heldSlotId) => {
-    try {
-      console.log('In booking availability')
+// if (!isAvailable) {
+//   await session.abortTransaction()
+//   session.endSession()
+//   res.status(400).json({ status: false, message: 'Exceeds room capacity' })
+// }
 
-      room = parseInt(room)
+// const createdBooking = await Bookings.create([bookingForm], { session })
 
-      console.log(date, timeslot, room, heldSlotId)
+// await session.commitTransaction()
+// session.endSession()
 
-      const bookings = await Bookings.find(
-        { date, timeslot },
-        'reservation.room'
-      ).exec()
+// res.status(201).json({
+//   status: false,
+//   message: 'Booking Created Succesfully',
+//   createdBooking: createdBooking[0],
+//   status: true
+// })
 
-      console.log('booking ----', bookings)
+// // check if timeslot choosen is available for booking
+// exports.booking_available = asyncHandler(
+//   async (date, timeslot, room, heldSlotId) => {
+//     try {
+//       console.log('In booking availability')
 
-      let roomHeld = 0
+//       room = parseInt(room)
 
-      if (heldSlotId) {
-        const heldSlots = await HeldSlot.find(
-          {
-            heldSlotId: { $nin: heldSlotId },
-            date,
-            timeslot
-          },
-          'room'
-        ).exec()
+//       console.log(date, timeslot, room, heldSlotId)
 
-        console.log('heldSlot ----', heldSlots)
+//       const bookings = await Bookings.find(
+//         { date, timeslot },
+//         'reservation.room'
+//       ).exec()
 
-        if (heldSlots.length) {
-          roomHeld = heldSlots.reduce((total, slot) => {
-            return (total += slot.room)
-          }, 0)
-        }
-      }
+//       console.log('booking ----', bookings)
 
-      const roomBooked = bookings.reduce((total, booking) => {
-        return (total += booking.reservation.room)
-      }, 0)
+//       let roomHeld = 0
 
-      console.log(
-        'room booked',
-        roomBooked,
-        'room held',
-        roomHeld,
-        'room to be booked',
-        room
-      )
-      const reservedRoom = roomBooked + roomHeld
+//       if (heldSlotId) {
+//         const heldSlots = await HeldSlot.find(
+//           {
+//             heldSlotId: { $nin: heldSlotId },
+//             date,
+//             timeslot
+//           },
+//           'room'
+//         ).exec()
 
-      if (reservedRoom === 0) return true
-      if (reservedRoom === 3) return false
+//         console.log('heldSlot ----', heldSlots)
 
-      return room === (reservedRoom === 1 ? 2 : 1)
-    } catch (err) {
-      res.status(400).json({ status: false, message: error.message })
-    }
-  }
-)
+//         if (heldSlots.length) {
+//           roomHeld = heldSlots.reduce((total, slot) => {
+//             return (total += slot.room)
+//           }, 0)
+//         }
+//       }
 
-exports.timeslots_available = asyncHandler(async (req, res, next) => {
-  try {
-    console.log(req.params)
-    const { date, id } = req.params
+//       const roomBooked = bookings.reduce((total, booking) => {
+//         return (total += booking.reservation.room)
+//       }, 0)
 
-    if (!date || !dayjs(date, 'YYYY-MM-DD', true).isValid()) {
-      return res.status(400).json({
-        status: false,
-        message: 'Invalid or missing date. Expected format: YYYY-MM-DD'
-      })
-    }
+//       console.log(
+//         'room booked',
+//         roomBooked,
+//         'room held',
+//         roomHeld,
+//         'room to be booked',
+//         room
+//       )
+//       const reservedRoom = roomBooked + roomHeld
 
-    const minDate = dayjs(MINDATE)
-    const maxDate = dayjs(MAXDATE)
-    const currentDate = dayjs(date)
+//       if (reservedRoom === 0) return true
+//       if (reservedRoom === 3) return false
 
-    if (currentDate.diff(minDate) < 0 || currentDate.diff(maxDate) > 0) {
-      return res.status(400).json({
-        status: false,
-        message: 'Invalid Date. Cannot Book Date Requested'
-      })
-    }
+//       return room === (reservedRoom === 1 ? 2 : 1)
+//     } catch (err) {
+//       res.status(400).json({ status: false, message: error.message })
+//     }
+//   }
+// )
 
-    const excludeHeldSlotIds = id ? [id] : []
+// exports.timeslots_available = asyncHandler(async (req, res, next) => {
+//   try {
+//     console.log(req.params)
+//     const { date, id } = req.params
 
-    const bookings = await Bookings.find(
-      { date },
-      'reservation.room timeslot'
-    ).exec()
+//     if (!date || !dayjs(date, 'YYYY-MM-DD', true).isValid()) {
+//       return res.status(400).json({
+//         status: false,
+//         message: 'Invalid or missing date. Expected format: YYYY-MM-DD'
+//       })
+//     }
 
-    const heldSlots = await HeldSlot.find(
-      {
-        date,
-        ...(excludeHeldSlotIds.length && {
-          heldSlotId: { $nin: excludeHeldSlotIds }
-        })
-      },
-      'room timeslot'
-    ).exec()
+//     const minDate = dayjs(MINDATE)
+//     const maxDate = dayjs(MAXDATE)
+//     const currentDate = dayjs(date)
 
-    console.log('booked ---', bookings, 'held ----', heldSlots)
+//     if (currentDate.diff(minDate) < 0 || currentDate.diff(maxDate) > 0) {
+//       return res.status(400).json({
+//         status: false,
+//         message: 'Invalid Date. Cannot Book Date Requested'
+//       })
+//     }
 
-    // count of rooms booked per timeslot
-    const roomsBooked = {}
-    console.log('bookings', bookings)
-    bookings.forEach(({ reservation: { room }, timeslot }) => {
-      roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + room
-    })
-    console.log('roomsBooked', roomsBooked)
+//     const excludeHeldSlotIds = id ? [id] : []
 
-    // count of rooms held per timeslot
-    const roomsHeld = {}
-    heldSlots.forEach(({ room, timeslot }) => {
-      roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + room
-    })
+//     const bookings = await Bookings.find(
+//       { date },
+//       'reservation.room timeslot'
+//     ).exec()
 
-    const sortedRoomsBooked = {}
-    const sortedRoomsHeld = {}
-    const timeslotAvailability = {}
+//     const heldSlots = await HeldSlot.find(
+//       {
+//         date,
+//         ...(excludeHeldSlotIds.length && {
+//           heldSlotId: { $nin: excludeHeldSlotIds }
+//         })
+//       },
+//       'room timeslot'
+//     ).exec()
 
-    const restoredDate = DateTime.fromISO(date, {
-      zone: ZONE
-    }).toJSDate()
+//     console.log('booked ---', bookings, 'held ----', heldSlots)
 
-    const month = restoredDate.getMonth()
-    const day = restoredDate.getDay()
+//     // count of rooms booked per timeslot
+//     const roomsBooked = {}
+//     console.log('bookings', bookings)
+//     bookings.forEach(({ reservation: { room }, timeslot }) => {
+//       roomsBooked[timeslot] = (roomsBooked[timeslot] || 0) + room
+//     })
+//     console.log('roomsBooked', roomsBooked)
 
-    const TIMESLOTS =
-      WINTER_MONTHS.includes(month) && WEEKEND_DATE.includes(day)
-        ? WINTER_TIMESLOTS
-        : STANDARD_TIMESLOTS
+//     // count of rooms held per timeslot
+//     const roomsHeld = {}
+//     heldSlots.forEach(({ room, timeslot }) => {
+//       roomsHeld[timeslot] = (roomsHeld[timeslot] || 0) + room
+//     })
 
-    TIMESLOTS.forEach((slot) => {
-      timeslotAvailability[slot] =
-        MAX_ROOMS_PER_TIMESLOT -
-        noOfRooms((roomsBooked[slot] || 0) + (roomsHeld[slot] || 0))
+//     const sortedRoomsBooked = {}
+//     const sortedRoomsHeld = {}
+//     const timeslotAvailability = {}
 
-      sortedRoomsBooked[slot] = roomsBooked[slot] || 0
-      sortedRoomsHeld[slot] = roomsHeld[slot] || 0
-    })
+//     const restoredDate = DateTime.fromISO(date, {
+//       zone: ZONE
+//     }).toJSDate()
 
-    console.log('sortedRoomsBooked', sortedRoomsBooked)
-    console.log('sortedRoomsHeld', sortedRoomsHeld)
-    console.log('timeslotAvailability', timeslotAvailability)
+//     const month = restoredDate.getMonth()
+//     const day = restoredDate.getDay()
 
-    res.status(200).json({
-      status: true,
-      message: `List of available timeslots for ${date}`,
-      roomsBooked: sortedRoomsBooked,
-      roomsHeld: sortedRoomsHeld,
-      timeslotAvailability
-    })
-  } catch (error) {
-    console.error('Error finding date:', error)
-    res.status(400).json({ status: false, message: error.message })
-  }
-})
+//     const TIMESLOTS =
+//       WINTER_MONTHS.includes(month) && WEEKEND_DATE.includes(day)
+//         ? WINTER_TIMESLOTS
+//         : STANDARD_TIMESLOTS
+
+//     TIMESLOTS.forEach((slot) => {
+//       timeslotAvailability[slot] =
+//         MAX_ROOMS_PER_TIMESLOT -
+//         noOfRooms((roomsBooked[slot] || 0) + (roomsHeld[slot] || 0))
+
+//       sortedRoomsBooked[slot] = roomsBooked[slot] || 0
+//       sortedRoomsHeld[slot] = roomsHeld[slot] || 0
+//     })
+
+//     console.log('sortedRoomsBooked', sortedRoomsBooked)
+//     console.log('sortedRoomsHeld', sortedRoomsHeld)
+//     console.log('timeslotAvailability', timeslotAvailability)
+
+//     res.status(200).json({
+//       status: true,
+//       message: `List of available timeslots for ${date}`,
+//       roomsBooked: sortedRoomsBooked,
+//       roomsHeld: sortedRoomsHeld,
+//       timeslotAvailability
+//     })
+//   } catch (error) {
+//     console.error('Error finding date:', error)
+//     res.status(400).json({ status: false, message: error.message })
+//   }
+// })

@@ -1,8 +1,9 @@
 import bookingService from '../services/bookingService.js'
 
-export const getAvailability = async (req, res) => {
+const getAvailability = async (req, res) => {
   try {
-    const availability = await bookingService.getAvailability()
+    const { date, id } = req.query
+    const availability = await bookingService.getAvailability({ date, id })
 
     res.status(200).json({
       success: true,
@@ -15,7 +16,7 @@ export const getAvailability = async (req, res) => {
 }
 
 // create a new booking
-export const createBooking = async (req, res) => {
+const createBooking = async (req, res) => {
   try {
     const booking = await bookingService.createBooking(req.body)
 
@@ -28,5 +29,11 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' })
   }
 }
+
+const bookingController = {
+  getAvailability,
+  createBooking
+}
+export default bookingController
 
 //

@@ -1,4 +1,4 @@
-// import bookingsRouter from './routes/booking.js'
+import bookingsRouter from './routes/bookingRouter.js'
 // import adminRouter from './routes/admin.js'
 // import heldSlotRouter from './routes/heldSlot.js'
 import express from 'express'
@@ -13,7 +13,7 @@ app.use(cors())
 
 // app.use('/heldSlots', heldSlotRouter)
 // app.use('/admin', adminRouter)
-// app.use('/booking', bookingsRouter)
+app.use('/booking', bookingsRouter)
 app.get('/', (req, res) => {
   res.json({ message: 'Cloud Land Party Booking API is running' })
 })
