@@ -114,7 +114,6 @@ const bookingSchema = new Schema(
   }
 )
 
-// compound index for booking with specific startime, room, and status
 bookingSchema.index(
   {
     room: 1,
@@ -130,18 +129,5 @@ bookingSchema.index(
 
 // FOR PRODUCTION
 // bookingSchema.set({ autoIndex: false })
-
-// Virtual: Customer full name
-// bookingSchema.virtual('customerFullName').get(function () {
-//   if (this.customer?.first_name && this.customer?.last_name) {
-//     return `${this.customer.first_name} ${this.customer.last_name}`
-//   }
-//   return ''
-// })
-
-// Virtual: Total guests (kids + adults)
-// bookingSchema.virtual('reservation.totalGuests').get(function () {
-//   return (this.reservation.kids || 0) + (this.reservation.adults || 0)
-// })
 
 export default mongoose.model('Booking', bookingSchema)

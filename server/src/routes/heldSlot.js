@@ -1,6 +1,7 @@
-const express = require('express')
+import express from 'express.js'
+import heldSlotController from '../controllers/heldSlotController.js'
+
 const router = express.Router()
-const heldSlotController = require('../controllers/heldSlotController')
 
 router.post('/start', heldSlotController.start_slot_hold)
 

@@ -1,9 +1,10 @@
-const express = require('express')
+import express from 'express'
+import bookingController from '../controllers/bookingController.js'
+
 const router = express.Router()
-const booking_controller = require('../controllers/bookingController')
 
-router.post('/create', booking_controller.booking_create)
+router.get('/:date', bookingController.getAvailability)
 
-router.get('/:date/heldSlot/:id', booking_controller.timeslots_available)
+router.post('/create', bookingController.createBooking)
 
-module.exports = router
+export default router
