@@ -1,26 +1,38 @@
-// import Booking from '../models/booking.js'
+import mongoose from 'mongoose'
+import Booking from '../models/booking.js'
 // import heldSlots from '../models/heldslot.js'
 
 const getAvailability = async (data) => {
   console.log(data)
 
-  const bookings = await Bookings.find(
-    { date },
-    'reservation.room timeslot'
+  const bookings = await Booking.find(
+    { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
+    'room '
   ).exec()
 
   // const heldSlots = await HeldSlot.find(
   //   {
-  //     // date,
+  //     // { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
   //     // ...(excludeHeldSlotIds.length && {
   //     //   heldSlotId: { $nin: excludeHeldSlotIds }
   //     })
   //   },
   //   'room timeslot'
   // ).exec()
+
+  return bookings
 }
 
-const createBooking = () => {}
+const createBooking = async (data) => {
+  const session = await mongoose.startSession()
+  try {
+    session.startTransaction()
+    const createdBooking = await Booking.create([data], { session })
+    await session.commitTransaction()
+  } catch (error) {
+    console.log(error)
+  }
+}
 
 const bookingService = {
   getAvailability,

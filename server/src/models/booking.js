@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { BOOKING_STATUS } from '../utils/bookingUtils'
+import { BOOKING_STATUS } from '../utils/bookingUtils.js'
 const { Schema } = mongoose
 
 const bookingSchema = new Schema(
@@ -37,6 +37,8 @@ const bookingSchema = new Schema(
     status: {
       type: String,
       enum: Object.values(BOOKING_STATUS),
+      default: BOOKING_STATUS.PENDING,
+      required: true,
       index: true
     },
 
