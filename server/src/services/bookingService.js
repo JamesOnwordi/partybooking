@@ -26,11 +26,13 @@ const getAvailability = async (data) => {
 const createBooking = async (data) => {
   const session = await mongoose.startSession()
   try {
-    session.startTransaction()
-    const createdBooking = await Booking.create([data], { session })
-    await session.commitTransaction()
+    await session.withTransaction(async () => {
+      const createdBooking = await Booking.create([data], { session })
+    })
   } catch (error) {
     console.log(error)
+  } finally {
+    session.endSession()
   }
 }
 
