@@ -27,12 +27,22 @@ const createBooking = async (data) => {
   const session = await mongoose.startSession()
   try {
     await session.withTransaction(async () => {
-      const createdBooking = await Booking.create([data], { session })
+      const existingBooking = await Booking.exists({
+        startTime: { $lt: data.endTime },
+        endTime: { $gt: data.startTime }
+      }).session(session)
+      if (existingBooking) {
+        throw new Error(
+          'Timeslot not available. Booking conflicts with an existing booking.'
+        )
+      }
+
+      await Booking.create([data], { session })
     })
   } catch (error) {
     console.log(error)
   } finally {
-    session.endSession()
+    await session.endSession()
   }
 }
 
