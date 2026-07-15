@@ -1,6 +1,7 @@
 'use client'
 
 import Calendar from 'react-calendar'
+import { FaBirthdayCake } from 'react-icons/fa'
 import { ToastContainer, toast } from 'react-toastify'
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
@@ -34,198 +35,202 @@ export default function CalendarPage() {
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [roomAvailable, setRoomAvailable] = useState([])
-  const [packagePrice, setPackagePrice] = useState(0)
+
   const [guidingMessage, setGuidingMessage] = useState('')
   const [heldSlotId, setHeldSlotId] = useState(null)
   const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
   const [timeslot, setTimeslot] = useState(STANDARD_TIMESLOTS)
   const [isRestored, setIsRestored] = useState(false)
+  const [basePrice, setBasePrice] = useState()
+  const [cleaningPrice, setCleaningPrice] = useState()
+  const [taxPrice, setTaxPrice] = useState()
+  const [totalPrice, setTotalPrice] = useState()
   const router = useRouter()
 
-  // Load saved booking state from localStorage
-  useEffect(() => {
-    console.log('runs at the start of app')
-    if (typeof window === 'undefined') return
-    const saved = localStorage.getItem('initialBooking')
-    localStorage.removeItem('formData')
+  // // Load saved booking state from localStorage
+  // useEffect(() => {
+  //   console.log('runs at the start of app')
+  //   if (typeof window === 'undefined') return
+  //   const saved = localStorage.getItem('initialBooking')
+  //   localStorage.removeItem('formData')
 
-    if (!saved) {
-      setIsRestored(true)
-      return
-    }
+  //   if (!saved) {
+  //     setIsRestored(true)
+  //     return
+  //   }
 
-    const parsed = JSON.parse(saved)
-    if (!parsed.heldSlotId) {
-      setIsRestored(true)
-      return
-    }
+  //   const parsed = JSON.parse(saved)
+  //   if (!parsed.heldSlotId) {
+  //     setIsRestored(true)
+  //     return
+  //   }
 
-    const {
-      selectedDate,
-      selectedPackage,
-      selectedTimeslot,
-      selectedRoom,
-      heldSlotId,
-      heldSlotExpiration
-    } = parsed
+  //   const {
+  //     selectedDate,
+  //     selectedPackage,
+  //     selectedTimeslot,
+  //     selectedRoom,
+  //     heldSlotId,
+  //     heldSlotExpiration
+  //   } = parsed
 
-    // Restore date
-    if (selectedDate) {
-      const restoredDate = DateTime.fromISO(selectedDate, {
-        zone: ZONE
-      }).toJSDate()
+  //   // Restore date
+  //   if (selectedDate) {
+  //     const restoredDate = DateTime.fromISO(selectedDate, {
+  //       zone: ZONE
+  //     }).toJSDate()
 
-      const currentDate = DateTime.now().setZone({ ZONE }).toJSDate()
+  //     const currentDate = DateTime.now().setZone({ ZONE }).toJSDate()
 
-      // If date is in the past, clear saved booking
-      if (currentDate > restoredDate) {
-        setGuidingMessage('Date Chosen Expired')
-        localStorage.removeItem('initialBooking')
-        setIsRestored(true)
-        return
-      }
+  //     // If date is in the past, clear saved booking
+  //     if (currentDate > restoredDate) {
+  //       setGuidingMessage('Date Chosen Expired')
+  //       localStorage.removeItem('initialBooking')
+  //       setIsRestored(true)
+  //       return
+  //     }
 
-      setDate(restoredDate)
-      setSelectedDate(selectedDate)
-    }
+  //     setDate(restoredDate)
+  //     setSelectedDate(selectedDate)
+  //   }
 
-    setSelectedTimeslot(selectedTimeslot ?? null)
-    setSelectedPackage(selectedPackage ?? null)
-    setSelectedRoom(selectedRoom ?? null)
-    setHeldSlotId(heldSlotId ?? null)
-    setHeldSlotExpiration(heldSlotExpiration ?? null)
-    setIsRestored(true)
+  //   setSelectedTimeslot(selectedTimeslot ?? null)
+  //   setSelectedPackage(selectedPackage ?? null)
+  //   setSelectedRoom(selectedRoom ?? null)
+  //   setHeldSlotId(heldSlotId ?? null)
+  //   setHeldSlotExpiration(heldSlotExpiration ?? null)
+  //   setIsRestored(true)
 
-    console.log(
-      'all data saved ',
-      parsed,
-      selectedTimeslot,
-      selectedPackage,
-      selectedRoom,
-      heldSlotId,
-      heldSlotExpiration,
-      heldSlotId
-    )
-  }, [])
+  //   console.log(
+  //     'all data saved ',
+  //     parsed,
+  //     selectedTimeslot,
+  //     selectedPackage,
+  //     selectedRoom,
+  //     heldSlotId,
+  //     heldSlotExpiration,
+  //     heldSlotId
+  //   )
+  // }, [])
 
-  // Save booking state to localStorage
-  useEffect(() => {
-    if (!isRestored) return
-    console.log('2 call')
-    if (typeof window === 'undefined') return
-    const basePrice = packagePrice?.base ?? 0
+  // // Save booking state to localStorage
+  // useEffect(() => {
+  //   if (!isRestored) return
+  //   console.log('2 call')
+  //   if (typeof window === 'undefined') return
+  //   const basePrice = packagePrice?.base ?? 0
 
-    localStorage.setItem(
-      'initialBooking',
-      JSON.stringify({
-        selectedDate,
-        selectedTimeslot,
-        selectedPackage,
-        selectedRoom,
-        basePrice,
-        heldSlotId,
-        heldSlotExpiration
-      })
-    )
-  }, [
-    selectedDate,
-    selectedTimeslot,
-    selectedPackage,
-    selectedRoom,
-    packagePrice,
-    heldSlotId,
-    heldSlotExpiration
-  ])
+  //   localStorage.setItem(
+  //     'initialBooking',
+  //     JSON.stringify({
+  //       selectedDate,
+  //       selectedTimeslot,
+  //       selectedPackage,
+  //       selectedRoom,
+  //       basePrice,
+  //       heldSlotId,
+  //       heldSlotExpiration
+  //     })
+  //   )
+  // }, [
+  //   selectedDate,
+  //   selectedTimeslot,
+  //   selectedPackage,
+  //   selectedRoom,
+  //   packagePrice,
+  //   heldSlotId,
+  //   heldSlotExpiration
+  // ])
 
-  useEffect(() => {
-    if (!isRestored) return
-    console.log('3  call')
-    console.log('3', availability, heldSlotId)
-    setAvailableTimeslot(availability.timeslotAvailability)
-    setHeldTimeslot(availability.roomsHeld)
-    if (availability.timeslotAvailability) {
-      let roomBooked = availability.roomsBooked[selectedTimeslot]
-      console.error('room booeked', roomBooked)
-      if (selectedTimeslot) {
-        if (roomBooked === 0) {
-          setRoomAvailable([1, 2, 3])
-        } else if (roomBooked === 1) {
-          setRoomAvailable([2])
-        } else if (roomBooked === 2) {
-          setRoomAvailable([1])
-        } else if (roomBooked === 3) {
-          setRoomAvailable([])
-        }
-        console.log('room booeked', roomBooked, selectedTimeslot, roomAvailable)
-      }
-    }
-  }, [availability, selectedTimeslot])
+  // useEffect(() => {
+  //   if (!isRestored) return
+  //   console.log('3  call')
+  //   console.log('3', availability, heldSlotId)
+  //   setAvailableTimeslot(availability.timeslotAvailability)
+  //   setHeldTimeslot(availability.roomsHeld)
+  //   if (availability.timeslotAvailability) {
+  //     let roomBooked = availability.roomsBooked[selectedTimeslot]
+  //     console.error('room booeked', roomBooked)
+  //     if (selectedTimeslot) {
+  //       if (roomBooked === 0) {
+  //         setRoomAvailable([1, 2, 3])
+  //       } else if (roomBooked === 1) {
+  //         setRoomAvailable([2])
+  //       } else if (roomBooked === 2) {
+  //         setRoomAvailable([1])
+  //       } else if (roomBooked === 3) {
+  //         setRoomAvailable([])
+  //       }
+  //       console.log('room booeked', roomBooked, selectedTimeslot, roomAvailable)
+  //     }
+  //   }
+  // }, [availability, selectedTimeslot])
 
-  useEffect(() => {
-    console.log('3 call')
-    console.log(
-      'date',
-      selectedTimeslot,
-      selectedPackage,
-      selectedRoom,
-      heldSlotId,
-      heldSlotExpiration,
-      heldSlotId,
+  // useEffect(() => {
+  //   console.log('3 call')
+  //   console.log(
+  //     'date',
+  //     selectedTimeslot,
+  //     selectedPackage,
+  //     selectedRoom,
+  //     heldSlotId,
+  //     heldSlotExpiration,
+  //     heldSlotId,
 
-      date.getMonth(),
-      WINTER_MONTHS.includes(date.getMonth()) &&
-        WEEKEND_DATE.includes(date.getDay())
-    )
-    if (
-      WINTER_MONTHS.includes(date.getMonth()) &&
-      WEEKEND_DATE.includes(date.getDay())
-    ) {
-      setTimeslot(WINTER_TIMESLOTS)
-    } else setTimeslot(STANDARD_TIMESLOTS)
-  }, [date])
+  //     date.getMonth(),
+  //     WINTER_MONTHS.includes(date.getMonth()) &&
+  //       WEEKEND_DATE.includes(date.getDay())
+  //   )
+  //   if (
+  //     WINTER_MONTHS.includes(date.getMonth()) &&
+  //     WEEKEND_DATE.includes(date.getDay())
+  //   ) {
+  //     setTimeslot(WINTER_TIMESLOTS)
+  //   } else setTimeslot(STANDARD_TIMESLOTS)
+  // }, [date])
 
-  // Update guiding message whenever selection changes
-  useEffect(() => {
-    console.log('5 call')
-    if (!selectedDate) setGuidingMessage('Please Select a Date')
-    else if (!selectedTimeslot) setGuidingMessage('Please Select a Timeslot')
-    else if (!selectedPackage) setGuidingMessage('Please Select a Package')
-    else if (!selectedRoom) setGuidingMessage('Please Select a Room')
-    else setGuidingMessage('Proceed to Form!')
-  }, [
-    selectedDate,
-    selectedTimeslot,
-    selectedPackage,
-    selectedRoom,
-    availableTimeslot
-  ])
+  // // Update guiding message whenever selection changes
+  // useEffect(() => {
+  //   console.log('5 call')
+  //   if (!selectedDate) setGuidingMessage('Please Select a Date')
+  //   else if (!selectedTimeslot) setGuidingMessage('Please Select a Timeslot')
+  //   else if (!selectedPackage) setGuidingMessage('Please Select a Package')
+  //   else if (!selectedRoom) setGuidingMessage('Please Select a Room')
+  //   else setGuidingMessage('Proceed to Form!')
+  // }, [
+  //   selectedDate,
+  //   selectedTimeslot,
+  //   selectedPackage,
+  //   selectedRoom,
+  //   availableTimeslot
+  // ])
 
-  // Hold countdown timer
-  // to be added
-  // const getTimeRemaining = () => {
-  //   setExtendButton(timeExtendable)
-  // }
+  // // Hold countdown timer
+  // // to be added
+  // // const getTimeRemaining = () => {
+  // //   setExtendButton(timeExtendable)
+  // // }
 
-  const requestAvailability = useCallback(
-    async (selectedDate) => {
-      console.log('2', availability, heldSlotId)
-      console.log('here')
-      await getAvailability({
-        date: selectedDate,
-        heldSlotId
-      }).then(setAvailability)
-      const heldSlotData = await getHeldSlot(heldSlotId)
-      console.warn('heldSlotData', heldSlotData)
-      setHeldSlotExpiration(heldSlotData)
-    },
-    [heldSlotId]
-  )
+  // const requestAvailability = useCallback(
+  //   async (selectedDate) => {
+  //     console.log('2', availability, heldSlotId)
+  //     console.log('here')
+  //     await getAvailability({
+  //       date: selectedDate,
+  //       heldSlotId
+  //     }).then(setAvailability)
+  //     const heldSlotData = await getHeldSlot(heldSlotId)
+  //     console.warn('heldSlotData', heldSlotData)
+  //     setHeldSlotExpiration(heldSlotData)
+  //   },
+  //   [heldSlotId]
+  // )
 
-  useEffect(() => {
-    console.log(selectedDate, ' things have changed')
-    if (!selectedDate) return
-    requestAvailability(selectedDate)
-  }, [selectedDate, requestAvailability])
+  // useEffect(() => {
+  //   console.log(selectedDate, ' things have changed')
+  //   if (!selectedDate) return
+  //   requestAvailability(selectedDate)
+  // }, [selectedDate, requestAvailability])
 
   // Date change handler
   const handleDateChange = async (newDate) => {
@@ -237,13 +242,62 @@ export default function CalendarPage() {
     console.log('index:', newDate, chosenDate)
     setDate(newDate)
     setSelectedDate(chosenDate)
-    requestAvailability(chosenDate)
+    // requestAvailability(chosenDate)
 
-    setGuidingMessage('Please Select a Timeslot')
-    setSelectedTimeslot(null)
-    setSelectedPackage(null)
-    setSelectedRoom(null)
+    // setSelectedTimeslot(null)
+    // setSelectedPackage(null)
+    // setSelectedRoom(null)
   }
+
+  const renderTimeslots = () =>
+    Object.keys(timeslot).map((slot) => {
+      // console.log('renderTimeslots', slot, availableTimeslot, heldTimeslot)
+      // const openSlot = availableTimeslot?.[slot] ?? null
+      // const heldSlot = heldTimeslot?.[slot] ?? null
+      // const disabled = !openSlot
+      const selected = selectedTimeslot === slot
+
+      // let stateClass = disabled
+      //   ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+      //   : 'text-green-800 hover:bg-green-200 cursor-pointer'
+
+      // if (openSlot === 1) {
+      //   stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
+      // }
+      // if (heldSlot > 0) {
+      //   stateClass = 'text-orange-700 hover:bg-orange-200 cursor-pointer'
+      // }
+
+      const selectedClass = selected ? 'ring-2 ring-purple-900 bg-blue-200' : ''
+
+      return (
+        <div key={slot} className="flex items-center gap-2">
+          <div>
+            <button
+              // className={`w-36 p-2  ring-1 border border-purple-400 text-sm ${stateClass} `}
+              className={`w-36 p-2  ring-1  text-sm ${selectedClass}`}
+              // disabled={disabled}
+              onClick={() => {
+                setSelectedTimeslot(slot)
+                setSelectedRoom(null)
+              }}
+            >
+              {timeslot[slot]}
+            </button>
+            <p className="text-sm text-gray-500 w-36">
+              {/* {openSlot === 0
+                ? 'No room available'
+                : `${openSlot} room${openSlot > 1 ? 's' : ''} available`} */}
+            </p>
+            {/* {heldSlot > 0 && (
+              <p className="text-sm text-gray-500 w-36">
+                {`${heldSlot} room${heldSlot > 1 ? 's' : ''} on Hold`}
+              </p>
+            )} */}
+          </div>
+        </div>
+      )
+    })
 
   // Booking handler
   const handleBookNow = async () => {
@@ -283,31 +337,26 @@ export default function CalendarPage() {
     }
   }
 
-  // Render helpers
-  const renderButtonGroup = (
-    items,
-    selected,
-    handler,
-    disabled,
-    labelMap = {}
-  ) =>
-    items.map((item) => {
-      const isSelected = selected === item
-      const baseClass = disabled
-        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-        : 'text-green-800 hover:bg-green-100 cursor-pointer'
+  // Render packages
+  const renderPackages = () =>
+    PACKAGES.map((item) => {
+      const isSelected = selectedPackage === item
+      // const baseClass = !selectedTimeslot
+      //   ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+      //   : 'text-green-800 hover:bg-green-100 cursor-pointer'
       const selectedClass = isSelected
-        ? 'ring-2 ring-purple-800 bg-green-200'
+        ? 'ring-2 ring-purple-900 bg-blue-200'
         : ''
 
       return (
         <div key={item} className="flex items-center gap-2">
           <button
-            className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${baseClass} ${selectedClass}`}
-            disabled={disabled}
-            onClick={() => handler(item)}
+            // className={`w-32 p-2  ring-1 border border-purple-400 text-sm ${baseClass} ${selectedClass}`}
+            className={`w-32 p-2  ring-1 text-sm ${selectedClass} `}
+            // disabled={!selectedTimeslot}
+            onClick={() => setSelectedPackage(item)}
           >
-            {labelMap[item] ?? item}
+            {item}
           </button>
         </div>
       )
@@ -315,92 +364,34 @@ export default function CalendarPage() {
 
   const renderRooms = () =>
     Object.keys(ROOMS).map((room) => {
-      const numericRoom = Number(ROOMS[room])
-      console.warn(
-        'numvericRoom',
-        roomAvailable,
-        numericRoom,
-        roomAvailable.includes(numericRoom),
-        room,
-        ROOMS[room],
-        selectedRoom
-      )
-      const isSelected = selectedRoom === room
-      const disabled =
-        !selectedPackage || (roomAvailable.includes(numericRoom) ? false : true)
+      // const numericRoom = Number(ROOMS[room])
 
-      let baseClass = !selectedPackage
-        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-        : 'text-green-800 hover:bg-green-100 cursor-pointer'
-      if (roomAvailable.includes(numericRoom) ? false : true) {
-        baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
-      }
+      const isSelected = selectedRoom === room
+      // const disabled =
+      //   !selectedPackage || (roomAvailable.includes(numericRoom) ? false : true)
+
+      // let baseClass = !selectedPackage
+      //   ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+      //   : 'text-green-800 hover:bg-green-100 cursor-pointer'
+      // if (roomAvailable.includes(numericRoom) ? false : true) {
+      //   baseClass = 'text-gray-400 bg-gray-100 cursor-not-allowed'
+      // }
       const selectedClass = isSelected
-        ? 'ring-2 ring-purple-900 bg-green-200'
+        ? 'ring-2 ring-purple-900 bg-blue-200'
         : ''
 
       return (
         <div key={ROOMS[room]} className="flex items-center gap-2">
           <button
-            className={`w-32 p-2 rounded-md ring-1 border border-purple-400 text-sm ${baseClass} ${selectedClass}`}
-            disabled={disabled}
+            // className={`w-32 p-2  ring-1 border border-purple-400 text-sm ${baseClass} `}
+            className={`w-32 p-2  ring-1  text-sm ${selectedClass}`}
+            // disabled={disabled}
             onClick={() => {
               setSelectedRoom(room)
             }}
           >
             {room}
           </button>
-        </div>
-      )
-    })
-
-  const renderTimeslots = () =>
-    Object.keys(timeslot).map((slot) => {
-      console.log('renderTimeslots', slot, availableTimeslot, heldTimeslot)
-      const openSlot = availableTimeslot?.[slot] ?? null
-      const heldSlot = heldTimeslot?.[slot] ?? null
-      const disabled = !openSlot
-      const selected = selectedTimeslot === slot
-
-      let stateClass = disabled
-        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-        : 'text-green-800 hover:bg-green-200 cursor-pointer'
-
-      if (openSlot === 1) {
-        stateClass = 'text-yellow-700 hover:bg-yellow-200 cursor-pointer'
-      }
-      if (heldSlot > 0) {
-        stateClass = 'text-orange-700 hover:bg-orange-200 cursor-pointer'
-      }
-
-      const selectedClass = selected
-        ? 'ring-2 ring-purple-900 bg-green-200'
-        : ''
-
-      return (
-        <div key={slot} className="flex items-center gap-2">
-          <div>
-            <button
-              className={`w-36 p-2 rounded-md ring-1 border border-purple-400 text-sm ${stateClass} ${selectedClass}`}
-              disabled={disabled}
-              onClick={() => {
-                setSelectedTimeslot(slot)
-                setSelectedRoom(null)
-              }}
-            >
-              {timeslot[slot]}
-            </button>
-            <p className="text-sm text-gray-500 w-36">
-              {openSlot === 0
-                ? 'No room available'
-                : `${openSlot} room${openSlot > 1 ? 's' : ''} available`}
-            </p>
-            {heldSlot > 0 && (
-              <p className="text-sm text-gray-500 w-36">
-                {`${heldSlot} room${heldSlot > 1 ? 's' : ''} on Hold`}
-              </p>
-            )}
-          </div>
         </div>
       )
     })
@@ -412,157 +403,137 @@ export default function CalendarPage() {
         selectedPackage,
         selectedRoom
       })
-      setPackagePrice(price ?? 0)
+      console.log(price)
+      price.basePrice ? setBasePrice(price.basePrice) : setBasePrice(0)
+      price.cleaningPrice
+        ? setCleaningPrice(price.cleaningPrice)
+        : setCleaningPrice(0)
+      price.tax ? setTaxPrice(price.tax) : setTaxPrice()
+      price.total ? setTotalPrice(price.total) : setTotalPrice(0)
     } else {
-      setPackagePrice(0)
     }
   }, [selectedPackage, selectedRoom, selectedDate])
 
   const calculateBasePrice = () => {
-    return packagePrice ? (
-      <div className="space-y-1">
-        <p>
-          Base price: <strong>${packagePrice.base.toFixed(2)}</strong>
-        </p>
-        {packagePrice.cleaning > 0 && (
-          <p>
-            Cleaning fee: <strong>${packagePrice.cleaning.toFixed(2)}</strong>
-          </p>
-        )}
-        {packagePrice.tax > 0 && (
-          <p>
-            Tax ({TAX}): <strong>${packagePrice.tax.toFixed(2)}</strong>
-          </p>
-        )}
-        <p className="mt-1">
-          Total:{' '}
-          <strong className="text-purple-700">
-            ${packagePrice.total.toFixed(2)}
-          </strong>
-        </p>
-      </div>
-    ) : null
+    // setBasePrice(packagePrice.base.toFixed(2))
+    // setPackagePrice(packagePrice.cleaning.toFixed(2))
+    // setTaxPrice(packagePrice.tax.toFixed(2))
+    // setTotalPrice(packagePrice.total.toFixed(2))
   }
-  const notify = () => toast('Wow so easy !')
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-purple-600 mb-4 pl-4">
-        Party Booking
+    <div className=" bg-gray-50 min-h-screen ">
+      <h1 className="text-xl font-bold flex items-center gap-3 p-4 ">
+        <FaBirthdayCake color="" /> Party Booking System
       </h1>
+      <hr className="border- mb-4"></hr>
 
-      {heldSlotId && (
+      {/* {heldSlotId && (
         <Timer
           heldSlotId={heldSlotId}
           heldSlotExpiration={heldSlotExpiration}
           setHeldSlotId={setHeldSlotId}
         />
-      )}
-
-      {guidingMessage && (
-        <p className="text-center text-purple-700 animate-pulse">
-          {guidingMessage}
-        </p>
-      )}
-      <ToastContainer />
-
-      <div className="flex flex-col lg:flex-row gap-6">
+      )} */}
+      <div className="flex flex-wrap justify-around place-items-center">
         {/* Calendar */}
-        <div className="p-4 w-full lg:w-1/3">
-          <h2 className="text-lg text-center font-semibold mb-4">Date</h2>
-          <div className="flex justify-center">
-            <Calendar
-              onChange={handleDateChange}
-              minDate={MINDATE}
-              maxDate={MAXDATE}
-              value={date}
-              className="react-calendar"
-            />
-          </div>
+        <div className=" justify-items-center m-4">
+          <Calendar
+            onChange={handleDateChange}
+            minDate={MINDATE}
+            maxDate={MAXDATE}
+            value={date}
+            className="react-calendar"
+          />
         </div>
 
-        {/* timeslot */}
-        <div className="w-full lg:w-1/3 p-4">
-          <h2 className="text-lg font-semibold mb-4">Timeslot</h2>
-          <div className="flex md:flex-col gap-3">{renderTimeslots()}</div>
-        </div>
-
-        {/* Package & Room */}
-        <div className="w-full lg:w-1/6 p-4">
-          <h2 className="text-lg font-semibold mb-4">Package</h2>
-          <div className="flex md:flex-col gap-3">
-            {renderButtonGroup(
-              PACKAGES,
-              selectedPackage,
-              setSelectedPackage,
-              !selectedTimeslot
-            )}
+        <div className="flex gap-8 m-4">
+          {/* timeslot */}
+          <div className="h-fit self-center">
+            <h2 className="text-lg font-semibold mb-4">Timeslot</h2>
+            <div className="flex md:flex-col flex-wrap gap-4">
+              {renderTimeslots()}
+            </div>
           </div>
 
-          <div className="text-lg font-semibold mt-4 mb-4">Room</div>
-          <div className="flex md:flex-col gap-3">{renderRooms()}</div>
+          {/* Package & Room */}
+          <div className="h-fit">
+            <h2 className="text-lg font-semibold mb-4">Package</h2>
+            <div className="flex md:flex-col flex-wrap gap-4">
+              {renderPackages()}
+            </div>
+
+            <div className="text-lg font-semibold mt-4 mb-4">Room</div>
+            <div className="flex md:flex-col flex-wrap gap-4">
+              {renderRooms()}
+            </div>
+          </div>
         </div>
 
         {/* Info + Price + Book Now */}
-        <div className="p-4 w-full lg:w-1/3">
-          <h2 className="text-lg font-semibold mb-2">Booking Info</h2>
-          {selectedTimeslot ? (
-            <p className="text-gray-800">
-              Number of Rooms:{' '}
-              <strong>
-                {selectedRoom
-                  ? ROOMS[selectedRoom] === 3
-                    ? 2
-                    : 1
-                  : 'Select a Room'}
-              </strong>
-            </p>
-          ) : (
-            <p className="text-gray-500">Select a timeslot to see details.</p>
-          )}
-
-          <p className="mt-4 text-sm text-gray-600">
-            Selected date: <strong>{date.toDateString()}</strong>
-          </p>
-          <p className="text-sm text-gray-600">
-            Selected timeslot:{' '}
-            <strong>{timeslot[selectedTimeslot] ?? 'None selected'}</strong>
-          </p>
-          <p className="text-sm text-gray-600">
-            Selected package:{' '}
-            <strong>{selectedPackage ?? 'None selected'}</strong>
-          </p>
-          <p className="text-sm text-gray-600">
-            Selected room: <strong>{selectedRoom ?? 'None selected'}</strong>
-          </p>
-
-          {selectedPackage && (
+        <div className=" flex flex-col gap-4 place-content-center max-w-80 md: w-1/3 m-4">
+          <div className="  ring-1 ring-gray-700 p-4">
+            <div className="mt-4 text-sm text-gray-600">
+              <h3 className="font-semibold mb-1">Booking Details:</h3>
+              <div className="space-y-1">
+                <p>
+                  Date: <strong>{date.toDateString()}</strong>
+                </p>
+                {
+                  <p>
+                    Time :{' '}
+                    <strong>
+                      {timeslot[selectedTimeslot] ?? 'None selected'}
+                    </strong>
+                  </p>
+                }
+                {
+                  <p>
+                    Package:{' '}
+                    <strong>{selectedPackage ?? 'None selected'}</strong>
+                  </p>
+                }
+                <p className="mt-1">
+                  Room: <strong>{selectedRoom ?? 'None selected'}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="  ring-1 ring-gray-700 p-4">
             <div className="mt-4 text-sm text-gray-600">
               <h3 className="font-semibold mb-1">Price Details:</h3>
+              <div className="space-y-1">
+                <p>
+                  Base price: <strong>${basePrice}</strong>
+                </p>
+                {
+                  <p>
+                    Cleaning fee: <strong>${cleaningPrice}</strong>
+                  </p>
+                }
+                {
+                  <p>
+                    Tax ({TAX}): <strong>${taxPrice}</strong>
+                  </p>
+                }
+                <p className="mt-1">
+                  Total:{' '}
+                  <strong className="text-purple-700">${totalPrice}</strong>
+                </p>
+              </div>
               {calculateBasePrice()}
             </div>
-          )}
-
-          <button
-            onClick={handleBookNow}
-            disabled={!selectedRoom}
-            className={`mt-6 px-4 py-2 rounded transition ${
-              selectedRoom
-                ? 'bg-purple-600 text-white hover:bg-purple-700'
-                : 'bg-gray-300 text-white cursor-not-allowed'
-            }`}
-          >
-            {!selectedDate
-              ? 'Please Select a Date'
-              : !selectedTimeslot
-                ? 'Please Select a Timeslot'
-                : !selectedPackage
-                  ? 'Please Select a Package'
-                  : !selectedRoom
-                    ? 'Please Select a Room'
-                    : 'Book Now'}
-          </button>
+          </div>
         </div>
+      </div>
+      <div className=" justify-self-end m-4">
+        <button
+          onClick={handleBookNow}
+          // disabled={!selectedRoom}
+          className={`p-4  transition ${'bg-purple-600 text-white hover:bg-purple-700'}`}
+        >
+          Proceed to Form
+        </button>
       </div>
     </div>
   )

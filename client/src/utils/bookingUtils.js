@@ -7,6 +7,7 @@ export const ROOMS = { 'Room 1': 1, 'Room 2': 2, Combined: 3 }
 export const PACKAGES = ['Solar', 'Galaxy']
 export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
 export const TAX = '5%'
+const CLEANING_FEE = 40
 export const ZONE = 'America/Denver'
 export const AGE_RANGE = [1, 15]
 export const DEFAULT_CAPACITY = [8, 16]
@@ -71,13 +72,13 @@ export const EXCLUSIVE_DAYS = [0, 5, 6]
 export const DEFAULT_KIDS = 8
 export const DEFAULT_ADULTS = 8
 
+const taxRate = 0.05
+
 export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   console.log(date, selectedPackage, selectedRoom)
-  if (!selectedPackage || !selectedRoom || !date) return null
+  if (!selectedPackage || !selectedRoom || !date) return {}
 
   const day = new Date(date).getDay()
-  let cleaningFee = 40
-  const taxRate = 0.05
 
   if (selectedPackage === PACKAGES[0]) {
     let basePrice =
@@ -89,21 +90,22 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
           ? 295
           : 395
 
-    const additionalFee = selectedRoom === 'Combined' ? cleaningFee * 0.7 : 0
-    cleaningFee = cleaningFee + additionalFee
-    console.warn('cleaning fee', cleaningFee)
-    const tax = (basePrice + cleaningFee + additionalFee) * taxRate
-    const total = basePrice + cleaningFee + tax
+    const additionalFee = selectedRoom === 'Combined' ? CLEANING_FEE * 0.7 : 0
+    let cleaningPrice = CLEANING_FEE + additionalFee
+    console.warn('cleaning fee', cleaningPrice)
+    const tax = (basePrice + cleaningPrice + additionalFee) * taxRate
+    const total = basePrice + cleaningPrice + tax
 
-    return { base: basePrice, cleaning: cleaningFee, tax, total }
+    return { basePrice, cleaningPrice, tax, total }
   }
 
   if (selectedPackage === PACKAGES[1]) {
     let basePrice = selectedRoom === 'Combined' ? 495 * 1.7 : 495
     const tax = basePrice * taxRate
     const total = basePrice + tax
+    const cleaningPrice = 0
 
-    return { base: basePrice, cleaning: 0, tax, total }
+    return { basePrice, cleaningPrice, tax, total }
   }
 
   return null
@@ -236,17 +238,16 @@ export async function submitBooking(bookingData) {
 }
 
 export const getTimeRemaining = (heldSlotExpiration) => {
-  if (!heldSlotExpiration) return { expired: true }
-  // console.log(' in get remaining', heldSlotExpiration)
-  const now = DateTime.now()
-  const expiryDate = DateTime.fromISO(heldSlotExpiration)
-  const diff = expiryDate.diff(now, ['minutes', 'seconds'])
-  let timeExtendable = diff.values.minutes < TIMER_POPUP
-
-  if (diff.toMillis() <= 0) return { expired: true }
-  return {
-    minutes: Math.floor(diff.minutes),
-    seconds: Math.floor(diff.seconds),
-    expired: false
-  }
+  // if (!heldSlotExpiration) return { expired: true }
+  // // console.log(' in get remaining', heldSlotExpiration)
+  // const now = DateTime.now()
+  // const expiryDate = DateTime.fromISO(heldSlotExpiration)
+  // const diff = expiryDate.diff(now, ['minutes', 'seconds'])
+  // let timeExtendable = diff.values.minutes < TIMER_POPUP
+  // if (diff.toMillis() <= 0) return { expired: true }
+  // return {
+  //   minutes: Math.floor(diff.minutes),
+  //   seconds: Math.floor(diff.seconds),
+  //   expired: false
+  // }
 }
