@@ -12,14 +12,14 @@ import { useRouter } from 'next/router'
 import {
   MAX_CAPACITY,
   ROOMS,
-  TIMESLOTS,
+  // TIMESLOTS,
   ADDONS,
   PACKAGES,
   DEFAULT_CAPACITY,
   EXTRA_KIDS_PRICE,
   EXCLUSIVE_DAYS,
   EXTRA_ADULTS_PRICE,
-  PARTY_PACKAGES,
+  // PARTY_PACKAGES,
   submitBooking,
   AGE_RANGE,
   KIDS_CAPACITY_RANGE,
@@ -161,15 +161,15 @@ export default function Form() {
       setPartyPackage(selectedPackage)
 
       if (selectedPackage === PACKAGES[1]) {
-        setChoosenPackage(PARTY_PACKAGES[2])
+        // setChoosenPackage(PARTY_PACKAGES[2])
         setGalaxyPackage(true)
       } else if (
         partyPackage === PACKAGES[0] &&
         EXCLUSIVE_DAYS.includes(date.getDay())
       ) {
-        setChoosenPackage(PARTY_PACKAGES[1])
+        // setChoosenPackage(PARTY_PACKAGES[1])
       } else {
-        setChoosenPackage(PARTY_PACKAGES[0])
+        // setChoosenPackage(PARTY_PACKAGES[0])
       }
     }
 
@@ -402,7 +402,7 @@ export default function Form() {
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
-                  value={TIMESLOTS[savedBookingData?.selectedTimeslot] || ''}
+                  // value={TIMESLOTS[savedBookingData?.selectedTimeslot] || ''}
                   disabled
                   className="w-full p-2 border rounded-md"
                 />

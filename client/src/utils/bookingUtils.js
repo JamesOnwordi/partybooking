@@ -1,21 +1,23 @@
 // utils/bookingUtils.js
 
 import axios from 'axios'
-import { DateTime } from 'luxon'
 const { nanoid } = require('nanoid')
 export const ROOMS = { 'Room 1': 1, 'Room 2': 2, Combined: 3 }
-export const PACKAGES = ['Solar', 'Galaxy']
-export const PARTY_PACKAGES = ['SolarMT', 'SolarFS', 'Galaxy']
+export const PACKAGES = ['Solar', 'Galaxy', 'Spa']
+
+export const ZONE = 'America/Denver'
+export const MAX_CAPACITY = [20, 40]
 export const TAX = '5%'
 const CLEANING_FEE = 40
-export const ZONE = 'America/Denver'
+
 export const AGE_RANGE = [1, 15]
 export const DEFAULT_CAPACITY = [8, 16]
 export const KIDS_CAPACITY_RANGE = [0, 19, 39]
 export const ADULTS_CAPACITY_RANGE = [1, 20, 40]
-export const MAX_CAPACITY = [20, 40]
+
 export const EXTRA_KIDS_PRICE = [20.95, 24.95, 28.5]
 export const EXTRA_ADULTS_PRICE = 5
+
 export const STANDARD_TIMESLOTS = {
   '12SD': '12:00 PM - 1:30 PM',
   '2SD': '2:00 PM - 3:30 PM',
@@ -27,17 +29,9 @@ export const WINTER_TIMESLOTS = {
   '2WT': '2:30PM - 4:00PM',
   '5WT': '5:30PM - 7:00PM'
 }
-export const TIMESLOTS = {
-  '12SD': '12:00 PM - 1:30 PM',
-  '2SD': '2:00 PM - 3:30 PM',
-  '4SD': '4:00 PM - 5:30 PM',
-  '6SD': '6:00 PM - 7:30 PM',
-  '11WT': '11:30AM - 1:00PM',
-  '2WT': '2:30PM - 4:00PM',
-  '5WT': '5:30PM - 7:00PM'
-}
+
 export const TIMER_POPUP = 5
-export const WINTER_MONTHS = [0, 1, 2, 11]
+export const WINTER_MONTHS = [1, 2, 3, 12]
 export const WEEKEND_DATE = [0, 5, 6]
 export const GALAXY_PACKAGE_ADDONS = [
   { name: 'Pepperoni Pizza', tag: 'Galaxy' },
@@ -73,6 +67,18 @@ export const DEFAULT_KIDS = 8
 export const DEFAULT_ADULTS = 8
 
 const taxRate = 0.05
+
+export function getTimeslot(month) {
+  console.log(
+    parseInt(month),
+    WINTER_MONTHS,
+    WINTER_MONTHS.includes(parseInt(month))
+  )
+  if (WINTER_MONTHS.includes(parseInt(month))) {
+    return WINTER_TIMESLOTS
+  }
+  return STANDARD_TIMESLOTS
+}
 
 export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   console.log(date, selectedPackage, selectedRoom)
@@ -111,8 +117,6 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   return null
 }
 
-export function calaculateTotalPrice({ basePrice }) {}
-
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 export async function getAvailability(availabilityData) {
@@ -137,22 +141,6 @@ export async function getAvailability(availabilityData) {
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)
     return {}
-  }
-}
-
-// need to complete this, I need to adjust the date being sent to the backend to either.js format or string and make that global
-
-export async function isBookable(bookingData) {
-  console.log('hi', bookingData)
-  try {
-    const response = await axios
-      .get(`${BASE_URL}/isBookable`, bookingData)
-      .then(function (response) {
-        console.log(response)
-      })
-    console.log(response)
-  } catch (error) {
-    console.log(error)
   }
 }
 
