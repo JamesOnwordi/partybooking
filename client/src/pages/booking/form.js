@@ -116,124 +116,124 @@ export default function Form() {
   }, [])
 
   // Set initial values from restored booking
-  useEffect(() => {
-    if (typeof window === 'undefined' || !isRestored) return
+  // useEffect(() => {
+  //   if (typeof window === 'undefined' || !isRestored) return
 
-    console.log(savedBookingData, savedFormData, isRestored)
+  //   console.log(savedBookingData, savedFormData, isRestored)
 
-    const {
-      selectedDate,
-      selectedTimeslot,
-      selectedPackage,
-      selectedRoom,
-      basePrice,
-      heldSlotId,
-      heldSlotExpiration
-    } = savedBookingData
+  //   const {
+  //     selectedDate,
+  //     selectedTimeslot,
+  //     selectedPackage,
+  //     selectedRoom,
+  //     basePrice,
+  //     heldSlotId,
+  //     heldSlotExpiration
+  //   } = savedBookingData
 
-    if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
-      router.replace('/booking')
+  //   if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
+  //     router.replace('/booking')
 
-    console.log(savedFormData)
-    console.log(savedBookingData)
+  //   console.log(savedFormData)
+  //   console.log(savedBookingData)
 
-    if (!savedBookingData) return
+  //   if (!savedBookingData) return
 
-    if (selectedDate) {
-      // Set party date
-      const JSDate = DateTime.fromISO(selectedDate, {
-        zone: 'America/Denver'
-      }).toJSDate()
+  //   if (selectedDate) {
+  //     // Set party date
+  //     const JSDate = DateTime.fromISO(selectedDate, {
+  //       zone: 'America/Denver'
+  //     }).toJSDate()
 
-      setValue('partyDate', JSDate.toDateString())
-      setDate(JSDate)
-    }
+  //     setValue('partyDate', JSDate.toDateString())
+  //     setDate(JSDate)
+  //   }
 
-    // Set timeslot
-    if (selectedTimeslot) {
-      setValue('partyTimeslot', selectedTimeslot)
-      setPartyTimeslot(selectedTimeslot)
-    }
+  //   // Set timeslot
+  //   if (selectedTimeslot) {
+  //     setValue('partyTimeslot', selectedTimeslot)
+  //     setPartyTimeslot(selectedTimeslot)
+  //   }
 
-    // Set package and possible addons
-    if (selectedPackage) {
-      setValue('partyPackage', selectedPackage)
-      setPartyPackage(selectedPackage)
+  //   // Set package and possible addons
+  //   if (selectedPackage) {
+  //     setValue('partyPackage', selectedPackage)
+  //     setPartyPackage(selectedPackage)
 
-      if (selectedPackage === PACKAGES[1]) {
-        // setChoosenPackage(PARTY_PACKAGES[2])
-        setGalaxyPackage(true)
-      } else if (
-        partyPackage === PACKAGES[0] &&
-        EXCLUSIVE_DAYS.includes(date.getDay())
-      ) {
-        // setChoosenPackage(PARTY_PACKAGES[1])
-      } else {
-        // setChoosenPackage(PARTY_PACKAGES[0])
-      }
-    }
+  //     if (selectedPackage === PACKAGES[1]) {
+  //       // setChoosenPackage(PARTY_PACKAGES[2])
+  //       setGalaxyPackage(true)
+  //     } else if (
+  //       partyPackage === PACKAGES[0] &&
+  //       EXCLUSIVE_DAYS.includes(date.getDay())
+  //     ) {
+  //       // setChoosenPackage(PARTY_PACKAGES[1])
+  //     } else {
+  //       // setChoosenPackage(PARTY_PACKAGES[0])
+  //     }
+  //   }
 
-    // Set room and capacities
-    if (selectedRoom) {
-      setValue('partyRoom', selectedRoom)
-      const roomIndex = ROOMS[selectedRoom]
+  //   // Set room and capacities
+  //   if (selectedRoom) {
+  //     setValue('partyRoom', selectedRoom)
+  //     const roomIndex = ROOMS[selectedRoom]
 
-      console.log('roomIndex', roomIndex)
+  //     console.log('roomIndex', roomIndex)
 
-      let capacity = 0
+  //     let capacity = 0
 
-      if (roomIndex === 3) {
-        setBookingIndex(1)
-        capacity = DEFAULT_CAPACITY[1]
-      } else {
-        setBookingIndex(0)
-        capacity = DEFAULT_CAPACITY[0]
-      }
+  //     if (roomIndex === 3) {
+  //       setBookingIndex(1)
+  //       capacity = DEFAULT_CAPACITY[1]
+  //     } else {
+  //       setBookingIndex(0)
+  //       capacity = DEFAULT_CAPACITY[0]
+  //     }
 
-      setValue('kidsCapacity', capacity)
-      setValue('adultsCapacity', capacity)
-    }
+  //     setValue('kidsCapacity', capacity)
+  //     setValue('adultsCapacity', capacity)
+  //   }
 
-    if (heldSlotId) setHeldSlotId(heldSlotId)
+  //   if (heldSlotId) setHeldSlotId(heldSlotId)
 
-    if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
+  //   if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
 
-    // Set price
-    basePrice && setPartyPrice(basePrice)
+  //   // Set price
+  //   basePrice && setPartyPrice(basePrice)
 
-    // form
-    if (!savedFormData) return
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      age,
-      gender,
-      celebrantName,
-      kidsCapacity,
-      adultsCapacity,
-      addons,
-      pizzaDeliveryTime,
-      Galaxy_Cheese_Pizza,
-      Galaxy_Pepperoni_Pizza
-    } = savedFormData
-    if (firstName) {
-      setValue('firstName', firstName)
-    }
-    if (lastName) setValue('lastName', lastName)
-    if (email) setValue('email', email)
-    if (phone) setValue('phone', phone)
-    if (celebrantName) setValue('celebrantName', celebrantName)
-    if (age) setValue('age', age)
-    if (gender) setValue('gender', gender)
-    if (addons) setValue('addons', addons)
-    if (Galaxy_Cheese_Pizza)
-      setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
-    if (Galaxy_Pepperoni_Pizza)
-      setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
-    if (pizzaDeliveryTime) ('pizzaDeliveryTime', pizzaDeliveryTime)
-  }, [savedBookingData, savedFormData])
+  //   // form
+  //   if (!savedFormData) return
+  //   const {
+  //     firstName,
+  //     lastName,
+  //     email,
+  //     phone,
+  //     age,
+  //     gender,
+  //     celebrantName,
+  //     kidsCapacity,
+  //     adultsCapacity,
+  //     addons,
+  //     pizzaDeliveryTime,
+  //     Galaxy_Cheese_Pizza,
+  //     Galaxy_Pepperoni_Pizza
+  //   } = savedFormData
+  //   if (firstName) {
+  //     setValue('firstName', firstName)
+  //   }
+  //   if (lastName) setValue('lastName', lastName)
+  //   if (email) setValue('email', email)
+  //   if (phone) setValue('phone', phone)
+  //   if (celebrantName) setValue('celebrantName', celebrantName)
+  //   if (age) setValue('age', age)
+  //   if (gender) setValue('gender', gender)
+  //   if (addons) setValue('addons', addons)
+  //   if (Galaxy_Cheese_Pizza)
+  //     setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
+  //   if (Galaxy_Pepperoni_Pizza)
+  //     setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
+  //   if (pizzaDeliveryTime) ('pizzaDeliveryTime', pizzaDeliveryTime)
+  // }, [savedBookingData, savedFormData])
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
