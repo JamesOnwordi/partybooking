@@ -95,22 +95,22 @@ export default function Form() {
 
   // Restore form state from localStorage
   useEffect(() => {
-    if (typeof window === "undefined") return;
+  //   if (typeof window === "undefined") return;
 
-    const bookingData = localStorage.getItem("initialBooking");
-    const formData = localStorage.getItem("formData");
+  //   const bookingData = localStorage.getItem("initialBooking");
+  //   const formData = localStorage.getItem("formData");
 
-    console.log(bookingData, formData);
-    if (bookingData) {
-      setSavedBookingData(JSON.parse(bookingData));
-    }
-    if (formData) {
-      setSavedFormData(JSON.parse(formData));
-    }
-    setIsRestored(true);
-  }, []);
+  //   console.log(bookingData, formData);
+  //   if (bookingData) {
+  //     setSavedBookingData(JSON.parse(bookingData));
+  //   }
+  //   if (formData) {
+  //     setSavedFormData(JSON.parse(formData));
+  //   }
+  //   setIsRestored(true);
+  // }, []);
 
-  // Set initial values from restored booking
+  // // Set initial values from restored booking
   // useEffect(() => {
   //   if (typeof window === 'undefined' || !isRestored) return
 
@@ -228,7 +228,7 @@ export default function Form() {
   //   if (Galaxy_Pepperoni_Pizza)
   //     setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
   //   if (pizzaDeliveryTime) setValue('pizzaDeliveryTime', pizzaDeliveryTime)
-  // }, [savedBookingData, savedFormData])
+  }, [savedBookingData, savedFormData])
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
@@ -323,12 +323,48 @@ export default function Form() {
 
   // Form submission handler
   const onSubmit = async (data) => {
-    console.log("Form Data:", data);
+  const payload = {
+    // bookingDate: savedBookingData.selectedDate,
 
-    localStorage.setItem("formData", JSON.stringify(data));
+    // timeSlotId: savedBookingData.selectedTimeslotId,
+    // packageId: savedBookingData.selectedPackageId,
+    // roomId: savedBookingData.selectedRoomId,
 
-    // router.push('review')
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+    phoneNumber: data.phoneNumber,
+
+    celebrantName: data.celebrantName,
+    celebrantGender: data.celebrantGender,
+    celebrantAge: Number(data.celebrantAge),
+
+    numberOfChildren: Number(data.numberOfChildren),
+    numberOfAdults: Number(data.numberOfAdults),
+
+    themeId: data.themeId,
+
+    // addons: Object.entries(data.addons)
+    //   .filter(([_, quantity]) => quantity > 0)
+    //   .map(([addonId, quantity]) => ({
+    //     addonId,
+    //     quantity,
+    //   })),
   };
+
+
+  // const response = await fetch("/api/bookings", {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify(payload),
+  // });
+
+  // const result = await response.json();
+
+  console.log(payload);
+};
 
   const pizzaDeliveryTime = () => {
     console.log("Pizza Delivery Time:", partyTimeslot);
@@ -377,10 +413,14 @@ export default function Form() {
             <FormField label="Party Date" required>
               <div className="flex items-center space-x-2">
                 <input
+                value={watchedValues.bookingDate || ""}
+                 readOnly
+                 className="w-full p-2 border rounded-md bg-gray-100"
+                 />
+                 <input
+                  type="hidden"
                   {...register("bookingDate")}
-                  disabled
-                  className="w-full p-2 border rounded-md"
-                />
+/>
                 <Modal
                   message={
                     <p>
@@ -396,11 +436,15 @@ export default function Form() {
             <FormField label="Party Timeslot" required>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
-                  // value={TIMESLOTS[savedBookingData?.selectedTimeslot] || ''}
-                  disabled
-                  className="w-full p-2 border rounded-md"
-                />
+  value={watchedValues.partyTimeslot || ""}
+  readOnly
+  className="w-full p-2 border rounded-md bg-gray-100"
+/>
+
+<input
+  type="hidden"
+  {...register("timeSlotId")}
+/>
                 <Modal
                   message={`🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
                     ${savedBookingData?.selectedTimeslot}`}
@@ -411,12 +455,16 @@ export default function Form() {
             <FormField label="Party Package" required>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
-                  value={savedBookingData?.selectedPackage || ""}
-                  disabled
-                  {...register("partyPackage")}
-                  className="w-full p-2 border rounded-md"
-                />
+  value={watchedValues.partyPackage || ""}
+  readOnly
+  className="w-full p-2 border rounded-md bg-gray-100"
+/>
+
+
+<input
+  type="hidden"
+  {...register("packageId")}
+/>
                 <Modal
                   message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${savedBookingData?.selectedPackage}`}
                 />
@@ -426,12 +474,16 @@ export default function Form() {
             <FormField label="Party Room" required>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
-                  value={savedBookingData?.selectedRoom || ""}
-                  disabled
-                  {...register("partyRoom")}
-                  className="w-full p-2 border rounded-md"
-                />
+  value={watchedValues.partyRoom || ""}
+  readOnly
+  className="w-full p-2 border rounded-md bg-gray-100"
+/>
+
+
+<input
+  type="hidden"
+  {...register("roomId")}
+/>
                 <Modal
                   message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${savedBookingData?.selectedRoom}`}
                 />
