@@ -1,12 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { set, useForm, useWatch } from 'react-hook-form'
-import {
-  CurrencyPoundIcon,
-  ExclamationCircleIcon,
-  InformationCircleIcon
-} from '@heroicons/react/24/outline'
+import { useForm, useWatch } from 'react-hook-form'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import {
@@ -32,7 +27,7 @@ import Modal from '@/components/Modal'
 import { DateTime, Zone } from 'luxon'
 import Timer from '@/components/Timer'
 
-export default function bookingForm() {
+export default function Form() {
   const router = useRouter()
   const {
     register,
@@ -45,19 +40,19 @@ export default function bookingForm() {
       firstName: '',
       lastName: '',
       email: '',
-      phone: '',
-      age: '',
-      gender: '',
+      phoneNumber: '',
+      celebrantAge: '',
+      celebrantGender: '',
       celebrantName: '',
-      kidsCapacity: 0,
-      adultsCapacity: 0,
+      numberOfChildren: 0,
+      numberOfAdults: 0,
       addons: {},
       pizzaDeliveryTime: ''
     }
   })
   const watchedValues = useWatch({ control })
-  const kids = parseInt(watchedValues?.kidsCapacity) || 0
-  const adults = parseInt(watchedValues?.adultsCapacity) || 0
+  const kids = parseInt(watchedValues?.numberOfChildren) || 0
+  const adults = parseInt(watchedValues?.numberOfAdults) || 0
 
   const addons = ADDONS.map((addon) => {
     return {
@@ -100,140 +95,118 @@ export default function bookingForm() {
 
   // Restore form state from localStorage
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const bookingData = localStorage.getItem('initialBooking')
-    const formData = localStorage.getItem('formData')
-
-    console.log(bookingData, formData)
-    if (bookingData) {
-      setSavedBookingData(JSON.parse(bookingData))
-    }
-    if (formData) {
-      setSavedFormData(JSON.parse(formData))
-    }
-    setIsRestored(true)
-  }, [])
-
-  // Set initial values from restored booking
-  // useEffect(() => {
-  //   if (typeof window === 'undefined' || !isRestored) return
-
-  //   console.log(savedBookingData, savedFormData, isRestored)
-
-  //   const {
-  //     selectedDate,
-  //     selectedTimeslot,
-  //     selectedPackage,
-  //     selectedRoom,
-  //     basePrice,
-  //     heldSlotId,
-  //     heldSlotExpiration
-  //   } = savedBookingData
-
-  //   if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
-  //     router.replace('/booking')
-
-  //   console.log(savedFormData)
-  //   console.log(savedBookingData)
-
-  //   if (!savedBookingData) return
-
-  //   if (selectedDate) {
-  //     // Set party date
-  //     const JSDate = DateTime.fromISO(selectedDate, {
-  //       zone: 'America/Denver'
-  //     }).toJSDate()
-
-  //     setValue('partyDate', JSDate.toDateString())
-  //     setDate(JSDate)
-  //   }
-
-  //   // Set timeslot
-  //   if (selectedTimeslot) {
-  //     setValue('partyTimeslot', selectedTimeslot)
-  //     setPartyTimeslot(selectedTimeslot)
-  //   }
-
-  //   // Set package and possible addons
-  //   if (selectedPackage) {
-  //     setValue('partyPackage', selectedPackage)
-  //     setPartyPackage(selectedPackage)
-
-  //     if (selectedPackage === PACKAGES[1]) {
-  //       // setChoosenPackage(PARTY_PACKAGES[2])
-  //       setGalaxyPackage(true)
-  //     } else if (
-  //       partyPackage === PACKAGES[0] &&
-  //       EXCLUSIVE_DAYS.includes(date.getDay())
-  //     ) {
-  //       // setChoosenPackage(PARTY_PACKAGES[1])
-  //     } else {
-  //       // setChoosenPackage(PARTY_PACKAGES[0])
-  //     }
-  //   }
-
-  //   // Set room and capacities
-  //   if (selectedRoom) {
-  //     setValue('partyRoom', selectedRoom)
-  //     const roomIndex = ROOMS[selectedRoom]
-
-  //     console.log('roomIndex', roomIndex)
-
-  //     let capacity = 0
-
-  //     if (roomIndex === 3) {
-  //       setBookingIndex(1)
-  //       capacity = DEFAULT_CAPACITY[1]
-  //     } else {
-  //       setBookingIndex(0)
-  //       capacity = DEFAULT_CAPACITY[0]
-  //     }
-
-  //     setValue('kidsCapacity', capacity)
-  //     setValue('adultsCapacity', capacity)
-  //   }
-
-  //   if (heldSlotId) setHeldSlotId(heldSlotId)
-
-  //   if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
-
-  //   // Set price
-  //   basePrice && setPartyPrice(basePrice)
-
-  //   // form
-  //   if (!savedFormData) return
-  //   const {
-  //     firstName,
-  //     lastName,
-  //     email,
-  //     phone,
-  //     age,
-  //     gender,
-  //     celebrantName,
-  //     kidsCapacity,
-  //     adultsCapacity,
-  //     addons,
-  //     pizzaDeliveryTime,
-  //     Galaxy_Cheese_Pizza,
-  //     Galaxy_Pepperoni_Pizza
-  //   } = savedFormData
-  //   if (firstName) {
-  //     setValue('firstName', firstName)
-  //   }
-  //   if (lastName) setValue('lastName', lastName)
-  //   if (email) setValue('email', email)
-  //   if (phone) setValue('phone', phone)
-  //   if (celebrantName) setValue('celebrantName', celebrantName)
-  //   if (age) setValue('age', age)
-  //   if (gender) setValue('gender', gender)
-  //   if (addons) setValue('addons', addons)
-  //   if (Galaxy_Cheese_Pizza)
-  //     setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
-  //   if (Galaxy_Pepperoni_Pizza)
-  //     setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
-  //   if (pizzaDeliveryTime) ('pizzaDeliveryTime', pizzaDeliveryTime)
-  // }, [savedBookingData, savedFormData])
+    //   if (typeof window === "undefined") return;
+    //   const bookingData = localStorage.getItem("initialBooking");
+    //   const formData = localStorage.getItem("formData");
+    //   console.log(bookingData, formData);
+    //   if (bookingData) {
+    //     setSavedBookingData(JSON.parse(bookingData));
+    //   }
+    //   if (formData) {
+    //     setSavedFormData(JSON.parse(formData));
+    //   }
+    //   setIsRestored(true);
+    // }, []);
+    // // Set initial values from restored booking
+    // useEffect(() => {
+    //   if (typeof window === 'undefined' || !isRestored) return
+    //   console.log(savedBookingData, savedFormData, isRestored)
+    //   const {
+    //     selectedDate,
+    //     selectedTimeslot,
+    //     selectedPackage,
+    //     selectedRoom,
+    //     basePrice,
+    //     heldSlotId,
+    //     heldSlotExpiration
+    //   } = savedBookingData
+    //   if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
+    //     router.replace('/booking')
+    //   console.log(savedFormData)
+    //   console.log(savedBookingData)
+    //   if (!savedBookingData) return
+    //   if (selectedDate) {
+    //     // Set party date
+    //     const JSDate = DateTime.fromISO(selectedDate, {
+    //       zone: 'America/Denver'
+    //     }).toJSDate()
+    //     setValue('partyDate', JSDate.toDateString())
+    //     setDate(JSDate)
+    //   }
+    //   // Set timeslot
+    //   if (selectedTimeslot) {
+    //     setValue('partyTimeslot', selectedTimeslot)
+    //     setPartyTimeslot(selectedTimeslot)
+    //   }
+    //   // Set package and possible addons
+    //   if (selectedPackage) {
+    //     setValue('partyPackage', selectedPackage)
+    //     setPartyPackage(selectedPackage)
+    //     if (selectedPackage === PACKAGES[1]) {
+    //       // setChoosenPackage(PARTY_PACKAGES[2])
+    //       setGalaxyPackage(true)
+    //     } else if (
+    //       partyPackage === PACKAGES[0] &&
+    //       EXCLUSIVE_DAYS.includes(date.getDay())
+    //     ) {
+    //       // setChoosenPackage(PARTY_PACKAGES[1])
+    //     } else {
+    //       // setChoosenPackage(PARTY_PACKAGES[0])
+    //     }
+    //   }
+    //   // Set room and capacities
+    //   if (selectedRoom) {
+    //     setValue('partyRoom', selectedRoom)
+    //     const roomIndex = ROOMS[selectedRoom]
+    //     console.log('roomIndex', roomIndex)
+    //     let capacity = 0
+    //     if (roomIndex === 3) {
+    //       setBookingIndex(1)
+    //       capacity = DEFAULT_CAPACITY[1]
+    //     } else {
+    //       setBookingIndex(0)
+    //       capacity = DEFAULT_CAPACITY[0]
+    //     }
+    //     setValue('kidsCapacity', capacity)
+    //     setValue('adultsCapacity', capacity)
+    //   }
+    //   if (heldSlotId) setHeldSlotId(heldSlotId)
+    //   if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
+    //   // Set price
+    //   basePrice && setPartyPrice(basePrice)
+    //   // form
+    //   if (!savedFormData) return
+    //   const {
+    //     firstName,
+    //     lastName,
+    //     email,
+    //     phoneNumber,
+    //     celebrantAge,
+    //     celebrantGender,
+    //     celebrantName,
+    //     kidsCapacity,
+    //     adultsCapacity,
+    //     addons,
+    //     pizzaDeliveryTime,
+    //     Galaxy_Cheese_Pizza,
+    //     Galaxy_Pepperoni_Pizza
+    //   } = savedFormData
+    //   if (firstName) {
+    //     setValue('firstName', firstName)
+    //   }
+    //   if (lastName) setValue('lastName', lastName)
+    //   if (email) setValue('email', email)
+    //   if (phoneNumber) setValue('phoneNumber', phoneNumber)
+    //   if (celebrantName) setValue('celebrantName', celebrantName)
+    //   if (celebrantAge) setValue('celebrantAge', celebrantAge)
+    //   if (celebrantGender) setValue('celebrantGender', celebrantGender)
+    //   if (addons) setValue('addons', addons)
+    //   if (Galaxy_Cheese_Pizza)
+    //     setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
+    //   if (Galaxy_Pepperoni_Pizza)
+    //     setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
+    //   if (pizzaDeliveryTime) setValue('pizzaDeliveryTime', pizzaDeliveryTime)
+  }, [savedBookingData, savedFormData])
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
@@ -328,11 +301,46 @@ export default function bookingForm() {
 
   // Form submission handler
   const onSubmit = async (data) => {
-    // console.log('Form Data:', data)
+    const payload = {
+      // bookingDate: savedBookingData.selectedDate,
 
-    // localStorage.setItem('formData', JSON.stringify(data))
+      // timeSlotId: savedBookingData.selectedTimeslotId,
+      // packageId: savedBookingData.selectedPackageId,
+      // roomId: savedBookingData.selectedRoomId,
 
-    router.push('review')
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+
+      celebrantName: data.celebrantName,
+      celebrantGender: data.celebrantGender,
+      celebrantAge: Number(data.celebrantAge),
+
+      numberOfChildren: Number(data.numberOfChildren),
+      numberOfAdults: Number(data.numberOfAdults),
+
+      themeId: data.themeId
+
+      // addons: Object.entries(data.addons)
+      //   .filter(([_, quantity]) => quantity > 0)
+      //   .map(([addonId, quantity]) => ({
+      //     addonId,
+      //     quantity,
+      //   })),
+    }
+
+    // const response = await fetch("/api/bookings", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify(payload),
+    // });
+
+    // const result = await response.json();
+
+    console.log(payload)
   }
 
   const pizzaDeliveryTime = () => {
@@ -382,10 +390,11 @@ export default function bookingForm() {
             <FormField label="Party Date" required>
               <div className="flex items-center space-x-2">
                 <input
-                  {...register('partyDate')}
-                  disabled
-                  className="w-full p-2 border rounded-md"
+                  value={watchedValues.bookingDate || ''}
+                  readOnly
+                  className="w-full p-2 border rounded-md bg-gray-100"
                 />
+                <input type="hidden" {...register('bookingDate')} />
                 <Modal
                   message={
                     <p>
@@ -401,11 +410,12 @@ export default function bookingForm() {
             <FormField label="Party Timeslot" required>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
-                  // value={TIMESLOTS[savedBookingData?.selectedTimeslot] || ''}
-                  disabled
-                  className="w-full p-2 border rounded-md"
+                  value={watchedValues.partyTimeslot || ''}
+                  readOnly
+                  className="w-full p-2 border rounded-md bg-gray-100"
                 />
+
+                <input type="hidden" {...register('timeSlotId')} />
                 <Modal
                   message={`🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
                     ${savedBookingData?.selectedTimeslot}`}
@@ -416,12 +426,12 @@ export default function bookingForm() {
             <FormField label="Party Package" required>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
-                  value={savedBookingData?.selectedPackage || ''}
-                  disabled
-                  {...register('partyPackage')}
-                  className="w-full p-2 border rounded-md"
+                  value={watchedValues.partyPackage || ''}
+                  readOnly
+                  className="w-full p-2 border rounded-md bg-gray-100"
                 />
+
+                <input type="hidden" {...register('packageId')} />
                 <Modal
                   message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${savedBookingData?.selectedPackage}`}
                 />
@@ -431,12 +441,12 @@ export default function bookingForm() {
             <FormField label="Party Room" required>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
-                  value={savedBookingData?.selectedRoom || ''}
-                  disabled
-                  {...register('partyRoom')}
-                  className="w-full p-2 border rounded-md"
+                  value={watchedValues.partyRoom || ''}
+                  readOnly
+                  className="w-full p-2 border rounded-md bg-gray-100"
                 />
+
+                <input type="hidden" {...register('roomId')} />
                 <Modal
                   message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${savedBookingData?.selectedRoom}`}
                 />
@@ -526,11 +536,11 @@ export default function bookingForm() {
             </FormField>
 
             {/* Phone */}
-            <FormField label="Phone" required>
+            <FormField label="Phone Number" required>
               <div className="flex items-center space-x-2">
                 <input
                   type="tel"
-                  {...register('phone', {
+                  {...register('phoneNumber', {
                     required: 'Phone number is required.',
                     pattern: {
                       value: /^[0-9]{10}$/,
@@ -540,12 +550,12 @@ export default function bookingForm() {
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`📞 Phone Number:\n\n${watchedValues.phone || ''}`}
+                  message={`📞 Phone Number:\n\n${watchedValues.phoneNumber || ''}`}
                 />
               </div>
-              {errors.phone && (
+              {errors.phoneNumber && (
                 <p className="text-red-500 text-sm mt-1">
-                  {errors.phone.message}
+                  {errors.phoneNumber.message}
                 </p>
               )}
             </FormField>
@@ -578,7 +588,7 @@ export default function bookingForm() {
                 <input
                   type="number"
                   max={AGE_RANGE[1]}
-                  {...register('age', {
+                  {...register('celebrantAge', {
                     required: "Celebrant's age is required",
                     min: {
                       value: AGE_RANGE[0],
@@ -592,21 +602,21 @@ export default function bookingForm() {
                   className="w-full p-2 border rounded-md"
                 />
                 <Modal
-                  message={`🎂 Age Turning:\n\n${watchedValues.age || ''}`}
+                  message={`🎂 Age Turning:\n\n${watchedValues.celebrantAge || ''}`}
                 />
               </div>
-              {errors.age && (
+              {errors.celebrantAge && (
                 <p className="text-red-500 text-sm mt-1">
-                  {errors.age.message}
+                  {errors.celebrantAge.message}
                 </p>
               )}
             </FormField>
 
             {/* Gender */}
-            <FormField label="Gender" required>
+            <FormField label="Celebrant's Gender" required>
               <div className="flex items-center space-x-2">
                 <select
-                  {...register('gender', {
+                  {...register('celebrantGender', {
                     required: "Celebrant's gender is required"
                   })}
                   className="w-full p-2 border rounded-md"
@@ -617,110 +627,33 @@ export default function bookingForm() {
                 </select>
                 <Modal message="Select the celebrant's gender" />
               </div>
-              {errors.gender && (
+              {errors.celebrantGender && (
                 <p className="text-red-500 text-sm mt-1">
-                  {errors.gender.message}
+                  {errors.celebrantGender.message}
                 </p>
               )}
             </FormField>
 
-            {/* Galaxy Package Add-ons */}
-            {galaxyPackage && (
-              <div>
-                <div className="md:col-span-2 space-y-1">
-                  <div className="flex space-x-2">
-                    <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3 w-full md:gap-6">
-                      {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
-                        <FormField
-                          key={`${addon.tag}_${addon.name.replace(/\s+/g, '_')}`}
-                          label={`${addon.tag} ${addon.name.replace(/\s+/g, ' ')}`}
-                        >
-                          <input
-                            type="number"
-                            min={0}
-                            max={index === 0 ? maxPepperoni : maxCheese}
-                            defaultValue={1}
-                            {...register(
-                              `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
-                              {
-                                min: 0,
-                                max: index === 0 ? maxPepperoni : maxCheese,
-                                required: `Pizza's choice is required`
-                              }
-                            )}
-                            className="w-full p-2 border rounded-md"
-                            onBlur={(e) => {
-                              const numberOfPizza = Number(
-                                e.currentTarget.value
-                              )
-                              console.warn(
-                                e.currentTarget.value,
-                                maxPepperoni,
-                                maxCheese,
-                                cheesePizza,
-                                pepperoniPizza,
-                                index
-                              )
-                              const clamped = Math.min(
-                                index === 0
-                                  ? cheesePizza + numberOfPizza <= 2
-                                    ? numberOfPizza
-                                    : 2 - cheesePizza
-                                  : pepperoniPizza + numberOfPizza <= 2
-                                    ? numberOfPizza
-                                    : 2 - pepperoniPizza,
-                                Math.max(numberOfPizza, 0)
-                              )
-                              e.currentTarget.value = clamped
-                              setValue(
-                                `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`,
-                                clamped
-                              )
-                            }}
-                          />
-                          {errors[
-                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
-                          ] && (
-                            <p className="text-red-500 text-sm mt-1">
-                              {
-                                errors[
-                                  `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
-                                ].message
-                              }
-                            </p>
-                          )}
-                        </FormField>
-                      ))}
-
-                      <FormField label="Delivery Time" required>
-                        <select
-                          {...register('pizzaDeliveryTime', {
-                            required: 'Delivery time is required'
-                          })}
-                          className="w-full p-2 border rounded-md"
-                        >
-                          {pizzaDeliveryTime()}
-                        </select>
-                        {errors.pizzaDeliveryTime && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.pizzaDeliveryTime?.message}
-                          </p>
-                        )}
-                      </FormField>
-                    </div>
-                    <Modal
-                      message={
-                        <p>
-                          You have 2 pizzas included in this package. <br />
-                          You can select up to 2 pizzas of each type. <br />
-                          You can also select a delivery time for the pizzas.
-                        </p>
-                      }
-                    />
-                  </div>
-                </div>
+            <FormField label="Theme">
+              <div className="flex items-center space-x-2">
+                <select
+                  {...register('theme', {
+                    required: 'Theme is required'
+                  })}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Select theme</option>
+                  <option value="Princess">Princess</option>
+                  <option value="Superhero">Superhero</option>
+                </select>
+                <Modal message="Select the celebrant's theme" />
               </div>
-            )}
+              {errors.theme && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.theme.message}
+                </p>
+              )}
+            </FormField>
           </div>
         </section>
         {/* Capacity Control */}
@@ -748,7 +681,7 @@ export default function bookingForm() {
                         type="number"
                         min={KIDS_CAPACITY_RANGE[0]}
                         max={maxKids}
-                        {...register('kidsCapacity', {
+                        {...register('numberOfChildren', {
                           valueAsNumber: true,
                           required: 'Number of kids is required',
                           min: {
@@ -767,22 +700,22 @@ export default function bookingForm() {
                             Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
                           )
                           e.currentTarget.value = clamped
-                          setValue('kidsCapacity', clamped)
+                          setValue('numberOfChildren', clamped)
                         }}
                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        aria-invalid={!!errors.kidsCapacity}
-                        aria-describedby="kidsCapacityError"
+                        aria-invalid={!!errors.numberOfChildren}
+                        aria-describedby="numberOfChildrenError"
                       />
                       <Modal
                         message={`👶 Kids Capacity Information:\n\nThe number of kids is:`}
                       />
                     </div>
-                    {errors.kidsCapacity && (
+                    {errors.numberOfChildren && (
                       <p
-                        id="kidsCapacityError"
+                        id="numberOfChildrenError"
                         className="text-red-500 text-sm mt-1"
                       >
-                        {errors.kidsCapacity.message}
+                        {errors.numberOfChildren.message}
                       </p>
                     )}
                   </FormField>
@@ -794,7 +727,7 @@ export default function bookingForm() {
                         type="number"
                         min={ADULTS_CAPACITY_RANGE[0]}
                         max={maxAdults}
-                        {...register('adultsCapacity', {
+                        {...register('numberOfAdults', {
                           valueAsNumber: true,
                           min: {
                             value: ADULTS_CAPACITY_RANGE[0],
@@ -812,22 +745,22 @@ export default function bookingForm() {
                             maxAdults
                           )
                           e.currentTarget.value = clamped
-                          setValue('adultsCapacity', clamped)
+                          setValue('numberOfAdults', clamped)
                         }}
                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        aria-invalid={!!errors.adultsCapacity}
-                        aria-describedby="adultsCapacityError"
+                        aria-invalid={!!errors.numberOfAdults}
+                        aria-describedby="numberOfAdultsError"
                       />
                       <Modal
                         message={`${DEFAULT_CAPACITY[bookingIndex]} adult admissions included for free`}
                       />
                     </div>
-                    {errors.adultsCapacity && (
+                    {errors.numberOfAdults && (
                       <p
-                        id="adultsCapacityError"
+                        id="numberOfAdultsError"
                         className="text-red-500 text-sm mt-1"
                       >
-                        {errors.adultsCapacity.message}
+                        {errors.numberOfAdults.message}
                       </p>
                     )}
                   </FormField>
@@ -836,6 +769,107 @@ export default function bookingForm() {
             </div>
           </section>
         </div>
+
+        {/* Galaxy Package Add-ons */}
+        {
+          <div>
+            <h2 className="text-lg font-semibold">Galaxy Addons</h2>
+            <p className="text-gray-600">
+              Select your pizza add-ons and delivery time for the Galaxy
+              package.
+            </p>
+            <div className=" space-y-1 grid  gap-6 mt-4">
+              <div className="flex space-x-2">
+                <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3 w-full md:gap-6">
+                  {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
+                    <FormField
+                      key={`${addon.tag}_${addon.name.replace(/\s+/g, '_')}`}
+                      label={`${addon.tag} ${addon.name.replace(/\s+/g, ' ')}`}
+                    >
+                      <input
+                        type="number"
+                        min={0}
+                        max={index === 0 ? maxPepperoni : maxCheese}
+                        defaultValue={1}
+                        {...register(
+                          `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
+                          {
+                            min: 0,
+                            max: index === 0 ? maxPepperoni : maxCheese,
+                            required: `Pizza's choice is required`
+                          }
+                        )}
+                        className="w-full p-2 border rounded-md"
+                        onBlur={(e) => {
+                          const numberOfPizza = Number(e.currentTarget.value)
+                          console.warn(
+                            e.currentTarget.value,
+                            maxPepperoni,
+                            maxCheese,
+                            cheesePizza,
+                            pepperoniPizza,
+                            index
+                          )
+                          const clamped = Math.min(
+                            index === 0
+                              ? cheesePizza + numberOfPizza <= 2
+                                ? numberOfPizza
+                                : 2 - cheesePizza
+                              : pepperoniPizza + numberOfPizza <= 2
+                                ? numberOfPizza
+                                : 2 - pepperoniPizza,
+                            Math.max(numberOfPizza, 0)
+                          )
+                          e.currentTarget.value = clamped
+                          setValue(
+                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`,
+                            clamped
+                          )
+                        }}
+                      />
+                      {errors[
+                        `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
+                      ] && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {
+                            errors[
+                              `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
+                            ].message
+                          }
+                        </p>
+                      )}
+                    </FormField>
+                  ))}
+
+                  <FormField label="Delivery Time" required>
+                    <select
+                      {...register('pizzaDeliveryTime', {
+                        required: 'Delivery time is required'
+                      })}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      {pizzaDeliveryTime()}
+                    </select>
+                    {errors.pizzaDeliveryTime && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.pizzaDeliveryTime?.message}
+                      </p>
+                    )}
+                  </FormField>
+                </div>
+                <Modal
+                  message={
+                    <p>
+                      You have 2 pizzas included in this package. <br />
+                      You can select up to 2 pizzas of each type. <br />
+                      You can also select a delivery time for the pizzas.
+                    </p>
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        }
         {/* Addons */}
         {/* Addons Section */}
         <section>
