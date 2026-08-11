@@ -78,12 +78,15 @@ export async function getOptions(month) {
 
   try {
     const response = await fetch(url)
+     if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`)
+    }
     const data = await response.json()
-    console.log(data)
 
-    return data.options
+    return data?.options ?? {}
   } catch (err) {
-    console.log(err)
+    console.error("getOptions ERROR:", err)
+    throw err
   }
 }
 

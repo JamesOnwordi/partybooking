@@ -38,7 +38,7 @@ export default function LandingPage() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
-  const [selectedRoom, setSelectedRoom] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState([])
 
   // Availability
   const [timeSlotsAvailability, setTimeSlotsAvailability] = useState(null)
@@ -96,7 +96,7 @@ export default function LandingPage() {
 
     // A new date invalidates the existing selections
     setSelectedTimeSlot(null)
-    setSelectedRoom(null)
+    setSelectedRoom([])
     setAvailableRooms([])
 
     try {
@@ -134,17 +134,34 @@ export default function LandingPage() {
     setAvailableRooms(roomIds)
 
     // Reset room because the available rooms changed
-    setSelectedRoom(null)
+    setSelectedRoom([])
   }
 
+  // ------------------------------------------------------------
+  // Package selection
+  // ------------------------------------------------------------
+
+  const handlePackageChange = (value) => {
+    if (!selectedPackage) return
+    console.log(value)
+   
+                    setSelectedPackage({
+                      id: value.id,
+                      name: value.name
+                    })
+  }
   // ------------------------------------------------------------
   // Room selection
   // ------------------------------------------------------------
 
   const handleRoomChange = (roomId) => {
     if (!availableRooms.includes(roomId)) return
-
-    setSelectedRoom(roomId)
+    
+    if (selectedRoom?.includes(roomId)) {
+      setSelectedRoom(selectedRoom.filter((room) => room !== roomId))
+    } else {
+      setSelectedRoom([...selectedRoom, roomId])
+    }
   }
 
   // ------------------------------------------------------------
@@ -230,7 +247,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      <div className="mx-auto flex max-w-7xl flex-wrap justify-center gap-8 p-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap justify-cener gap-8 p-6">
         {/* Calendar */}
         <section className="flex flex-col items-center">
           <h2 className="mb-4 text-lg font-semibold">Select a Date</h2>
@@ -260,8 +277,8 @@ export default function LandingPage() {
               if (isAvailable) {
                 availabilityClass =
                   availabilityCount === 1
-                    ? 'border-orange-500'
-                    : 'border-green-500'
+                    ? 'border-orange-400'
+                    : 'border-green-400'
               }
 
               if (isSelected) {
@@ -302,7 +319,7 @@ export default function LandingPage() {
         </section>
 
         {/* Package + Room */}
-        <section className="min-w-48">
+        <section className="min-w-36">
           <h2 className="mb-4 text-lg font-semibold">Select a Package</h2>
 
           <div className="flex flex-col gap-3">
@@ -313,11 +330,7 @@ export default function LandingPage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() =>
-                    setSelectedPackage({
-                      id: item.id,
-                      name: item.name
-                    })
+                  onClick={handlePackageChange(item)
                   }
                   className={`
                     rounded-md border-2 p-3 text-sm
@@ -341,7 +354,7 @@ export default function LandingPage() {
             {roomList.map((room) => {
               const isAvailable = availableRooms.includes(room.id)
 
-              const isSelected = selectedRoom === room.id
+              const isSelected = selectedRoom.includes(room.id) 
 
               return (
                 <button
@@ -369,7 +382,7 @@ export default function LandingPage() {
         </section>
 
         {/* Booking summary */}
-        <section className="w-full max-w-md">
+        <section className="min-w-72 max-w-md">
           <div className="space-y-4">
             {/* Booking details */}
             <div className="rounded-lg border bg-white p-5 shadow-sm">
@@ -402,7 +415,9 @@ export default function LandingPage() {
                 <p>
                   Room:{' '}
                   <strong className="text-gray-900">
-                    {roomList.find((room) => room.id === selectedRoom)?.name ??
+                    {roomList
+      .filter((room)=>
+       selectedRoom.includes(room.id)).map((room) =>room.name).join(', ')??
                       'None selected'}
                   </strong>
                 </p>
