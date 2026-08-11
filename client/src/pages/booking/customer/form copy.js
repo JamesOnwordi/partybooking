@@ -1,26 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { set, useForm, useWatch } from 'react-hook-form'
-import {
-  CurrencyPoundIcon,
-  ExclamationCircleIcon,
-  InformationCircleIcon
-} from '@heroicons/react/24/outline'
+import { useForm, useWatch } from 'react-hook-form'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import {
   MAX_CAPACITY,
-  ROOMS,
-  // TIMESLOTS,
   ADDONS,
   PACKAGES,
   DEFAULT_CAPACITY,
   EXTRA_KIDS_PRICE,
   EXCLUSIVE_DAYS,
   EXTRA_ADULTS_PRICE,
-  // PARTY_PACKAGES,
-  submitBooking,
   AGE_RANGE,
   KIDS_CAPACITY_RANGE,
   ADULTS_CAPACITY_RANGE,
@@ -29,10 +20,9 @@ import {
 } from '@/utils/bookingUtils'
 import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
-import { DateTime, Zone } from 'luxon'
 import Timer from '@/components/Timer'
 
-export default function bookingForm() {
+export default function Form() {
   const router = useRouter()
   const {
     register,
@@ -80,7 +70,6 @@ export default function bookingForm() {
 
   const [date, setDate] = useState(new Date())
   const [partyPackage, setPartyPackage] = useState('')
-  const [choosenPackage, setChoosenPackage] = useState('')
   const [partyTimeslot, setPartyTimeslot] = useState('')
   const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
   const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
@@ -88,152 +77,12 @@ export default function bookingForm() {
   const [maxCheese, setMaxCheese] = useState(2)
   const [bookingIndex, setBookingIndex] = useState(0)
   const [savedBookingData, setSavedBookingData] = useState(null)
-  const [savedFormData, setSavedFormData] = useState(null)
   const [spaceRemaining, setSpaceRemaining] = useState(0)
-  const [showAlert, setShowAlert] = useState(false)
   const [partyPrice, setPartyPrice] = useState(0)
   const [totalPrice, setTotalPrice] = useState(0)
   const [galaxyPackage, setGalaxyPackage] = useState(false)
   const [heldSlotId, setHeldSlotId] = useState(null)
   const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
-  const [isRestored, setIsRestored] = useState(false)
-
-  // Restore form state from localStorage
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const bookingData = localStorage.getItem('initialBooking')
-    const formData = localStorage.getItem('formData')
-
-    console.log(bookingData, formData)
-    if (bookingData) {
-      setSavedBookingData(JSON.parse(bookingData))
-    }
-    if (formData) {
-      setSavedFormData(JSON.parse(formData))
-    }
-    setIsRestored(true)
-  }, [])
-
-  // Set initial values from restored booking
-  // useEffect(() => {
-  //   if (typeof window === 'undefined' || !isRestored) return
-
-  //   console.log(savedBookingData, savedFormData, isRestored)
-
-  //   const {
-  //     selectedDate,
-  //     selectedTimeslot,
-  //     selectedPackage,
-  //     selectedRoom,
-  //     basePrice,
-  //     heldSlotId,
-  //     heldSlotExpiration
-  //   } = savedBookingData
-
-  //   if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
-  //     router.replace('/booking')
-
-  //   console.log(savedFormData)
-  //   console.log(savedBookingData)
-
-  //   if (!savedBookingData) return
-
-  //   if (selectedDate) {
-  //     // Set party date
-  //     const JSDate = DateTime.fromISO(selectedDate, {
-  //       zone: 'America/Denver'
-  //     }).toJSDate()
-
-  //     setValue('partyDate', JSDate.toDateString())
-  //     setDate(JSDate)
-  //   }
-
-  //   // Set timeslot
-  //   if (selectedTimeslot) {
-  //     setValue('partyTimeslot', selectedTimeslot)
-  //     setPartyTimeslot(selectedTimeslot)
-  //   }
-
-  //   // Set package and possible addons
-  //   if (selectedPackage) {
-  //     setValue('partyPackage', selectedPackage)
-  //     setPartyPackage(selectedPackage)
-
-  //     if (selectedPackage === PACKAGES[1]) {
-  //       // setChoosenPackage(PARTY_PACKAGES[2])
-  //       setGalaxyPackage(true)
-  //     } else if (
-  //       partyPackage === PACKAGES[0] &&
-  //       EXCLUSIVE_DAYS.includes(date.getDay())
-  //     ) {
-  //       // setChoosenPackage(PARTY_PACKAGES[1])
-  //     } else {
-  //       // setChoosenPackage(PARTY_PACKAGES[0])
-  //     }
-  //   }
-
-  //   // Set room and capacities
-  //   if (selectedRoom) {
-  //     setValue('partyRoom', selectedRoom)
-  //     const roomIndex = ROOMS[selectedRoom]
-
-  //     console.log('roomIndex', roomIndex)
-
-  //     let capacity = 0
-
-  //     if (roomIndex === 3) {
-  //       setBookingIndex(1)
-  //       capacity = DEFAULT_CAPACITY[1]
-  //     } else {
-  //       setBookingIndex(0)
-  //       capacity = DEFAULT_CAPACITY[0]
-  //     }
-
-  //     setValue('kidsCapacity', capacity)
-  //     setValue('adultsCapacity', capacity)
-  //   }
-
-  //   if (heldSlotId) setHeldSlotId(heldSlotId)
-
-  //   if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
-
-  //   // Set price
-  //   basePrice && setPartyPrice(basePrice)
-
-  //   // form
-  //   if (!savedFormData) return
-  //   const {
-  //     firstName,
-  //     lastName,
-  //     email,
-  //     phone,
-  //     age,
-  //     gender,
-  //     celebrantName,
-  //     kidsCapacity,
-  //     adultsCapacity,
-  //     addons,
-  //     pizzaDeliveryTime,
-  //     Galaxy_Cheese_Pizza,
-  //     Galaxy_Pepperoni_Pizza
-  //   } = savedFormData
-  //   if (firstName) {
-  //     setValue('firstName', firstName)
-  //   }
-  //   if (lastName) setValue('lastName', lastName)
-  //   if (email) setValue('email', email)
-  //   if (phone) setValue('phone', phone)
-  //   if (celebrantName) setValue('celebrantName', celebrantName)
-  //   if (age) setValue('age', age)
-  //   if (gender) setValue('gender', gender)
-  //   if (addons) setValue('addons', addons)
-  //   if (Galaxy_Cheese_Pizza)
-  //     setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
-  //   if (Galaxy_Pepperoni_Pizza)
-  //     setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
-  //   if (pizzaDeliveryTime) ('pizzaDeliveryTime', pizzaDeliveryTime)
-  // }, [savedBookingData, savedFormData])
 
   // Recaculate max capacities based on number of rooms
   useEffect(() => {
@@ -247,17 +96,6 @@ export default function bookingForm() {
       roomCap - (kidsCapacity + adultsCapacity)
     )
     const currentCapacity = kidsCapacity + adultsCapacity
-    console.log(
-      'capacity',
-      kids,
-      adults,
-      'max',
-      // remainingSpaceKids,
-      // remainingSpaceAdults,
-      'room cap',
-      remainingSpace,
-      roomCap
-    )
 
     if (currentCapacity > roomCap) {
       console.log('in here')
@@ -328,11 +166,43 @@ export default function bookingForm() {
 
   // Form submission handler
   const onSubmit = async (data) => {
-    // console.log('Form Data:', data)
+    const bookingData = {
+      bookingDate: '2026-08-15',
+      timeSlotId: 'ed4a37e9-1133-4145-9819-19a033e34560',
+      packageId: '2528d71b-b80a-474c-91f1-efde029c1bce',
+      roomId: '8bf7e6d6-1093-4899-b73e-c22a0e64ea9c',
+      firstName: 'John',
+      lastName: 'Doe',
+      phoneNumber: '+639171234567',
+      email: 'john.doe@example.com',
+      celebrantName: 'Emma Doe',
+      celebrantGender: 'Female',
+      celebrantAge: 7,
+      numberOfChildren: 18,
+      numberOfAdults: 25,
+      themeId: '06ff689e-cdb5-482b-b52e-f115fc7fa4e2',
+      notes:
+        'Please prepare a Frozen-themed backdrop and a table near the entrance.',
+      status: 'pending'
+    }
 
-    // localStorage.setItem('formData', JSON.stringify(data))
+    try {
+      const response = await fetch('https:localhost:3000/booking/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+      })
 
-    router.push('review')
+      console.log(response)
+
+      const data = await response.json(console.log(data))
+
+      router.push('review')
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   const pizzaDeliveryTime = () => {
@@ -886,7 +756,7 @@ export default function bookingForm() {
         </div>
         {/* Back and Submit Buttons */}
         <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center mt-4 gap-4">
-          <Link href="/booking/customer/" passHref>
+          <Link href="/booking/" passHref>
             <button
               type="button"
               className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"

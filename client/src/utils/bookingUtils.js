@@ -1,6 +1,7 @@
 // utils/bookingUtils.js
 
 import axios from 'axios'
+import dayjs from 'dayjs'
 const { nanoid } = require('nanoid')
 export const ROOMS = { 'Room 1': 1, 'Room 2': 2, Combined: 3 }
 export const PACKAGES = ['Solar', 'Galaxy', 'Spa']
@@ -68,16 +69,39 @@ export const DEFAULT_ADULTS = 8
 
 const taxRate = 0.05
 
-export function getTimeslot(month) {
-  console.log(
-    parseInt(month),
-    WINTER_MONTHS,
-    WINTER_MONTHS.includes(parseInt(month))
-  )
-  if (WINTER_MONTHS.includes(parseInt(month))) {
-    return WINTER_TIMESLOTS
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
+export const formatTime = (time) => dayjs(`2000-01-01T${time}`).format('h:mm A')
+
+export async function getOptions(month) {
+  const url = `http://localhost:3000/booking/options`
+
+  try {
+    const response = await fetch(url)
+    const data = await response.json()
+    console.log(data)
+
+    return data.options
+  } catch (err) {
+    console.log(err)
   }
-  return STANDARD_TIMESLOTS
+}
+
+export async function getAvailability(data) {
+  const { date } = data
+
+  try {
+    const url = `${BASE_URL}/booking/availability?date=${date}`
+
+    const response = await fetch(url)
+    const data = await response.json()
+
+    console.log(data)
+
+    return data?.timeSlotsAvailability
+  } catch (err) {
+    console.error('Failed to fetch timeslots:', err.message)
+  }
 }
 
 export function calculatePrice({ date, selectedPackage, selectedRoom }) {
@@ -115,33 +139,6 @@ export function calculatePrice({ date, selectedPackage, selectedRoom }) {
   }
 
   return null
-}
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-
-export async function getAvailability(availabilityData) {
-  console.log(availabilityData)
-  const { date, heldSlotId } = availabilityData
-
-  try {
-    const res = await axios.get(
-      `${BASE_URL}/booking/${date}/heldSlot/${heldSlotId}`
-    )
-    const { timeslotAvailability, roomsHeld, roomsBooked } = res.data
-
-    console.log('Fetched timeslot data:', date, res.data)
-
-    // Ensure timeslotAvailability is an object
-    return typeof timeslotAvailability === 'object' &&
-      timeslotAvailability !== null &&
-      typeof roomsHeld === 'object' &&
-      roomsHeld !== null
-      ? { timeslotAvailability, roomsHeld, roomsBooked }
-      : {}
-  } catch (err) {
-    console.error('Failed to fetch timeslots:', err.message)
-    return {}
-  }
 }
 
 export async function getHeldSlot(heldSlotId) {
