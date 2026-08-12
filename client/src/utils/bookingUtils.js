@@ -73,7 +73,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
 export const formatTime = (time) => dayjs(`2000-01-01T${time}`).format('h:mm A')
 
-export async function getOptions(month) {
+export async function getOptions() {
   const url = `http://localhost:3000/booking/options`
 
   try {
@@ -92,6 +92,23 @@ export async function getOptions(month) {
 
 export async function getAvailability(data) {
   const { date } = data
+
+  try {
+    const url = `${BASE_URL}/booking/availability?date=${date}`
+
+    const response = await fetch(url)
+    const data = await response.json()
+
+    console.log(data)
+
+    return data?.timeSlotsAvailability
+  } catch (err) {
+    console.error('Failed to fetch timeslots:', err.message)
+  }
+}
+
+export async function getPackagePrice(item){
+    const { id } = item
 
   try {
     const url = `${BASE_URL}/booking/availability?date=${date}`

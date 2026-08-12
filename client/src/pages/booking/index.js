@@ -142,13 +142,13 @@ export default function LandingPage() {
   // ------------------------------------------------------------
 
   const handlePackageChange = (value) => {
-    if (!selectedPackage) return
+    // if (!selectedPackage) return
     console.log(value)
-   
-                    setSelectedPackage({
-                      id: value.id,
-                      name: value.name
-                    })
+    getPackagePrice(value.id)   
+    setSelectedPackage({
+      id: value.id,
+      name: value.name
+    })
   }
   // ------------------------------------------------------------
   // Room selection
@@ -330,8 +330,7 @@ export default function LandingPage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={handlePackageChange(item)
-                  }
+                  onClick={() => handlePackageChange(item)}
                   className={`
                     rounded-md border-2 p-3 text-sm
                     transition
