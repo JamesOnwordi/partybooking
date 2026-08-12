@@ -70,7 +70,7 @@ export async function getAvailability(data) {
 export async function getPackagePrice(data) {
   const { packageId, day } = data
 
-  const dayPrice = WEEKDAY.includes(day) ? 'WEEKDAY' : 'WEEKEND'
+  const dayPrice = WEEKEND.includes(day) ? 'WEEKEND' : 'WEEKDAY'
   console.log(data, dayPrice)
 
   try {
@@ -78,6 +78,8 @@ export async function getPackagePrice(data) {
 
     const response = await fetch(url)
     const data = await response.json()
+
+    console.log(data)
 
     const prices = data?.prices
 
