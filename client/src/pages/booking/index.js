@@ -10,12 +10,14 @@ import { useRouter } from 'next/router'
 
 import {
   calculatePrice,
-  TAX,
   ZONE,
   MINDATE,
   getOptions,
   formatTime,
-  getAvailability
+  getAvailability,
+  getPackagePrice,
+  calculateTotalPrice,
+  TAX_RATE
 } from '@/utils/bookingUtils'
 
 import 'react-calendar/dist/Calendar.css'
@@ -43,6 +45,14 @@ export default function LandingPage() {
   // Availability
   const [timeSlotsAvailability, setTimeSlotsAvailability] = useState(null)
   const [availableRooms, setAvailableRooms] = useState([])
+
+  // Pricing
+  const [price, setPrice] = useState({
+    basePrice: 0,
+    cleaningFee: 0,
+    total: 0,
+    tax: 0
+  })
 
   // ------------------------------------------------------------
   // Load booking options
@@ -143,8 +153,7 @@ export default function LandingPage() {
 
   const handlePackageChange = (value) => {
     // if (!selectedPackage) return
-    console.log(value)
-    getPackagePrice(value.id)   
+
     setSelectedPackage({
       id: value.id,
       name: value.name
@@ -156,7 +165,7 @@ export default function LandingPage() {
 
   const handleRoomChange = (roomId) => {
     if (!availableRooms.includes(roomId)) return
-    
+
     if (selectedRoom?.includes(roomId)) {
       setSelectedRoom(selectedRoom.filter((room) => room !== roomId))
     } else {
@@ -168,28 +177,47 @@ export default function LandingPage() {
   // Price calculation
   // ------------------------------------------------------------
 
-  const price = useMemo(() => {
-    if (!selectedDate || !selectedPackage || !selectedRoom) {
-      return {
+  useEffect(() => {
+    if (!selectedDate || !selectedPackage || !selectedRoom?.length) {
+      setPrice({
         basePrice: 0,
-        cleaningPrice: 0,
-        tax: 0,
-        total: 0
+        cleaningFee: 0,
+        total: 0,
+        tax: 0
+      })
+
+      return
+    }
+
+    const calculatePrice = async () => {
+      try {
+        const packagePricing = await getPackagePrice({
+          packageId: selectedPackage.id,
+          day: selectedDate.day()
+        })
+
+        console.log(packagePricing)
+
+        const totalPrice = calculateTotalPrice({
+          packagePrice: packagePricing.packagePrice,
+          cleaningFee: packagePricing.cleaningFee,
+          numberOfRooms: selectedRoom.length
+        })
+
+        console.log(totalPrice)
+
+        setPrice({
+          basePrice: totalPrice.packagePrice,
+          cleaningFee: totalPrice.cleaningFee,
+          total: totalPrice.total,
+          tax: totalPrice.tax
+        })
+      } catch (error) {
+        console.error('Unable to calculate price:', error)
       }
     }
 
-    return (
-      calculatePrice({
-        date: selectedDate,
-        selectedPackage,
-        selectedRoom
-      }) ?? {
-        basePrice: 0,
-        cleaningPrice: 0,
-        tax: 0,
-        total: 0
-      }
-    )
+    calculatePrice()
   }, [selectedDate, selectedPackage, selectedRoom])
 
   // ------------------------------------------------------------
@@ -353,7 +381,7 @@ export default function LandingPage() {
             {roomList.map((room) => {
               const isAvailable = availableRooms.includes(room.id)
 
-              const isSelected = selectedRoom.includes(room.id) 
+              const isSelected = selectedRoom.includes(room.id)
 
               return (
                 <button
@@ -415,9 +443,9 @@ export default function LandingPage() {
                   Room:{' '}
                   <strong className="text-gray-900">
                     {roomList
-      .filter((room)=>
-       selectedRoom.includes(room.id)).map((room) =>room.name).join(', ')??
-                      'None selected'}
+                      .filter((room) => selectedRoom.includes(room.id))
+                      .map((room) => room.name)
+                      .join(', ') ?? 'None selected'}
                   </strong>
                 </p>
               </div>
@@ -435,11 +463,11 @@ export default function LandingPage() {
 
                 <div className="flex justify-between">
                   <span>Cleaning fee</span>
-                  <strong>${price.cleaningPrice ?? 0}</strong>
+                  <strong>${price.cleaningFee ?? 0}</strong>
                 </div>
 
                 <div className="flex justify-between">
-                  <span>Tax ({TAX})</span>
+                  <span>Tax ({TAX_RATE}%)</span>
                   <strong>${price.tax ?? 0}</strong>
                 </div>
 

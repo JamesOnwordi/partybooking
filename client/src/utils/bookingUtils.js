@@ -3,55 +3,24 @@
 import axios from 'axios'
 import dayjs from 'dayjs'
 const { nanoid } = require('nanoid')
-export const ROOMS = { 'Room 1': 1, 'Room 2': 2, Combined: 3 }
-export const PACKAGES = ['Solar', 'Galaxy', 'Spa']
 
 export const ZONE = 'America/Denver'
-export const MAX_CAPACITY = [20, 40]
-export const TAX = '5%'
-const CLEANING_FEE = 40
 
-export const AGE_RANGE = [1, 15]
-export const DEFAULT_CAPACITY = [8, 16]
-export const KIDS_CAPACITY_RANGE = [0, 19, 39]
-export const ADULTS_CAPACITY_RANGE = [1, 20, 40]
-
-export const EXTRA_KIDS_PRICE = [20.95, 24.95, 28.5]
-export const EXTRA_ADULTS_PRICE = 5
-
-export const STANDARD_TIMESLOTS = {
-  '12SD': '12:00 PM - 1:30 PM',
-  '2SD': '2:00 PM - 3:30 PM',
-  '4SD': '4:00 PM - 5:30 PM',
-  '6SD': '6:00 PM - 7:30 PM'
-}
-export const WINTER_TIMESLOTS = {
-  '11WT': '11:30AM - 1:00PM',
-  '2WT': '2:30PM - 4:00PM',
-  '5WT': '5:30PM - 7:00PM'
-}
+export const TAX_RATE = 5
 
 export const TIMER_POPUP = 5
 export const WINTER_MONTHS = [1, 2, 3, 12]
-export const WEEKEND_DATE = [0, 5, 6]
-export const GALAXY_PACKAGE_ADDONS = [
-  { name: 'Pepperoni Pizza', tag: 'Galaxy' },
-  { name: 'Cheese Pizza', tag: 'Galaxy' }
-]
-export const ADDONS = [
-  { id: 'pepperoni_pizza', name: 'Pepperoni Pizza', price: 35, max: 5 },
-  { id: 'cheese_pizza', name: 'Cheese Pizza', price: 35, max: 5 },
-  { id: 'fruit_tray', name: 'Fruit Tray', price: 30, max: 5 },
-  { id: 'vegetable_tray', name: 'Vegetable Tray', price: 30, max: 5 },
-  { id: 'goody_bags', name: 'Goody Bags', price: 9.95, max: 40 },
-  { id: 'grip_socks', name: 'Grip Socks', price: 2.95, max: 40 }
-]
+export const WEEKEND = [0, 5, 6]
+export const WEEKDAY = [1, 2, 3, 4]
+export const HOLIDAYS = []
+
 export const MINDATE = new Date(new Date().setDate(new Date().getDate() + 2))
 export const MAXDATE = new Date(
   new Date().getFullYear(),
   new Date().getMonth() + 4,
   0
 )
+
 export const MINDATE_BIG_CALENDAR = new Date(
   new Date().setDate(new Date().getDate() + 2)
 )
@@ -59,15 +28,6 @@ export const MAXDATE_BIG_CALENDAR = new Date(
   new Date().getFullYear(),
   new Date().getMonth() + 4
 )
-export const HOLIDAYS = []
-// days that require extra charges in cloudLand
-// days are in javascript.getDay() format
-export const EXCLUSIVE_DAYS = [0, 5, 6]
-
-export const DEFAULT_KIDS = 8
-export const DEFAULT_ADULTS = 8
-
-const taxRate = 0.05
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
@@ -78,14 +38,14 @@ export async function getOptions() {
 
   try {
     const response = await fetch(url)
-     if (!response.ok) {
+    if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`)
     }
     const data = await response.json()
 
     return data?.options ?? {}
   } catch (err) {
-    console.error("getOptions ERROR:", err)
+    console.error('getOptions ERROR:', err)
     throw err
   }
 }
@@ -107,58 +67,45 @@ export async function getAvailability(data) {
   }
 }
 
-export async function getPackagePrice(item){
-    const { id } = item
+export async function getPackagePrice(data) {
+  const { packageId, day } = data
+
+  const dayPrice = WEEKDAY.includes(day) ? 'WEEKDAY' : 'WEEKEND'
+  console.log(data, dayPrice)
 
   try {
-    const url = `${BASE_URL}/booking/availability?date=${date}`
+    const url = `${BASE_URL}/booking/price/${packageId}`
 
     const response = await fetch(url)
     const data = await response.json()
 
-    console.log(data)
+    const prices = data?.prices
 
-    return data?.timeSlotsAvailability
+    const price = prices.filter((price) => price.pricingType === dayPrice)
+
+    console.log(price)
+
+    return price[0]
   } catch (err) {
     console.error('Failed to fetch timeslots:', err.message)
   }
 }
 
-export function calculatePrice({ date, selectedPackage, selectedRoom }) {
-  console.log(date, selectedPackage, selectedRoom)
-  if (!selectedPackage || !selectedRoom || !date) return {}
+export function calculateTotalPrice(data) {
+  console.log(data)
+  const { packagePrice, cleaningFee, numberOfRooms } = data
 
-  const day = new Date(date).getDay()
+  const totalPackagePrice = (packagePrice * numberOfRooms) / 100
+  const totalCleaningPrice = (cleaningFee * numberOfRooms) / 100
+  const tax = ((totalPackagePrice + totalCleaningPrice) * TAX_RATE) / 100
+  const total = totalPackagePrice + totalCleaningPrice + tax
 
-  if (selectedPackage === PACKAGES[0]) {
-    let basePrice =
-      selectedRoom === 'Combined'
-        ? day >= 1 && day <= 4
-          ? 295 * 1.7
-          : 395 * 1.7
-        : day >= 1 && day <= 4
-          ? 295
-          : 395
-
-    const additionalFee = selectedRoom === 'Combined' ? CLEANING_FEE * 0.7 : 0
-    let cleaningPrice = CLEANING_FEE + additionalFee
-    console.warn('cleaning fee', cleaningPrice)
-    const tax = (basePrice + cleaningPrice + additionalFee) * taxRate
-    const total = basePrice + cleaningPrice + tax
-
-    return { basePrice, cleaningPrice, tax, total }
+  return {
+    packagePrice: totalPackagePrice,
+    cleaningFee: totalCleaningPrice,
+    tax,
+    total
   }
-
-  if (selectedPackage === PACKAGES[1]) {
-    let basePrice = selectedRoom === 'Combined' ? 495 * 1.7 : 495
-    const tax = basePrice * taxRate
-    const total = basePrice + tax
-    const cleaningPrice = 0
-
-    return { basePrice, cleaningPrice, tax, total }
-  }
-
-  return null
 }
 
 export async function getHeldSlot(heldSlotId) {

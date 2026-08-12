@@ -9,7 +9,6 @@ import {
   ROOMS,
   // TIMESLOTS,
   ADDONS,
-  PACKAGES,
   DEFAULT_CAPACITY,
   EXTRA_KIDS_PRICE,
   EXCLUSIVE_DAYS,
@@ -267,18 +266,18 @@ export default function Form() {
 
     let additionalKids = kids - defaultCapacity
     let additionalKidsPrice = 0
-    if (additionalKids > 0) {
-      if (partyPackage === PACKAGES[1]) {
-        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
-      } else if (
-        partyPackage === PACKAGES[0] &&
-        EXCLUSIVE_DAYS.includes(date.getDay())
-      ) {
-        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
-      } else {
-        additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
-      }
-    }
+    // if (additionalKids > 0) {
+    //   if (partyPackage === PACKAGES[1]) {
+    //     additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
+    //   } else if (
+    //     partyPackage === PACKAGES[0] &&
+    //     EXCLUSIVE_DAYS.includes(date.getDay())
+    //   ) {
+    //     additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
+    //   } else {
+    //     additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
+    //   }
+    // }
     console.log('errors: ', errors)
 
     let fewerKids
