@@ -51,10 +51,17 @@ export async function getOptions() {
 }
 
 export async function getAvailability(data) {
-  const { date } = data
+  const { date, heldSlotId } = data
+
+  console.log(data)
 
   try {
-    const url = `${BASE_URL}/booking/availability?date=${date}`
+    const params = new URLSearchParams({
+      date,
+      ...(heldSlotId && { heldSlotId })
+    })
+
+    const url = `${BASE_URL}/booking/availability?${params}`
 
     const response = await fetch(url)
     const data = await response.json()
@@ -110,6 +117,28 @@ export function calculateTotalPrice(data) {
   }
 }
 
+export async function createSlotHold(data) {
+  try {
+    const { bookingDate, timeSlotId, roomId } = data
+
+    const holdData = {
+      bookingDate,
+      timeSlotId,
+      roomId
+    }
+
+    const response = await axios.post(`${BASE_URL}/booking/hold`, holdData)
+
+    console.log(response.data.sessionId)
+
+    return response.data.sessionId
+  } catch (error) {
+    console.log('Hold failed:', error.response?.data || error.message)
+
+    throw error
+  }
+}
+
 export async function getHeldSlot(heldSlotId) {
   if (!heldSlotId) return
   console.log(heldSlotId)
@@ -137,46 +166,6 @@ export async function extendHeldSlot(heldSlotId) {
     return expiresAt
     return response.data
   } catch (error) {}
-}
-
-export async function createHold(data, setHeldSlotId, setAvailability) {
-  try {
-    const heldSlotId = data.heldSlotId ? data.heldSlotId : nanoid(10)
-
-    console.log('data:', data)
-
-    const holdData = {
-      heldSlotId,
-      date: data.date,
-      timeslot: data.timeslot,
-      room: data.room
-    }
-    console.log('Sending hold data:', holdData)
-
-    const response = await axios.post(`${BASE_URL}/heldSlots/start`, holdData)
-
-    console.log(response.data)
-    if (!data.heldSlotId) {
-      setHeldSlotId(heldSlotId)
-    }
-
-    return response.data
-  } catch (error) {
-    // return error
-    if (error.response.status === 409) {
-      const newData = {
-        heldSlotId: data.heldSlotId,
-        date: data.date
-      }
-
-      const availability = await getAvailability(newData)
-
-      setAvailability(availability)
-    }
-    return error.response.data
-
-    console.log('Hold failed:', error.response?.data || error.message)
-  }
 }
 
 export async function submitBooking(bookingData) {

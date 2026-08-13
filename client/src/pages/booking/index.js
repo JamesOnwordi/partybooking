@@ -17,7 +17,8 @@ import {
   getAvailability,
   getPackagePrice,
   calculateTotalPrice,
-  TAX_RATE
+  TAX_RATE,
+  createSlotHold
 } from '@/utils/bookingUtils'
 
 import 'react-calendar/dist/Calendar.css'
@@ -45,14 +46,10 @@ export default function LandingPage() {
   // Availability
   const [timeSlotsAvailability, setTimeSlotsAvailability] = useState(null)
   const [availableRooms, setAvailableRooms] = useState([])
+  const [heldSlotId, setHeldSlotId] = useState(null)
 
   // Pricing
-  const [price, setPrice] = useState({
-    basePrice: 0,
-    cleaningFee: 0,
-    total: 0,
-    tax: 0
-  })
+  const [price, setPrice] = useState({})
 
   // ------------------------------------------------------------
   // Load booking options
@@ -111,7 +108,8 @@ export default function LandingPage() {
 
     try {
       const availability = await getAvailability({
-        date: date.format('YYYY-MM-DD')
+        date: date.format('YYYY-MM-DD'),
+        heldSlotId
       })
 
       setTimeSlotsAvailability(availability ?? {})
@@ -237,10 +235,18 @@ export default function LandingPage() {
   // Navigation
   // ------------------------------------------------------------
 
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     if (!canProceed) return
 
-    router.push('/booking/form')
+    const slotId = await createSlotHold({
+      bookingDate: selectedDate.format('YYYY-MM-DD'),
+      timeSlotId: selectedTimeSlot.id,
+      roomId: selectedRoom
+    })
+
+    slotId ? setHeldSlotId(slotId) : ''
+
+    // router.push('/booking/form')
   }
 
   // ------------------------------------------------------------
