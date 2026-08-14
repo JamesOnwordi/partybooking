@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import Calendar from 'react-calendar'
-import { FaBirthdayCake } from 'react-icons/fa'
+import { FaBirthdayCake, FaClock } from 'react-icons/fa'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 
@@ -18,10 +18,12 @@ import {
   getPackagePrice,
   calculateTotalPrice,
   TAX_RATE,
-  createSlotHold
+  createSlotHold,
+  getTimeRemaining
 } from '@/utils/bookingUtils'
 
 import 'react-calendar/dist/Calendar.css'
+import { ClockIcon } from '@heroicons/react/24/outline'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -46,7 +48,10 @@ export default function LandingPage() {
   // Availability
   const [timeSlotsAvailability, setTimeSlotsAvailability] = useState(null)
   const [availableRooms, setAvailableRooms] = useState([])
-  const [heldSlotId, setHeldSlotId] = useState(null)
+
+  const [sessionId, setSessionId] = useState(null)
+  const [sessionExpiration, setSessionExpiration] = useState(null)
+  const [sessionTimer, setSessionTimer] = useState({})
 
   // Pricing
   const [price, setPrice] = useState({})
@@ -56,6 +61,7 @@ export default function LandingPage() {
   // ------------------------------------------------------------
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
     let mounted = true
 
     async function fetchOptions() {
@@ -83,12 +89,39 @@ export default function LandingPage() {
       }
     }
 
+    function getSessionData() {
+      const sessionData = JSON.parse(localStorage.getItem('sessionData'))
+
+      if (sessionData) {
+        setSessionId(sessionData.sessionId)
+        setSessionExpiration(sessionData.expiresAt)
+      }
+    }
+
     fetchOptions()
+    getSessionData()
 
     return () => {
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!sessionExpiration) return
+    const interval = setInterval(() => {
+      const remaining = getTimeRemaining(sessionExpiration)
+
+      if (remaining.expired) {
+        setSessionId(null)
+        setSessionExpiration(null)
+        localStorage.removeItem('sessionData')
+        clearInterval(interval)
+      }
+      setSessionTimer(remaining)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [sessionExpiration])
 
   // ------------------------------------------------------------
   // Date selection
@@ -109,7 +142,7 @@ export default function LandingPage() {
     try {
       const availability = await getAvailability({
         date: date.format('YYYY-MM-DD'),
-        heldSlotId
+        sessionId
       })
 
       setTimeSlotsAvailability(availability ?? {})
@@ -238,15 +271,25 @@ export default function LandingPage() {
   const handleBookNow = async () => {
     if (!canProceed) return
 
-    const slotId = await createSlotHold({
-      bookingDate: selectedDate.format('YYYY-MM-DD'),
-      timeSlotId: selectedTimeSlot.id,
-      roomId: selectedRoom
-    })
+    try {
+      if (!sessionId) {
+        const heldSlotResponse = await createSlotHold({
+          bookingDate: selectedDate.format('YYYY-MM-DD'),
+          timeSlotId: selectedTimeSlot.id,
+          roomId: selectedRoom
+        })
 
-    slotId ? setHeldSlotId(slotId) : ''
+        if (heldSlotResponse) {
+          setSessionId(heldSlotResponse.sessionId)
+          setSessionExpiration(heldSlotResponse.expiresAt)
+          localStorage.setItem('sessionData', JSON.stringify(heldSlotResponse))
 
-    // router.push('/booking/form')
+          // router.push('/booking/form')
+        }
+      }
+    } catch (error) {
+      console.error('Unable to hold slot:', error)
+    }
   }
 
   // ------------------------------------------------------------
@@ -268,12 +311,19 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="border-b bg-white px-6 py-4">
-        <h1 className="flex items-center gap-3 text-xl font-bold">
+      <header className="border-b flex items-center justify-between bg-white px-6 py-4">
+        <h1 className=" gap-3 flex items-center text-xl font-bold">
           <FaBirthdayCake />
           Party Booking System
         </h1>
       </header>
+      {sessionExpiration && (
+        <div className=" bg-red-100 p-4 rounded-md   gap-3 flex items-center text-md text-red-700">
+          <FaClock />
+          {sessionTimer.minutes}:{String(sessionTimer.seconds).padStart(2, '0')}{' '}
+          left to complete booking!
+        </div>
+      )}
 
       {error && (
         <div className="mx-auto mt-4 max-w-6xl rounded-md bg-red-100 p-4 text-sm text-red-700">
