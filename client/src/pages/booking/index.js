@@ -9,7 +9,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 
 import {
-  calculatePrice,
   ZONE,
   MINDATE,
   getOptions,
@@ -19,7 +18,9 @@ import {
   calculateTotalPrice,
   TAX_RATE,
   createSlotHold,
-  getTimeRemaining
+  getTimeRemaining,
+  getHeldSlot,
+  updateSlotHold
 } from '@/utils/bookingUtils'
 
 import 'react-calendar/dist/Calendar.css'
@@ -73,6 +74,8 @@ export default function LandingPage() {
 
         if (!mounted) return
 
+        console.log(data)
+
         setTimeSlots(data.timeSlots ?? {})
         setPackages(data.packages ?? {})
         setRooms(data.rooms ?? {})
@@ -89,22 +92,40 @@ export default function LandingPage() {
       }
     }
 
-    function getSessionData() {
-      const sessionData = JSON.parse(localStorage.getItem('sessionData'))
-
-      if (sessionData) {
-        setSessionId(sessionData.sessionId)
-        setSessionExpiration(sessionData.expiresAt)
-      }
-    }
-
     fetchOptions()
-    getSessionData()
 
     return () => {
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    async function getSessionData() {
+      const sessionId = JSON.parse(localStorage.getItem('sessionId'))
+
+      if (!sessionId) return
+
+      setSessionId(sessionId)
+
+      const heldSlot = await getHeldSlot(sessionId)
+      console.log(heldSlot[0])
+
+      const roomArray = heldSlot.map((slot) => slot.roomId)
+
+      // heldSlot[0]?.startTime `${date} ${timeSlot.startTime}`
+      const theDate = heldSlot[0]?.startAt?.split('T')[0]
+
+      if (heldSlot) {
+        setSelectedRoom(roomArray)
+        setSelectedPackage(heldSlot[0]?.packageId)
+        setSelectedDate(dayjs(theDate).tz(ZONE))
+        setSelectedTimeSlot(heldSlot[0]?.timeSlotId)
+        setSessionExpiration(heldSlot[0]?.expiresAt)
+      }
+    }
+    getSessionData()
+    console.log(timeSlots, packages, rooms)
+  }, [timeSlots, packages, rooms])
 
   useEffect(() => {
     if (!sessionExpiration) return
@@ -114,7 +135,7 @@ export default function LandingPage() {
       if (remaining.expired) {
         setSessionId(null)
         setSessionExpiration(null)
-        localStorage.removeItem('sessionData')
+        localStorage.removeItem('sessionId')
         clearInterval(interval)
       }
       setSessionTimer(remaining)
@@ -131,6 +152,7 @@ export default function LandingPage() {
     if (!newDate) return
 
     const date = dayjs(newDate).tz(ZONE)
+    console.log(newDate, date)
 
     setSelectedDate(date)
 
@@ -160,15 +182,13 @@ export default function LandingPage() {
   const handleTimeSlotChange = (slot) => {
     if (!timeSlotsAvailability) return
 
+    console.log(selectedTimeSlot)
     const availability = timeSlotsAvailability[slot.id] ?? []
 
     // Don't allow unavailable timeslots
     if (availability.length === 0) return
 
-    setSelectedTimeSlot({
-      id: slot.id,
-      name: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
-    })
+    setSelectedTimeSlot(slot.id)
 
     const roomIds = availability.map((item) => item.roomId)
 
@@ -185,10 +205,7 @@ export default function LandingPage() {
   const handlePackageChange = (value) => {
     // if (!selectedPackage) return
 
-    setSelectedPackage({
-      id: value.id,
-      name: value.name
-    })
+    setSelectedPackage(value.id)
   }
   // ------------------------------------------------------------
   // Room selection
@@ -223,7 +240,7 @@ export default function LandingPage() {
     const calculatePrice = async () => {
       try {
         const packagePricing = await getPackagePrice({
-          packageId: selectedPackage.id,
+          packageId: selectedPackage,
           day: selectedDate.day()
         })
 
@@ -270,21 +287,42 @@ export default function LandingPage() {
 
   const handleBookNow = async () => {
     if (!canProceed) return
-
+    console.log(selectedDate, selectedPackage, selectedTimeSlot, selectedRoom)
     try {
       if (!sessionId) {
         const heldSlotResponse = await createSlotHold({
           bookingDate: selectedDate.format('YYYY-MM-DD'),
-          timeSlotId: selectedTimeSlot.id,
+          timeSlotId: selectedTimeSlot,
+          packageId: selectedPackage,
           roomId: selectedRoom
         })
 
         if (heldSlotResponse) {
           setSessionId(heldSlotResponse.sessionId)
           setSessionExpiration(heldSlotResponse.expiresAt)
-          localStorage.setItem('sessionData', JSON.stringify(heldSlotResponse))
+          localStorage.setItem(
+            'sessionId',
+            JSON.stringify(heldSlotResponse.sessionId)
+          )
 
           // router.push('/booking/form')
+        }
+      } else {
+        const heldSlotResponse = await updateSlotHold({
+          sessionId: sessionId,
+          bookingDate: selectedDate.format('YYYY-MM-DD'),
+          timeSlotId: selectedTimeSlot,
+          packageId: selectedPackage,
+          roomId: selectedRoom
+        })
+
+        if (heldSlotResponse) {
+          setSessionId(heldSlotResponse.sessionId)
+          setSessionExpiration(heldSlotResponse.expiresAt)
+          localStorage.setItem(
+            'sessionId',
+            JSON.stringify(heldSlotResponse.sessionId)
+          )
         }
       }
     } catch (error) {
@@ -352,7 +390,7 @@ export default function LandingPage() {
               const availabilityCount =
                 timeSlotsAvailability?.[slot.id]?.length ?? 0
 
-              const isSelected = selectedTimeSlot?.id === slot.id
+              const isSelected = timeSlots[selectedTimeSlot]?.id === slot.id
 
               const isAvailable = availabilityCount > 0
 
@@ -408,7 +446,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col gap-3">
             {packageList.map((item) => {
-              const isSelected = selectedPackage?.id === item.id
+              const isSelected = selectedPackage === item.id
 
               return (
                 <button
@@ -484,14 +522,16 @@ export default function LandingPage() {
                 <p>
                   Time:{' '}
                   <strong className="text-gray-900">
-                    {selectedTimeSlot?.name ?? 'None selected'}
+                    {timeSlots[selectedTimeSlot]
+                      ? `${formatTime(timeSlots[selectedTimeSlot]?.startTime)} - ${formatTime(timeSlots[selectedTimeSlot]?.endTime)}`
+                      : 'None selected'}
                   </strong>
                 </p>
 
                 <p>
                   Package:{' '}
                   <strong className="text-gray-900">
-                    {selectedPackage?.name ?? 'None selected'}
+                    {packages[selectedPackage]?.name ?? 'None selected'}
                   </strong>
                 </p>
 

@@ -120,7 +120,29 @@ export function calculateTotalPrice(data) {
 export async function createSlotHold(data) {
   try {
     const { data: responseData } = await axios.post(
-      `${BASE_URL}/booking/hold`,
+      `${BASE_URL}/booking/heldSlot/create`,
+      data
+    )
+
+    console.log(responseData)
+
+    return {
+      sessionId: responseData.sessionId,
+      expiresAt: responseData.expiresAt
+    }
+  } catch (error) {
+    console.error(
+      'Failed to create slot hold:',
+      error.response?.data || error.message
+    )
+
+    throw error
+  }
+}
+export async function updateSlotHold(data) {
+  try {
+    const { data: responseData } = await axios.put(
+      `${BASE_URL}/booking/heldSlot/update`,
       data
     )
 
@@ -140,6 +162,24 @@ export async function createSlotHold(data) {
   }
 }
 
+export async function getHeldSlot(sessionId) {
+  if (!sessionId) return
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/booking/heldSlot/${sessionId}`
+    )
+    console.log(response.data)
+
+    return response.data.heldSlot
+
+    // const { expiresAt } = response.data.heldSlot
+    // return expiresAt
+  } catch (error) {
+    console.log(error)
+  }
+}
+// not using yet
 export async function extendSlotHold(heldSlotId) {
   if (!heldSlotId) return
   console.log(heldSlotId)
@@ -175,19 +215,6 @@ export async function extendSlotHold(heldSlotId) {
     throw error
   }
 }
-// not using yet
-export async function getHeldSlot(heldSlotId) {
-  if (!heldSlotId) return
-  console.log(heldSlotId)
-  try {
-    const response = await axios.get(`${BASE_URL}/heldSlots/${heldSlotId}`)
-    console.log(response.data)
-    const { expiresAt } = response.data.heldSlot
-    return expiresAt
-  } catch (error) {
-    console.log(error)
-  }
-}
 
 export async function submitBooking(bookingData) {
   try {
@@ -209,8 +236,6 @@ export const getTimeRemaining = (sessionExpiration) => {
   const now = dayjs()
   const expiryDate = dayjs(sessionExpiration)
 
-  console.log(sessionExpiration)
-
   const diffMs = expiryDate.diff(now)
 
   if (diffMs <= 0) {
@@ -220,10 +245,8 @@ export const getTimeRemaining = (sessionExpiration) => {
       expired: true
     }
   }
-  console.log(diffMs)
 
   const totalSeconds = Math.floor(diffMs / 1000)
-  console.log(Math.floor(totalSeconds / 60), totalSeconds % 60, false)
 
   return {
     minutes: Math.floor(totalSeconds / 60),
