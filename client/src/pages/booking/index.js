@@ -157,6 +157,7 @@ export default function LandingPage() {
     setSelectedDate(date)
 
     // A new date invalidates the existing selections
+    setTimeSlotsAvailability({})
     setSelectedTimeSlot(null)
     setSelectedRoom([])
     setAvailableRooms([])
@@ -305,7 +306,7 @@ export default function LandingPage() {
             JSON.stringify(heldSlotResponse.sessionId)
           )
 
-          // router.push('/booking/form')
+          router.push('/booking/form')
         }
       } else {
         const heldSlotResponse = await updateSlotHold({
@@ -323,6 +324,7 @@ export default function LandingPage() {
             'sessionId',
             JSON.stringify(heldSlotResponse.sessionId)
           )
+          router.push('/booking/form')
         }
       }
     } catch (error) {

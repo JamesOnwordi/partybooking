@@ -269,3 +269,19 @@ export const getTimeRemaining = (sessionExpiration) => {
 //   expired: false
 // }
 // }
+
+export async function getFormOptions() {
+  const url = `http://localhost:3000/booking/form/options`
+
+  try {
+    // const response = await fetch(url)
+    // if (!response.ok) {
+    //   throw new Error(`Request failed: ${response.status}`)
+    // }
+    // const data = await response.json()
+    // return data?.options ?? {}
+  } catch (err) {
+    console.error('getOptions ERROR:', err)
+    throw err
+  }
+}
