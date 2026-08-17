@@ -538,10 +538,10 @@ export default function LandingPage() {
                 <p>
                   Room:{' '}
                   <strong className="text-gray-900">
-                    {roomList
+                    {selectedRoom.length?roomList
                       .filter((room) => selectedRoom.includes(room.id))
                       .map((room) => room.name)
-                      .join(', ') ?? 'None selected'}
+                      .join(', ') : 'None selected'}
                   </strong>
                 </p>
               </div>
