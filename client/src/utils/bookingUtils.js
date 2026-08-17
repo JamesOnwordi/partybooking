@@ -2,112 +2,192 @@
 
 import axios from 'axios'
 import dayjs from 'dayjs'
-const { nanoid } = require('nanoid')
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 
-export const ZONE = 'America/Denver'
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+// --------------------------------------------------
+// Timezone
+// --------------------------------------------------
+
+export const ZONE = 'America/Edmonton'
+
+// --------------------------------------------------
+// Booking configuration
+// --------------------------------------------------
 
 export const TAX_RATE = 5
-
 export const TIMER_POPUP = 5
-export const WINTER_MONTHS = [1, 2, 3, 12]
+
 export const WEEKEND = [0, 5, 6]
 export const WEEKDAY = [1, 2, 3, 4]
+
+export const WINTER_MONTHS = [1, 2, 3, 12]
 export const HOLIDAYS = []
 
-export const MINDATE = new Date(new Date().setDate(new Date().getDate() + 2))
-export const MAXDATE = new Date(
-  new Date().getFullYear(),
-  new Date().getMonth() + 4,
-  0
-)
+// --------------------------------------------------
+// Calendar dates
+// --------------------------------------------------
 
-export const MINDATE_BIG_CALENDAR = new Date(
-  new Date().setDate(new Date().getDate() + 2)
-)
-export const MAXDATE_BIG_CALENDAR = new Date(
-  new Date().getFullYear(),
-  new Date().getMonth() + 4
-)
+const today = dayjs().tz(ZONE)
+
+export const MINDATE = today.add(2, 'day').startOf('day').toDate()
+
+export const MAXDATE = today.add(4, 'month').endOf('month').toDate()
+
+export const MINDATE_BIG_CALENDAR = MINDATE
+
+export const MAXDATE_BIG_CALENDAR = today
+  .add(4, 'month')
+  .endOf('month')
+  .toDate()
+
+// --------------------------------------------------
+// API
+// --------------------------------------------------
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
-export const formatTime = (time) => dayjs(`2000-01-01T${time}`).format('h:mm A')
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
+
+export const formatTime = (time) => {
+  if (!time) return ''
+
+  return dayjs(`2000-01-01T${time}`).format('h:mm A')
+}
+
+export const getDayType = (day) => {
+  return WEEKEND.includes(day) ? 'WEEKEND' : 'WEEKDAY'
+}
+
+// --------------------------------------------------
+// Get Booking Options
+// --------------------------------------------------
 
 export async function getOptions() {
-  const url = `http://localhost:3000/booking/options`
+  const url = `${BASE_URL}/booking/options`
 
   try {
     const response = await fetch(url)
+
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`)
     }
+
     const data = await response.json()
 
     return data?.options ?? {}
-  } catch (err) {
-    console.error('getOptions ERROR:', err)
-    throw err
+  } catch (error) {
+    console.error('Failed to fetch booking options:', error)
+
+    throw error
   }
 }
 
-export async function getAvailability(data) {
-  const { date, sessionId } = data
+// --------------------------------------------------
+// Get Availability
+// --------------------------------------------------
 
-  console.log(data)
+export async function getAvailability({ date, sessionId }) {
+  if (!date) {
+    throw new Error('Booking date is required')
+  }
 
   try {
     const params = new URLSearchParams({
-      date,
-      ...(sessionId && { sessionId })
+      date
     })
+
+    if (sessionId) {
+      params.set('sessionId', sessionId)
+    }
 
     const url = `${BASE_URL}/booking/availability?${params}`
 
     const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Availability request failed: ${response.status}`)
+    }
+
     const data = await response.json()
 
-    console.log(data)
+    return data?.timeSlotsAvailability ?? {}
+  } catch (error) {
+    console.error('Failed to fetch availability:', error)
 
-    return data?.timeSlotsAvailability
-  } catch (err) {
-    console.error('Failed to fetch timeslots:', err.message)
+    throw error
   }
 }
 
-export async function getPackagePrice(data) {
-  const { packageId, day } = data
+// --------------------------------------------------
+// Get Package Price
+// --------------------------------------------------
 
-  const dayPrice = WEEKEND.includes(day) ? 'WEEKEND' : 'WEEKDAY'
-  console.log(data, dayPrice)
+export async function getPackagePrice({ packageId, day }) {
+  if (!packageId) {
+    throw new Error('Package ID is required')
+  }
+
+  if (typeof day !== 'number') {
+    throw new Error('Day is required')
+  }
+
+  const dayPrice = getDayType(day)
 
   try {
     const url = `${BASE_URL}/booking/price/${packageId}`
 
     const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Package price request failed: ${response.status}`)
+    }
+
     const data = await response.json()
 
-    console.log(data)
+    const prices = data?.prices ?? []
 
-    const prices = data?.prices
+    const matchingPrice = prices.find((price) => price.pricingType === dayPrice)
 
-    const price = prices.filter((price) => price.pricingType === dayPrice)
+    if (!matchingPrice) {
+      throw new Error(`No ${dayPrice} pricing found for package ${packageId}`)
+    }
 
-    console.log(price)
+    return matchingPrice
+  } catch (error) {
+    console.error('Failed to fetch package price:', error)
 
-    return price[0]
-  } catch (err) {
-    console.error('Failed to fetch timeslots:', err.message)
+    throw error
   }
 }
 
-export function calculateTotalPrice(data) {
-  console.log(data)
-  const { packagePrice, cleaningFee, numberOfRooms } = data
+// --------------------------------------------------
+// Calculate Total Price
+// --------------------------------------------------
 
-  const totalPackagePrice = (packagePrice * numberOfRooms) / 100
-  const totalCleaningPrice = (cleaningFee * numberOfRooms) / 100
-  const tax = ((totalPackagePrice + totalCleaningPrice) * TAX_RATE) / 100
-  const total = totalPackagePrice + totalCleaningPrice + tax
+export function calculateTotalPrice({
+  packagePrice,
+  cleaningFee,
+  numberOfRooms
+}) {
+  const packagePriceCents = Number(packagePrice) || 0
+  const cleaningFeeCents = Number(cleaningFee) || 0
+  const rooms = Number(numberOfRooms) || 0
+
+  const totalPackagePrice = (packagePriceCents * rooms) / 100
+
+  const totalCleaningPrice = (cleaningFeeCents * rooms) / 100
+
+  const subtotal = totalPackagePrice + totalCleaningPrice
+
+  const tax = (subtotal * TAX_RATE) / 100
+
+  const total = subtotal + tax
 
   return {
     packagePrice: totalPackagePrice,
@@ -117,18 +197,23 @@ export function calculateTotalPrice(data) {
   }
 }
 
+// --------------------------------------------------
+// Create Slot Hold
+// --------------------------------------------------
+
 export async function createSlotHold(data) {
   try {
-    const { data: responseData } = await axios.post(
+    const response = await axios.post(
       `${BASE_URL}/booking/heldSlot/create`,
       data
     )
 
-    console.log(responseData)
+    const responseData = response.data
 
     return {
       sessionId: responseData.sessionId,
-      expiresAt: responseData.expiresAt
+      expiresAt: responseData.expiresAt,
+      holds: responseData.holds ?? []
     }
   } catch (error) {
     console.error(
@@ -139,22 +224,28 @@ export async function createSlotHold(data) {
     throw error
   }
 }
+
+// --------------------------------------------------
+// Update Slot Hold
+// --------------------------------------------------
+
 export async function updateSlotHold(data) {
   try {
-    const { data: responseData } = await axios.put(
+    const response = await axios.put(
       `${BASE_URL}/booking/heldSlot/update`,
       data
     )
 
-    console.log(responseData)
+    const responseData = response.data
 
     return {
       sessionId: responseData.sessionId,
-      expiresAt: responseData.expiresAt
+      expiresAt: responseData.expiresAt,
+      holds: responseData.holds ?? []
     }
   } catch (error) {
     console.error(
-      'Failed to create slot hold:',
+      'Failed to update slot hold:',
       error.response?.data || error.message
     )
 
@@ -162,53 +253,24 @@ export async function updateSlotHold(data) {
   }
 }
 
+// --------------------------------------------------
+// Get Held Slot
+// --------------------------------------------------
+
 export async function getHeldSlot(sessionId) {
-  if (!sessionId) return
+  if (!sessionId) {
+    return []
+  }
 
   try {
     const response = await axios.get(
       `${BASE_URL}/booking/heldSlot/${sessionId}`
     )
-    console.log(response.data)
 
-    return response.data.heldSlot
-
-    // const { expiresAt } = response.data.heldSlot
-    // return expiresAt
-  } catch (error) {
-    console.log(error)
-  }
-}
-// not using yet
-export async function extendSlotHold(heldSlotId) {
-  if (!heldSlotId) return
-  console.log(heldSlotId)
-
-  try {
-    const response = await axios.post(`${BASE_URL}/heldSlot/extend`, {
-      heldSlotId
-    })
-
-    const { expiresAt } = response.data.heldSlot
-    console.log(expiresAt)
-    return expiresAt
-    return response.data
-  } catch (error) {}
-  try {
-    const { data: responseData } = await axios.post(
-      `${BASE_URL}/booking/hold`,
-      data
-    )
-
-    console.log(responseData)
-
-    return {
-      sessionId: responseData.sessionId,
-      expiresAt: responseData.expiresAt
-    }
+    return response.data?.heldSlot ?? []
   } catch (error) {
     console.error(
-      'Failed to create slot hold:',
+      'Failed to get held slot:',
       error.response?.data || error.message
     )
 
@@ -216,21 +278,86 @@ export async function extendSlotHold(heldSlotId) {
   }
 }
 
-export async function submitBooking(bookingData) {
+// --------------------------------------------------
+// Get Held Slot Data
+// --------------------------------------------------
+
+export async function getHeldSlotData(sessionId) {
+  if (!sessionId) {
+    return []
+  }
+
   try {
-    const res = await axios
-      .post(`${BASE_URL}/booking/create`, bookingData)
-      .then(function (response) {
-        console.log(response)
-      })
+    const response = await axios.get(
+      `${BASE_URL}/booking/heldSlot/data/${sessionId}`
+    )
+
+    return response.data?.heldSlot ?? []
   } catch (error) {
-    console.log(error)
+    console.error(
+      'Failed to get held slot data:',
+      error.response?.data || error.message
+    )
+
+    throw error
   }
 }
 
+// --------------------------------------------------
+// Extend Slot Hold
+// --------------------------------------------------
+
+export async function extendSlotHold(sessionId) {
+  if (!sessionId) {
+    throw new Error('Session ID is required')
+  }
+
+  try {
+    const response = await axios.post(`${BASE_URL}/booking/heldSlot/extend`, {
+      sessionId
+    })
+
+    return response.data
+  } catch (error) {
+    console.error(
+      'Failed to extend slot hold:',
+      error.response?.data || error.message
+    )
+
+    throw error
+  }
+}
+
+// --------------------------------------------------
+// Submit Booking
+// --------------------------------------------------
+
+export async function submitBooking(bookingData) {
+  try {
+    const response = await axios.post(`${BASE_URL}/booking/create`, bookingData)
+
+    return response.data
+  } catch (error) {
+    console.error(
+      'Failed to submit booking:',
+      error.response?.data || error.message
+    )
+
+    throw error
+  }
+}
+
+// --------------------------------------------------
+// Get Time Remaining
+// --------------------------------------------------
+
 export const getTimeRemaining = (sessionExpiration) => {
   if (!sessionExpiration) {
-    return { expired: true }
+    return {
+      minutes: 0,
+      seconds: 0,
+      expired: true
+    }
   }
 
   const now = dayjs()
@@ -255,33 +382,26 @@ export const getTimeRemaining = (sessionExpiration) => {
   }
 }
 
-// export const getTimeRemaining = (sessionExpiration) => {
-// if (!sessionExpiration) return { expired: true }
-// // console.log(' in get remaining', sessionExpiration)
-// const now = DateTime.now()
-// const expiryDate = DateTime.fromISO(sessionExpiration)
-// const diff = expiryDate.diff(now, ['minutes', 'seconds'])
-// let timeExtendable = diff.values.minutes < TIMER_POPUP
-// if (diff.toMillis() <= 0) return { expired: true }
-// return {
-//   minutes: Math.floor(diff.minutes),
-//   seconds: Math.floor(diff.seconds),
-//   expired: false
-// }
-// }
+// --------------------------------------------------
+// Form Options
+// --------------------------------------------------
 
 export async function getFormOptions() {
-  const url = `http://localhost:3000/booking/form/options`
+  const url = `${BASE_URL}/booking/form/options`
 
   try {
-    // const response = await fetch(url)
-    // if (!response.ok) {
-    //   throw new Error(`Request failed: ${response.status}`)
-    // }
-    // const data = await response.json()
-    // return data?.options ?? {}
-  } catch (err) {
-    console.error('getOptions ERROR:', err)
-    throw err
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    return data?.options ?? {}
+  } catch (error) {
+    console.error('Failed to fetch form options:', error)
+
+    throw error
   }
 }
