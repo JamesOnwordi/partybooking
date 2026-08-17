@@ -1,33 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import {
-  MAX_CAPACITY,
-  ROOMS,
-  // TIMESLOTS,
-  ADDONS,
-  DEFAULT_CAPACITY,
-  EXTRA_KIDS_PRICE,
-  EXCLUSIVE_DAYS,
-  EXTRA_ADULTS_PRICE,
-  // PARTY_PACKAGES,
-  submitBooking,
-  AGE_RANGE,
-  KIDS_CAPACITY_RANGE,
-  ADULTS_CAPACITY_RANGE,
-  GALAXY_PACKAGE_ADDONS,
-  MINDATE
-} from '@/utils/bookingUtils'
+
 import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
-import { DateTime, Zone } from 'luxon'
 import Timer from '@/components/Timer'
+
+import {
+  ZONE,
+  getHeldSlotData,
+  submitBooking,
+  calculateTotalPrice
+} from '@/utils/bookingUtils'
+
+import { TAX_RATE } from '@/utils/bookingUtils'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export default function Form() {
   const router = useRouter()
+
+  // ------------------------------------------------------------
+  // Form
+  // ------------------------------------------------------------
+
   const {
     register,
     handleSubmit,
@@ -45,906 +48,811 @@ export default function Form() {
       celebrantName: '',
       numberOfChildren: 0,
       numberOfAdults: 0,
-      addons: {},
-      pizzaDeliveryTime: ''
+      theme: '',
+      notes: '',
+      addons: {}
     }
   })
+
   const watchedValues = useWatch({ control })
-  const kids = parseInt(watchedValues?.numberOfChildren) || 0
-  const adults = parseInt(watchedValues?.numberOfAdults) || 0
 
-  const addons = ADDONS.map((addon) => {
-    return {
-      quantity: watchedValues?.addons?.[addon.id] || 0,
-      id: addon.id,
-      name: addon.name,
-      price: addon.price,
-      min: 0,
-      max: addon.max
-    }
+  // ------------------------------------------------------------
+  // State
+  // ------------------------------------------------------------
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const [heldSlots, setHeldSlots] = useState([])
+
+  const [bookingDate, setBookingDate] = useState(null)
+  const [selectedPackage, setSelectedPackage] = useState(null)
+  const [selectedRooms, setSelectedRooms] = useState([])
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null)
+
+  const [packagePricing, setPackagePricing] = useState(null)
+  const [packageRules, setPackageRules] = useState(null)
+  const [themes, setThemes] = useState(null)
+
+  const [sessionId, setSessionId] = useState(null)
+  const [sessionExpiration, setSessionExpiration] = useState(null)
+
+  const [price, setPrice] = useState({
+    basePrice: 0,
+    cleaningFee: 0,
+    additionalChildren: 0,
+    additionalAdults: 0,
+    tax: 0,
+    total: 0
   })
 
-  const pepperoniPizza =
-    parseInt(
-      watchedValues?.[
-        (GALAXY_PACKAGE_ADDONS[0].tag, GALAXY_PACKAGE_ADDONS[0].name)
-      ]
-    ) || 0
-  const cheesePizza = parseInt(watchedValues?.[ADDONS[1].name]) || 0
+  const [submitting, setSubmitting] = useState(false)
 
-  const [date, setDate] = useState(new Date())
-  const [partyPackage, setPartyPackage] = useState('')
-  const [choosenPackage, setChoosenPackage] = useState('')
-  const [partyTimeslot, setPartyTimeslot] = useState('')
-  const [maxKids, setMaxKids] = useState(MAX_CAPACITY[0])
-  const [maxAdults, setMaxAdults] = useState(MAX_CAPACITY[0])
-  const [maxPepperoni, setMaxPepperoni] = useState(2)
-  const [maxCheese, setMaxCheese] = useState(2)
-  const [bookingIndex, setBookingIndex] = useState(0)
-  const [savedBookingData, setSavedBookingData] = useState(null)
-  const [savedFormData, setSavedFormData] = useState(null)
-  const [spaceRemaining, setSpaceRemaining] = useState(0)
-  const [showAlert, setShowAlert] = useState(false)
-  const [partyPrice, setPartyPrice] = useState(0)
-  const [totalPrice, setTotalPrice] = useState(0)
-  const [galaxyPackage, setGalaxyPackage] = useState(false)
-  const [heldSlotId, setHeldSlotId] = useState(null)
-  const [heldSlotExpiration, setHeldSlotExpiration] = useState(null)
-  const [isRestored, setIsRestored] = useState(false)
+  // ------------------------------------------------------------
+  // Derived values
+  // ------------------------------------------------------------
 
-  // Restore form state from localStorage
-  useEffect(() => {
-    //   if (typeof window === "undefined") return;
-    //   const bookingData = localStorage.getItem("initialBooking");
-    //   const formData = localStorage.getItem("formData");
-    //   console.log(bookingData, formData);
-    //   if (bookingData) {
-    //     setSavedBookingData(JSON.parse(bookingData));
-    //   }
-    //   if (formData) {
-    //     setSavedFormData(JSON.parse(formData));
-    //   }
-    //   setIsRestored(true);
-    // }, []);
-    // // Set initial values from restored booking
-    // useEffect(() => {
-    //   if (typeof window === 'undefined' || !isRestored) return
-    //   console.log(savedBookingData, savedFormData, isRestored)
-    //   const {
-    //     selectedDate,
-    //     selectedTimeslot,
-    //     selectedPackage,
-    //     selectedRoom,
-    //     basePrice,
-    //     heldSlotId,
-    //     heldSlotExpiration
-    //   } = savedBookingData
-    //   if (!selectedDate || !selectedTimeslot || !selectedPackage || !selectedRoom)
-    //     router.replace('/booking')
-    //   console.log(savedFormData)
-    //   console.log(savedBookingData)
-    //   if (!savedBookingData) return
-    //   if (selectedDate) {
-    //     // Set party date
-    //     const JSDate = DateTime.fromISO(selectedDate, {
-    //       zone: 'America/Denver'
-    //     }).toJSDate()
-    //     setValue('partyDate', JSDate.toDateString())
-    //     setDate(JSDate)
-    //   }
-    //   // Set timeslot
-    //   if (selectedTimeslot) {
-    //     setValue('partyTimeslot', selectedTimeslot)
-    //     setPartyTimeslot(selectedTimeslot)
-    //   }
-    //   // Set package and possible addons
-    //   if (selectedPackage) {
-    //     setValue('partyPackage', selectedPackage)
-    //     setPartyPackage(selectedPackage)
-    //     if (selectedPackage === PACKAGES[1]) {
-    //       // setChoosenPackage(PARTY_PACKAGES[2])
-    //       setGalaxyPackage(true)
-    //     } else if (
-    //       partyPackage === PACKAGES[0] &&
-    //       EXCLUSIVE_DAYS.includes(date.getDay())
-    //     ) {
-    //       // setChoosenPackage(PARTY_PACKAGES[1])
-    //     } else {
-    //       // setChoosenPackage(PARTY_PACKAGES[0])
-    //     }
-    //   }
-    //   // Set room and capacities
-    //   if (selectedRoom) {
-    //     setValue('partyRoom', selectedRoom)
-    //     const roomIndex = ROOMS[selectedRoom]
-    //     console.log('roomIndex', roomIndex)
-    //     let capacity = 0
-    //     if (roomIndex === 3) {
-    //       setBookingIndex(1)
-    //       capacity = DEFAULT_CAPACITY[1]
-    //     } else {
-    //       setBookingIndex(0)
-    //       capacity = DEFAULT_CAPACITY[0]
-    //     }
-    //     setValue('kidsCapacity', capacity)
-    //     setValue('adultsCapacity', capacity)
-    //   }
-    //   if (heldSlotId) setHeldSlotId(heldSlotId)
-    //   if (heldSlotExpiration) setHeldSlotExpiration(heldSlotExpiration)
-    //   // Set price
-    //   basePrice && setPartyPrice(basePrice)
-    //   // form
-    //   if (!savedFormData) return
-    //   const {
-    //     firstName,
-    //     lastName,
-    //     email,
-    //     phoneNumber,
-    //     celebrantAge,
-    //     celebrantGender,
-    //     celebrantName,
-    //     kidsCapacity,
-    //     adultsCapacity,
-    //     addons,
-    //     pizzaDeliveryTime,
-    //     Galaxy_Cheese_Pizza,
-    //     Galaxy_Pepperoni_Pizza
-    //   } = savedFormData
-    //   if (firstName) {
-    //     setValue('firstName', firstName)
-    //   }
-    //   if (lastName) setValue('lastName', lastName)
-    //   if (email) setValue('email', email)
-    //   if (phoneNumber) setValue('phoneNumber', phoneNumber)
-    //   if (celebrantName) setValue('celebrantName', celebrantName)
-    //   if (celebrantAge) setValue('celebrantAge', celebrantAge)
-    //   if (celebrantGender) setValue('celebrantGender', celebrantGender)
-    //   if (addons) setValue('addons', addons)
-    //   if (Galaxy_Cheese_Pizza)
-    //     setValue('Galaxy_Cheese_Pizza', Galaxy_Cheese_Pizza)
-    //   if (Galaxy_Pepperoni_Pizza)
-    //     setValue('Galaxy_Pepperoni_Pizza', Galaxy_Pepperoni_Pizza)
-    //   if (pizzaDeliveryTime) setValue('pizzaDeliveryTime', pizzaDeliveryTime)
-  }, [savedBookingData, savedFormData])
+  const numberOfChildren = Number(watchedValues?.numberOfChildren) || 0
 
-  // Recaculate max capacities based on number of rooms
-  useEffect(() => {
-    const roomCap = MAX_CAPACITY[bookingIndex] || MAX_CAPACITY[0]
+  const numberOfAdults = Number(watchedValues?.numberOfAdults) || 0
 
-    const kidsCapacity = Math.max(KIDS_CAPACITY_RANGE[0], kids)
-    const adultsCapacity = Math.max(ADULTS_CAPACITY_RANGE[0], adults)
-
-    const remainingSpace = Math.max(
-      0,
-      roomCap - (kidsCapacity + adultsCapacity)
+  const totalRoomCapacity = useMemo(() => {
+    return selectedRooms.reduce(
+      (total, room) => total + (room?.capacity || 0),
+      0
     )
-    const currentCapacity = kidsCapacity + adultsCapacity
-    console.log(
-      'capacity',
-      kids,
-      adults,
-      'max',
-      // remainingSpaceKids,
-      // remainingSpaceAdults,
-      'room cap',
-      remainingSpace,
-      roomCap
-    )
+  }, [selectedRooms])
 
-    if (currentCapacity > roomCap) {
-      console.log('in here')
-      setSpaceRemaining(0)
-    } else {
-      const remainingSpaceKids = kidsCapacity + remainingSpace
-      const remainingSpaceAdults = adultsCapacity + remainingSpace
-      setSpaceRemaining(remainingSpace)
-      setMaxKids(remainingSpaceKids)
-      setMaxAdults(remainingSpaceAdults)
-      //
+  const includedChildren = packageRules?.includedChildrenCount ?? 0
+
+  const includedAdults = packageRules?.includedAdultCount ?? 0
+
+  const additionalChildren = Math.max(0, numberOfChildren - includedChildren)
+
+  const additionalAdults = Math.max(0, numberOfAdults - includedAdults)
+
+  const availableCapacity = Math.max(
+    totalRoomCapacity - numberOfChildren - numberOfAdults
+  )
+
+  // ------------------------------------------------------------
+  // Load held slot
+  // ------------------------------------------------------------
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadHeldSlot() {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const storedSessionId = localStorage.getItem('sessionId')
+
+        if (!storedSessionId) {
+          router.push('/booking')
+          return
+        }
+
+        const parsedSessionId = JSON.parse(storedSessionId)
+
+        if (!parsedSessionId) {
+          router.push('/booking')
+          return
+        }
+
+        setSessionId(parsedSessionId)
+
+        const data = await getHeldSlotData(parsedSessionId)
+
+        if (!mounted) return
+
+        if (!data || data.length === 0) {
+          setError('Your booking session could not be found or has expired.')
+          return
+        }
+
+        setHeldSlots(data)
+
+        // ------------------------------------------------------
+        // First hold contains the common booking information
+        // ------------------------------------------------------
+
+        const first = data[0]
+
+        const heldSlot = first.held_slot
+        const pricing = first.package_pricing
+        const rules = first.package_rules
+
+        // IMPORTANT:
+        // startAt is UTC in DB.
+        // Convert it to America/Denver before extracting date.
+        const localStart = dayjs(heldSlot.startAt).tz(ZONE)
+
+        setBookingDate(localStart)
+
+        setSelectedPackage(first.packages)
+        setSelectedTimeSlot(first.time_slots)
+        setPackagePricing(pricing)
+        setPackageRules(rules)
+
+        setSessionExpiration(heldSlot.expiresAt)
+
+        // ------------------------------------------------------
+        // Multiple rooms can be held for the same session
+        // ------------------------------------------------------
+
+        const rooms = data.map((item) => item.rooms).filter(Boolean)
+
+        setSelectedRooms(rooms)
+      } catch (err) {
+        console.error('Unable to load held slot:', err)
+
+        if (mounted) {
+          setError(
+            'Unable to load your booking. Please return to the booking page.'
+          )
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
     }
 
-    const maxPizza = 2
-    const remainingPizza = Math.max(
-      0,
-      maxPizza - (pepperoniPizza + cheesePizza)
+    loadHeldSlot()
+
+    return () => {
+      mounted = false
+    }
+  }, [router])
+
+  // ------------------------------------------------------------
+  // Calculate price
+  // ------------------------------------------------------------
+
+  useEffect(() => {
+    if (!packagePricing) {
+      setPrice({
+        basePrice: 0,
+        cleaningFee: 0,
+        additionalChildren: 0,
+        additionalAdults: 0,
+        tax: 0,
+        total: 0
+      })
+
+      return
+    }
+
+    const packagePrice = Number(packagePricing.packagePrice || 0)
+
+    const cleaningFee = Number(packagePricing.cleaningFee || 0)
+
+    const additionalChildPrice = Number(
+      packagePricing.additionalChildPrice || 0
     )
 
-    setMaxPepperoni(pepperoniPizza + remainingPizza)
-    setMaxCheese(cheesePizza + remainingPizza)
+    const additionalAdultPrice = Number(
+      packagePricing.additionalAdultPrice || 0
+    )
 
-    console.log('maxkid', maxKids)
-  }, [kids, adults, pepperoniPizza, cheesePizza])
+    const roomCount = selectedRooms.length || 1
 
-  // Calculate party price based on selected package and addons
-  useEffect(() => {
-    console.log(kids, adults, addons, watchedValues)
+    const basePackagePrice = (packagePrice * roomCount) / 100
 
-    const addonsPrice = addons.reduce((acc, addon) => {
-      return acc + addon.quantity * addon.price
-    }, 0)
-    const defaultCapacity = DEFAULT_CAPACITY[bookingIndex]
+    const baseCleaningFee = (cleaningFee * roomCount) / 100
 
-    let additionalKids = kids - defaultCapacity
-    let additionalKidsPrice = 0
-    // if (additionalKids > 0) {
-    //   if (partyPackage === PACKAGES[1]) {
-    //     additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[2]
-    //   } else if (
-    //     partyPackage === PACKAGES[0] &&
-    //     EXCLUSIVE_DAYS.includes(date.getDay())
-    //   ) {
-    //     additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[1]
-    //   } else {
-    //     additionalKidsPrice = additionalKids * EXTRA_KIDS_PRICE[0]
-    //   }
-    // }
-    console.log('errors: ', errors)
+    const childrenPrice = (additionalChildren * additionalChildPrice) / 100
 
-    let fewerKids
-    kids < defaultCapacity
-      ? (fewerKids = defaultCapacity - kids)
-      : (fewerKids = 0)
+    const adultsPrice = (additionalAdults * additionalAdultPrice) / 100
 
-    let additionalAdults = adults - defaultCapacity - fewerKids
-    let additionalAdultsPrice = 0
+    const subtotal =
+      basePackagePrice + baseCleaningFee + childrenPrice + adultsPrice
 
-    console.log(additionalAdults)
-    if (additionalAdults > 0) {
-      additionalAdultsPrice = additionalAdults * EXTRA_ADULTS_PRICE
-    }
+    const tax = (subtotal * TAX_RATE) / 100
 
-    const total =
-      addonsPrice + partyPrice + additionalKidsPrice + additionalAdultsPrice
-    setTotalPrice(total)
-  }, [kids, adults, addons])
+    const total = subtotal + tax
 
-  // Form submission handler
-  const onSubmit = async (data) => {
-    const payload = {
-      // bookingDate: savedBookingData.selectedDate,
-
-      // timeSlotId: savedBookingData.selectedTimeslotId,
-      // packageId: savedBookingData.selectedPackageId,
-      // roomId: savedBookingData.selectedRoomId,
-
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phoneNumber: data.phoneNumber,
-
-      celebrantName: data.celebrantName,
-      celebrantGender: data.celebrantGender,
-      celebrantAge: Number(data.celebrantAge),
-
-      numberOfChildren: Number(data.numberOfChildren),
-      numberOfAdults: Number(data.numberOfAdults),
-
-      themeId: data.themeId
-
-      // addons: Object.entries(data.addons)
-      //   .filter(([_, quantity]) => quantity > 0)
-      //   .map(([addonId, quantity]) => ({
-      //     addonId,
-      //     quantity,
-      //   })),
-    }
-
-    // const response = await fetch("/api/bookings", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify(payload),
-    // });
-
-    // const result = await response.json();
-
-    console.log(payload)
-  }
-
-  const pizzaDeliveryTime = () => {
-    console.log('Pizza Delivery Time:', partyTimeslot)
-    const timeslot = partyTimeslot.slice(0, -2)
-    const pickupTime = ['00', '15', '30', '45']
-
-    return pickupTime.map((time) => {
-      const formattedTime = `${timeslot}:${time} PM`
-      return (
-        <option key={formattedTime} value={formattedTime}>
-          {formattedTime}
-        </option>
-      )
+    setPrice({
+      basePrice: basePackagePrice,
+      cleaningFee: baseCleaningFee,
+      additionalChildren: childrenPrice,
+      additionalAdults: adultsPrice,
+      tax,
+      total
     })
+  }, [
+    packagePricing,
+    packageRules,
+    selectedRooms,
+    additionalChildren,
+    additionalAdults
+  ])
+
+  // ------------------------------------------------------------
+  // Submit
+  // ------------------------------------------------------------
+
+  const onSubmit = async (formData) => {
+    if (!heldSlots.length || !sessionId) {
+      setError('Your booking session has expired.')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      setError(null)
+
+      const first = heldSlots[0]
+
+      const bookingData = {
+        // ------------------------------------------
+        // Held booking information
+        // ------------------------------------------
+
+        sessionId,
+
+        bookingDate: bookingDate ? bookingDate.format('YYYY-MM-DD') : null,
+
+        timeSlotId: first.held_slot.timeSlotId,
+
+        packageId: first.held_slot.packageId,
+
+        roomId: selectedRooms.map((room) => room.id),
+
+        // ------------------------------------------
+        // Customer information
+        // ------------------------------------------
+
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+
+        // ------------------------------------------
+        // Celebrant
+        // ------------------------------------------
+
+        celebrantName: formData.celebrantName,
+        celebrantAge: Number(formData.celebrantAge),
+        celebrantGender: formData.celebrantGender,
+
+        // ------------------------------------------
+        // Party
+        // ------------------------------------------
+
+        numberOfChildren: Number(formData.numberOfChildren),
+        numberOfAdults: Number(formData.numberOfAdults),
+
+        theme: formData.theme || null,
+
+        notes: formData.notes || null,
+
+        // ------------------------------------------
+        // Pricing
+        // ------------------------------------------
+
+        basePrice: price.basePrice,
+        cleaningFee: price.cleaningFee,
+        additionalChildrenPrice: price.additionalChildren,
+        additionalAdultsPrice: price.additionalAdults,
+        tax: price.tax,
+        totalPrice: price.total,
+
+        // ------------------------------------------
+        // Addons
+        // ------------------------------------------
+
+        addons: formData.addons || {},
+
+        status: 'pending'
+      }
+
+      console.log('Submitting booking:', bookingData)
+
+      await submitBooking(bookingData)
+
+      // Booking successfully created.
+      // Remove the temporary hold session.
+      localStorage.removeItem('sessionId')
+
+      router.push('/booking/review')
+    } catch (err) {
+      console.error('Unable to submit booking:', err)
+
+      setError(
+        err?.response?.data?.message ||
+          'Unable to complete your booking. Please try again.'
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
+
+  // ------------------------------------------------------------
+  // Loading
+  // ------------------------------------------------------------
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-gray-600">Loading your booking...</p>
+      </main>
+    )
+  }
+
+  // ------------------------------------------------------------
+  // Render
+  // ------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <header className="text-xl font-bold mb-8">
-        <h1 className="text-3xl font-bold text-pink-600 mb-2">
+    <main className="min-h-screen bg-gray-50 p-6 md:p-8">
+      <header className="mb-8">
+        <h1 className="mb-2 text-3xl font-bold text-pink-600">
           🎉 Party Booking Form
         </h1>
+
         <p className="text-gray-600">
-          Please fill out the form below to book your party. All fields are
-          required unless specified otherwise.
+          Please fill out the form below to complete your booking.
         </p>
       </header>
 
+      {/* Error */}
+
+      {error && (
+        <div className="mb-6 rounded-md bg-red-100 p-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white p-6 rounded shadow-md space-y-8"
+        className="space-y-8 rounded-lg bg-white p-6 shadow-md"
       >
+        {/* ================================================== */}
+        {/* PARTY DETAILS */}
+        {/* ================================================== */}
+
         <section>
-          <div>
-            <h2 className="text-lg font-semibold">Party Details</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Party Details</h2>
+
+              <p className="text-sm text-gray-600">
+                Your selected booking information.
+              </p>
+            </div>
+
             <Timer
-              heldSlotId={heldSlotId}
-              heldSlotExpiration={heldSlotExpiration}
+              heldSlotId={sessionId}
+              heldSlotExpiration={sessionExpiration}
             />
           </div>
 
-          <p className="text-gray-600">
-            To modify any details, please go back to the booking page.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Date */}
+
             <FormField label="Party Date" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  value={watchedValues.bookingDate || ''}
-                  readOnly
-                  className="w-full p-2 border rounded-md bg-gray-100"
-                />
-                <input type="hidden" {...register('bookingDate')} />
-                <Modal
-                  message={
-                    <p>
-                      Selected Party Date: {savedBookingData?.selectedDate}{' '}
-                      <br />
-                      <span>To change date go back to previous page.</span>
-                    </p>
-                  }
-                />
-              </div>
+              <input
+                type="text"
+                value={bookingDate ? bookingDate.format('MMMM DD, YYYY') : ''}
+                readOnly
+                className="w-full rounded-md border bg-gray-100 p-2"
+              />
             </FormField>
+
+            {/* Time */}
 
             <FormField label="Party Timeslot" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  value={watchedValues.partyTimeslot || ''}
-                  readOnly
-                  className="w-full p-2 border rounded-md bg-gray-100"
-                />
-
-                <input type="hidden" {...register('timeSlotId')} />
-                <Modal
-                  message={`🕒 Selected Timeslot Information:\n\nThe currently selected timeslot is:
-                    ${savedBookingData?.selectedTimeslot}`}
-                />
-              </div>
+              <input
+                type="text"
+                value={
+                  selectedTimeSlot
+                    ? `${formatTime(selectedTimeSlot.startTime)} - ${formatTime(selectedTimeSlot.endTime)}`
+                    : ''
+                }
+                readOnly
+                className="w-full rounded-md border bg-gray-100 p-2"
+              />
             </FormField>
+
+            {/* Package */}
 
             <FormField label="Party Package" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  value={watchedValues.partyPackage || ''}
-                  readOnly
-                  className="w-full p-2 border rounded-md bg-gray-100"
-                />
-
-                <input type="hidden" {...register('packageId')} />
-                <Modal
-                  message={`🎁 Selected Package Information:\n\nThe currently selected package is: ${savedBookingData?.selectedPackage}`}
-                />
-              </div>
+              <input
+                type="text"
+                value={selectedPackage?.name || ''}
+                readOnly
+                className="w-full rounded-md border bg-gray-100 p-2"
+              />
             </FormField>
 
-            <FormField label="Party Room" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  value={watchedValues.partyRoom || ''}
-                  readOnly
-                  className="w-full p-2 border rounded-md bg-gray-100"
-                />
+            {/* Rooms */}
 
-                <input type="hidden" {...register('roomId')} />
-                <Modal
-                  message={`🏠 Selected Room Information:\n\nThe currently selected room is: ${savedBookingData?.selectedRoom}`}
-                />
-              </div>
+            <FormField label="Party Rooms" required>
+              <input
+                type="text"
+                value={selectedRooms.map((room) => room.name).join(', ')}
+                readOnly
+                className="w-full rounded-md border bg-gray-100 p-2"
+              />
+
+              <p className="mt-1 text-xs text-gray-500">
+                Total capacity: {totalRoomCapacity}
+              </p>
             </FormField>
           </div>
         </section>
-        {/* Customer Details */}
+
+        {/* ================================================== */}
+        {/* CUSTOMER DETAILS */}
+        {/* ================================================== */}
+
         <section>
-          <h2 className="text-lg font-semibold">Booking Details</h2>
-          <p className="text-gray-600">
-            Provide contact information for confirmation and communication.
+          <h2 className="text-lg font-semibold">Customer Details</h2>
+
+          <p className="mb-4 text-gray-600">
+            Provide your contact information.
           </p>
 
-          <div className="grid sm:grid-cols-2 md:grid-cols-2 gap-6 mt-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* First Name */}
+
             <FormField label="First Name" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  {...register('firstName', {
-                    required: 'First name is required.'
-                  })}
-                  className="w-full p-2 border rounded-md"
-                  aria-invalid={!!errors.firstName}
-                  aria-describedby="firstNameError"
-                />
-                <Modal
-                  message={`👤 Customer's First Name:\n\n${
-                    watchedValues.firstName || ''
-                  }`}
-                />
-              </div>
+              <input
+                {...register('firstName', {
+                  required: 'First name is required.'
+                })}
+                className="w-full rounded-md border p-2"
+              />
+
               {errors.firstName && (
-                <p id="firstNameError" className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.firstName.message}
                 </p>
               )}
             </FormField>
 
             {/* Last Name */}
+
             <FormField label="Last Name" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  {...register('lastName', {
-                    required: 'Last name is required.'
-                  })}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`👤 Customer's Last Name:\n\n${
-                    watchedValues.lastName || ''
-                  }`}
-                />
-              </div>
+              <input
+                {...register('lastName', {
+                  required: 'Last name is required.'
+                })}
+                className="w-full rounded-md border p-2"
+              />
+
               {errors.lastName && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.lastName.message}
                 </p>
               )}
             </FormField>
 
             {/* Email */}
+
             <FormField label="Email" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[^@]+@[^@]+\.[^@]+$/,
-                      message: 'Invalid email address'
-                    }
-                  })}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`📧 Customer's Email:\n\n${
-                    watchedValues.email || ''
-                  }`}
-                />
-              </div>
+              <input
+                type="email"
+                {...register('email', {
+                  required: 'Email is required.',
+                  pattern: {
+                    value: /^[^@]+@[^@]+\.[^@]+$/,
+                    message: 'Invalid email address.'
+                  }
+                })}
+                className="w-full rounded-md border p-2"
+              />
+
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.email.message}
                 </p>
               )}
             </FormField>
 
             {/* Phone */}
+
             <FormField label="Phone Number" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="tel"
-                  {...register('phoneNumber', {
-                    required: 'Phone number is required.',
-                    pattern: {
-                      value: /^[0-9]{10}$/,
-                      message: 'Phone number must be 10 digits'
-                    }
-                  })}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`📞 Phone Number:\n\n${watchedValues.phoneNumber || ''}`}
-                />
-              </div>
+              <input
+                type="tel"
+                {...register('phoneNumber', {
+                  required: 'Phone number is required.'
+                })}
+                className="w-full rounded-md border p-2"
+              />
+
               {errors.phoneNumber && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.phoneNumber.message}
                 </p>
               )}
             </FormField>
+          </div>
+        </section>
 
-            {/* Celebrant Name */}
+        {/* ================================================== */}
+        {/* CELEBRANT */}
+        {/* ================================================== */}
+
+        <section>
+          <h2 className="text-lg font-semibold">Celebrant Details</h2>
+
+          <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Name */}
+
             <FormField label="Celebrant's Name" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  {...register('celebrantName', {
-                    required: "Celebrant's name is required"
-                  })}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`🎉 Celebrant's Name:\n\n${
-                    watchedValues.celebrantName || ''
-                  }`}
-                />
-              </div>
+              <input
+                {...register('celebrantName', {
+                  required: "Celebrant's name is required."
+                })}
+                className="w-full rounded-md border p-2"
+              />
+
               {errors.celebrantName && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.celebrantName.message}
                 </p>
               )}
             </FormField>
 
             {/* Age */}
+
             <FormField label="Age Turning" required>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  max={AGE_RANGE[1]}
-                  {...register('celebrantAge', {
-                    required: "Celebrant's age is required",
-                    min: {
-                      value: AGE_RANGE[0],
-                      message: `Age must be at least ${AGE_RANGE[0]}`
-                    },
-                    max: {
-                      value: AGE_RANGE[1],
-                      message: `Age must be ${AGE_RANGE[1]} or younger`
-                    }
-                  })}
-                  className="w-full p-2 border rounded-md"
-                />
-                <Modal
-                  message={`🎂 Age Turning:\n\n${watchedValues.celebrantAge || ''}`}
-                />
-              </div>
+              <input
+                type="number"
+                min={1}
+                {...register('celebrantAge', {
+                  required: "Celebrant's age is required.",
+                  min: {
+                    value: 1,
+                    message: 'Age must be at least 1.'
+                  }
+                })}
+                className="w-full rounded-md border p-2"
+              />
+
               {errors.celebrantAge && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.celebrantAge.message}
                 </p>
               )}
             </FormField>
 
             {/* Gender */}
+
             <FormField label="Celebrant's Gender" required>
-              <div className="flex items-center space-x-2">
-                <select
-                  {...register('celebrantGender', {
-                    required: "Celebrant's gender is required"
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="">Select gender</option>
-                  <option value="Female">Female</option>
-                  <option value="Male">Male</option>
-                </select>
-                <Modal message="Select the celebrant's gender" />
-              </div>
+              <select
+                {...register('celebrantGender', {
+                  required: "Celebrant's gender is required."
+                })}
+                className="w-full rounded-md border p-2"
+              >
+                <option value="">Select gender</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+
               {errors.celebrantGender && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-red-500">
                   {errors.celebrantGender.message}
                 </p>
               )}
             </FormField>
 
+            {/* Theme */}
+
             <FormField label="Theme">
-              <div className="flex items-center space-x-2">
-                <select
-                  {...register('theme', {
-                    required: 'Theme is required'
-                  })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="">Select theme</option>
-                  <option value="Princess">Princess</option>
-                  <option value="Superhero">Superhero</option>
-                </select>
-                <Modal message="Select the celebrant's theme" />
-              </div>
-              {errors.theme && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.theme.message}
-                </p>
-              )}
+              <select
+                {...register('theme')}
+                className="w-full rounded-md border p-2"
+              >
+                <option value="">Select theme</option>
+                <option value="Princess">Princess</option>
+                <option value="Superhero">Superhero</option>
+              </select>
             </FormField>
           </div>
         </section>
-        {/* Capacity Control */}
-        <div className="flex">
-          <section>
-            <h2 className="text-lg font-semibold">Capacity Details</h2>
-            <p className="text-gray-600">
-              Provide contact information for confirmation and communication.
-            </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-6 mt-4">
-              <div>
-                <div className="mb-4">
-                  <p className="text-sm">
-                    Total Capacity: {MAX_CAPACITY[bookingIndex]}
-                  </p>
-                  <p className="text-sm">Spots Left: {spaceRemaining}</p>
-                </div>
+        {/* ================================================== */}
+        {/* CAPACITY */}
+        {/* ================================================== */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Number of Kids */}
-                  <FormField label="Number of Kids">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="number"
-                        min={KIDS_CAPACITY_RANGE[0]}
-                        max={maxKids}
-                        {...register('numberOfChildren', {
-                          valueAsNumber: true,
-                          required: 'Number of kids is required',
-                          min: {
-                            value: KIDS_CAPACITY_RANGE[0],
-                            message: `Must have at least ${KIDS_CAPACITY_RANGE[0]} kid(s)`
-                          },
-                          max: {
-                            value: maxKids,
-                            message: `Cannot exceed ${maxKids} kids for selected room`
-                          }
-                        })}
-                        onBlur={(e) => {
-                          const numberOfKids = Number(e.currentTarget.value)
-                          const clamped = Math.min(
-                            maxKids,
-                            Math.max(numberOfKids, KIDS_CAPACITY_RANGE[0])
-                          )
-                          e.currentTarget.value = clamped
-                          setValue('numberOfChildren', clamped)
-                        }}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        aria-invalid={!!errors.numberOfChildren}
-                        aria-describedby="numberOfChildrenError"
-                      />
-                      <Modal
-                        message={`👶 Kids Capacity Information:\n\nThe number of kids is:`}
-                      />
-                    </div>
-                    {errors.numberOfChildren && (
-                      <p
-                        id="numberOfChildrenError"
-                        className="text-red-500 text-sm mt-1"
-                      >
-                        {errors.numberOfChildren.message}
-                      </p>
-                    )}
-                  </FormField>
-
-                  {/* Number of Adults */}
-                  <FormField label="Number of Adults">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="number"
-                        min={ADULTS_CAPACITY_RANGE[0]}
-                        max={maxAdults}
-                        {...register('numberOfAdults', {
-                          valueAsNumber: true,
-                          min: {
-                            value: ADULTS_CAPACITY_RANGE[0],
-                            message: `Must have at least ${ADULTS_CAPACITY_RANGE[0]} adult(s)`
-                          },
-                          max: {
-                            value: maxAdults,
-                            message: `Cannot exceed ${maxAdults} adults for selected room`
-                          }
-                        })}
-                        onBlur={(e) => {
-                          const numberOfAdults = Number(e.currentTarget.value)
-                          const clamped = Math.min(
-                            Math.max(numberOfAdults, ADULTS_CAPACITY_RANGE[0]),
-                            maxAdults
-                          )
-                          e.currentTarget.value = clamped
-                          setValue('numberOfAdults', clamped)
-                        }}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        aria-invalid={!!errors.numberOfAdults}
-                        aria-describedby="numberOfAdultsError"
-                      />
-                      <Modal
-                        message={`${DEFAULT_CAPACITY[bookingIndex]} adult admissions included for free`}
-                      />
-                    </div>
-                    {errors.numberOfAdults && (
-                      <p
-                        id="numberOfAdultsError"
-                        className="text-red-500 text-sm mt-1"
-                      >
-                        {errors.numberOfAdults.message}
-                      </p>
-                    )}
-                  </FormField>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        {/* Galaxy Package Add-ons */}
-        {
-          <div>
-            <h2 className="text-lg font-semibold">Galaxy Addons</h2>
-            <p className="text-gray-600">
-              Select your pizza add-ons and delivery time for the Galaxy
-              package.
-            </p>
-            <div className=" space-y-1 grid  gap-6 mt-4">
-              <div className="flex space-x-2">
-                <div className="md:grid flex flex-wrap md:grid-cols-3 gap-3 w-full md:gap-6">
-                  {GALAXY_PACKAGE_ADDONS.map((addon, index) => (
-                    <FormField
-                      key={`${addon.tag}_${addon.name.replace(/\s+/g, '_')}`}
-                      label={`${addon.tag} ${addon.name.replace(/\s+/g, ' ')}`}
-                    >
-                      <input
-                        type="number"
-                        min={0}
-                        max={index === 0 ? maxPepperoni : maxCheese}
-                        defaultValue={1}
-                        {...register(
-                          `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`, // better key than space-based
-                          {
-                            min: 0,
-                            max: index === 0 ? maxPepperoni : maxCheese,
-                            required: `Pizza's choice is required`
-                          }
-                        )}
-                        className="w-full p-2 border rounded-md"
-                        onBlur={(e) => {
-                          const numberOfPizza = Number(e.currentTarget.value)
-                          console.warn(
-                            e.currentTarget.value,
-                            maxPepperoni,
-                            maxCheese,
-                            cheesePizza,
-                            pepperoniPizza,
-                            index
-                          )
-                          const clamped = Math.min(
-                            index === 0
-                              ? cheesePizza + numberOfPizza <= 2
-                                ? numberOfPizza
-                                : 2 - cheesePizza
-                              : pepperoniPizza + numberOfPizza <= 2
-                                ? numberOfPizza
-                                : 2 - pepperoniPizza,
-                            Math.max(numberOfPizza, 0)
-                          )
-                          e.currentTarget.value = clamped
-                          setValue(
-                            `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`,
-                            clamped
-                          )
-                        }}
-                      />
-                      {errors[
-                        `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
-                      ] && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {
-                            errors[
-                              `${addon.tag}_${addon.name.replace(/\s+/g, '_')}`
-                            ].message
-                          }
-                        </p>
-                      )}
-                    </FormField>
-                  ))}
-
-                  <FormField label="Delivery Time" required>
-                    <select
-                      {...register('pizzaDeliveryTime', {
-                        required: 'Delivery time is required'
-                      })}
-                      className="w-full p-2 border rounded-md"
-                    >
-                      {pizzaDeliveryTime()}
-                    </select>
-                    {errors.pizzaDeliveryTime && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.pizzaDeliveryTime?.message}
-                      </p>
-                    )}
-                  </FormField>
-                </div>
-                <Modal
-                  message={
-                    <p>
-                      You have 2 pizzas included in this package. <br />
-                      You can select up to 2 pizzas of each type. <br />
-                      You can also select a delivery time for the pizzas.
-                    </p>
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        }
-        {/* Addons */}
-        {/* Addons Section */}
         <section>
-          <h2 className="text-lg font-semibold">Add-ons</h2>
-          <p className="text-gray-600 mb-4">
-            Select quantities for the add-ons you'd like to include in your
-            party.
-          </p>
+          <h2 className="text-lg font-semibold">Party Capacity</h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            {addons.map((addon) => (
-              <div key={addon.id} className="flex flex-col">
-                <FormField label={`${addon.name} ($${addon.price})`}>
-                  <input
-                    type="number"
-                    min={0}
-                    max={addon.max}
-                    defaultValue={0}
-                    {...register(`addons.${addon.id}`, {
-                      valueAsNumber: true,
-                      min: {
-                        value: 0,
-                        message: `Minimum value is 0`
-                      },
-                      max: {
-                        value: addon.max,
-                        message: `Cannot exceed ${addon.max} ${addon.name}`
-                      }
-                    })}
-                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  {errors?.addons?.[addon.id]?.message && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.addons[addon.id].message}
-                    </p>
-                  )}
-                </FormField>
+          <div className="mt-4 rounded-md bg-gray-50 p-4">
+            <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-4">
+              <div>
+                <p className="text-sm text-gray-500">Room Capacity</p>
+
+                <p className="font-semibold">{totalRoomCapacity}</p>
               </div>
-            ))}
+
+              <div>
+                <p className="text-sm text-gray-500">Spots Remaining</p>
+
+                <p className="font-semibold">{availableCapacity}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Included Children</p>
+
+                <p className="font-semibold">{includedChildren}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Included Adults</p>
+
+                <p className="font-semibold">{includedAdults}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Children */}
+
+              <FormField label="Number of Children" required>
+                <input
+                  type="number"
+                  min={0}
+                  max={totalRoomCapacity}
+                  {...register('numberOfChildren', {
+                    valueAsNumber: true,
+                    required: 'Number of children is required.',
+                    min: {
+                      value: 0,
+                      message: 'Number of children cannot be negative.'
+                    },
+                    validate: (value) =>
+                      value + numberOfAdults <= totalRoomCapacity ||
+                      `Maximum capacity is ${totalRoomCapacity}.`
+                  })}
+                  className="w-full rounded-md border p-2"
+                />
+
+                {errors.numberOfChildren && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.numberOfChildren.message}
+                  </p>
+                )}
+              </FormField>
+
+              {/* Adults */}
+
+              <FormField label="Number of Adults" required>
+                <input
+                  type="number"
+                  min={0}
+                  max={totalRoomCapacity}
+                  {...register('numberOfAdults', {
+                    valueAsNumber: true,
+                    required: 'Number of adults is required.',
+                    min: {
+                      value: 0,
+                      message: 'Number of adults cannot be negative.'
+                    },
+                    validate: (value) =>
+                      value + numberOfChildren <= totalRoomCapacity ||
+                      `Maximum capacity is ${totalRoomCapacity}.`
+                  })}
+                  className="w-full rounded-md border p-2"
+                />
+
+                {errors.numberOfAdults && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.numberOfAdults.message}
+                  </p>
+                )}
+              </FormField>
+            </div>
           </div>
         </section>
-        {/* Review Message */}
-        <div className="text-gray-600 mt-6">
-          <p className="text-sm">
-            Please review your booking details before submitting. If you need to
-            make changes, you can go back to the booking page.
-          </p>
-        </div>
-        {/* Back and Submit Buttons */}
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center mt-4 gap-4">
-          <Link href="/booking/customer/" passHref>
-            <button
-              type="button"
-              className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-            >
-              Back
-            </button>
+
+        {/* ================================================== */}
+        {/* NOTES */}
+        {/* ================================================== */}
+
+        <section>
+          <h2 className="text-lg font-semibold">Additional Notes</h2>
+
+          <textarea
+            {...register('notes')}
+            rows={4}
+            placeholder="Anything you'd like us to know?"
+            className="mt-4 w-full rounded-md border p-3"
+          />
+        </section>
+
+        {/* ================================================== */}
+        {/* PRICE */}
+        {/* ================================================== */}
+
+        <section className="rounded-lg border bg-gray-50 p-5">
+          <h2 className="mb-4 text-lg font-semibold">Price Details</h2>
+
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span>Package</span>
+
+              <strong>${price.basePrice.toFixed(2)}</strong>
+            </div>
+
+            {price.cleaningFee > 0 && (
+              <div className="flex justify-between">
+                <span>Cleaning fee</span>
+
+                <strong>${price.cleaningFee.toFixed(2)}</strong>
+              </div>
+            )}
+
+            {price.additionalChildren > 0 && (
+              <div className="flex justify-between">
+                <span>Additional children</span>
+
+                <strong>${price.additionalChildren.toFixed(2)}</strong>
+              </div>
+            )}
+
+            {price.additionalAdults > 0 && (
+              <div className="flex justify-between">
+                <span>Additional adults</span>
+
+                <strong>${price.additionalAdults.toFixed(2)}</strong>
+              </div>
+            )}
+
+            <div className="flex justify-between">
+              <span>Tax ({TAX_RATE}%)</span>
+
+              <strong>${price.tax.toFixed(2)}</strong>
+            </div>
+
+            <hr />
+
+            <div className="flex justify-between text-lg">
+              <span className="font-semibold">Total</span>
+
+              <strong className="text-purple-700">
+                ${price.total.toFixed(2)}
+              </strong>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================== */}
+        {/* ACTIONS */}
+        {/* ================================================== */}
+
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Link
+            href="/booking"
+            className="rounded-md bg-red-600 px-6 py-3 text-center font-medium text-white hover:bg-red-700"
+          >
+            Back
           </Link>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
-            <p className="text-lg text-gray-700">
-              Total Price:{' '}
-              <span className="font-semibold">
-                ${(totalPrice || 0).toFixed(2)}
-              </span>
-            </p>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              onClick={onSubmit}
-            >
-              Confirm Booking
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-md bg-purple-600 px-6 py-3 font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          >
+            {submitting ? 'Submitting...' : 'Confirm Booking'}
+          </button>
         </div>
       </form>
-    </div>
+    </main>
   )
+}
+
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+
+function formatTime(time) {
+  if (!time) return ''
+
+  return dayjs(`2000-01-01T${time}`).format('h:mm A')
 }
