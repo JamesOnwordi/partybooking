@@ -152,13 +152,13 @@ export default function Form() {
           return
         }
 
-        setHeldSlots(data)
+        setHeldSlots(data.heldSlot)
 
         // ------------------------------------------------------
         // First hold contains the common booking information
         // ------------------------------------------------------
 
-        const first = data[0]
+        const first = data.heldSlot[0]
 
         const heldSlot = first.held_slot
         const pricing = first.package_pricing
@@ -170,9 +170,11 @@ export default function Form() {
         const localStart = dayjs(heldSlot.startAt).tz(ZONE)
 
         setBookingDate(localStart)
+        
 
         setSelectedPackage(first.packages)
         setSelectedTimeSlot(first.time_slots)
+        setThemes(first.themes)
         setPackagePricing(pricing)
         setPackageRules(rules)
 
@@ -182,7 +184,7 @@ export default function Form() {
         // Multiple rooms can be held for the same session
         // ------------------------------------------------------
 
-        const rooms = data.map((item) => item.rooms).filter(Boolean)
+        const rooms = data.heldSlot.map((item) => item.rooms).filter(Boolean)
 
         setSelectedRooms(rooms)
       } catch (err) {
@@ -650,6 +652,11 @@ export default function Form() {
                 className="w-full rounded-md border p-2"
               >
                 <option value="">Select theme</option>
+                {themes?.map((theme) => (
+                  <option key={theme.id} value={theme.name}>
+                    {theme.name}
+                  </option>
+                ))}
                 <option value="Princess">Princess</option>
                 <option value="Superhero">Superhero</option>
               </select>

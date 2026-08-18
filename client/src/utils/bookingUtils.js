@@ -291,8 +291,8 @@ export async function getHeldSlotData(sessionId) {
     const response = await axios.get(
       `${BASE_URL}/booking/heldSlot/data/${sessionId}`
     )
-
-    return response.data?.heldSlot ?? []
+    console.log('Held slot data response:', response.data)
+    return response.data?.options ?? []
   } catch (error) {
     console.error(
       'Failed to get held slot data:',
