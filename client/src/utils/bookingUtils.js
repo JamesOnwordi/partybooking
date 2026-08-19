@@ -27,6 +27,8 @@ export const WEEKDAY = [1, 2, 3, 4]
 export const WINTER_MONTHS = [1, 2, 3, 12]
 export const HOLIDAYS = []
 
+const SECOND_ROOM_DISCOUNT = 0.03
+
 // --------------------------------------------------
 // Calendar dates
 // --------------------------------------------------

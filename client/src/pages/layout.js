@@ -1,7 +1,6 @@
 import { FaBirthdayCake } from 'react-icons/fa'
-import '../styles/globals.css'
 
-function MyApp({ Component, pageProps }) {
+export default function BookingLayout({ children }) {
   return (
     <>
       <header className="flex items-center justify-between border-b bg-white px-6 py-4">
@@ -10,9 +9,9 @@ function MyApp({ Component, pageProps }) {
           Party Booking System
         </h1>
       </header>
-      <Component {...pageProps} />
+      <html>
+        <body>{children}</body>
+      </html>
     </>
   )
 }
-
-export default MyApp

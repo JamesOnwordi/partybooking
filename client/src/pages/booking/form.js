@@ -12,12 +12,7 @@ import FormField from '@/components/FormField'
 import Modal from '@/components/Modal'
 import Timer from '@/components/Timer'
 
-import {
-  ZONE,
-  getHeldSlotData,
-  submitBooking,
-  calculateTotalPrice
-} from '@/utils/bookingUtils'
+import { ZONE, getHeldSlotData } from '@/utils/bookingUtils'
 
 import { TAX_RATE } from '@/utils/bookingUtils'
 
@@ -103,13 +98,20 @@ export default function Form() {
     )
   }, [selectedRooms])
 
-  const includedChildren = packageRules?.includedChildrenCount ?? 0
+  const includedChildren =
+    packageRules?.includedChildrenCount * selectedRooms?.length ?? 0
 
-  const includedAdults = packageRules?.includedAdultCount ?? 0
+  const includedAdults =
+    packageRules?.includedAdultCount * selectedRooms?.length ?? 0
 
   const additionalChildren = Math.max(0, numberOfChildren - includedChildren)
 
-  const additionalAdults = Math.max(0, numberOfAdults - includedAdults)
+  const openChildrenSpot = includedChildren - numberOfChildren
+
+  const additionalAdults =
+    openChildrenSpot > 0
+      ? Math.max(0, numberOfAdults - (includedAdults + openChildrenSpot))
+      : Math.max(0, numberOfAdults - includedAdults)
 
   const availableCapacity = Math.max(
     totalRoomCapacity - numberOfChildren - numberOfAdults
@@ -170,11 +172,10 @@ export default function Form() {
         const localStart = dayjs(heldSlot.startAt).tz(ZONE)
 
         setBookingDate(localStart)
-        
 
         setSelectedPackage(first.packages)
         setSelectedTimeSlot(first.time_slots)
-        setThemes(first.themes)
+        setThemes(data.themes)
         setPackagePricing(pricing)
         setPackageRules(rules)
 
@@ -351,13 +352,18 @@ export default function Form() {
         status: 'pending'
       }
 
-      console.log('Submitting booking:', bookingData)
+      console.log('saving booking:', bookingData)
 
-      await submitBooking(bookingData)
+      const savedFormData = localStorage.setItem(
+        'bookingFormData',
+        JSON.stringify(bookingData)
+      )
+
+      // await submitBooking(bookingData)
 
       // Booking successfully created.
       // Remove the temporary hold session.
-      localStorage.removeItem('sessionId')
+      // localStorage.removeItem('sessionId')
 
       router.push('/booking/review')
     } catch (err) {
@@ -400,6 +406,11 @@ export default function Form() {
         </p>
       </header>
 
+      {/* Hold timer */}
+      {sessionExpiration && (
+        <Timer sessionId={sessionId} sessionExpiration={sessionExpiration} />
+      )}
+
       {/* Error */}
 
       {error && (
@@ -425,11 +436,6 @@ export default function Form() {
                 Your selected booking information.
               </p>
             </div>
-
-            <Timer
-              heldSlotId={sessionId}
-              heldSlotExpiration={sessionExpiration}
-            />
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -651,14 +657,12 @@ export default function Form() {
                 {...register('theme')}
                 className="w-full rounded-md border p-2"
               >
-                <option value="">Select theme</option>
+                <option value="">Select a theme</option>
                 {themes?.map((theme) => (
                   <option key={theme.id} value={theme.name}>
                     {theme.name}
                   </option>
                 ))}
-                <option value="Princess">Princess</option>
-                <option value="Superhero">Superhero</option>
               </select>
             </FormField>
           </div>

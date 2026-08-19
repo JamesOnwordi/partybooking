@@ -1,51 +1,44 @@
 import { useEffect, useState } from 'react'
 import { getTimeRemaining } from '@/utils/bookingUtils'
+import { FaClock } from 'react-icons/fa'
 
-export default function Timer({ heldSlotId, heldSlotExpiration }) {
-  const [timeLeft, setTimeLeft] = useState(0)
+export default function Timer({ sessionId, sessionExpiration }) {
+  const [sessionTimer, setSessionTimer] = useState({
+    minutes: 0,
+    seconds: 0,
+    expired: false
+  })
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (!sessionExpiration) {
+      return
+    }
 
-    if (!heldSlotId) return
-    const interval = setInterval(() => {
-      console.log(heldSlotExpiration, heldSlotId)
-      const remaining = getTimeRemaining(heldSlotExpiration)
-      setTimeLeft(remaining)
+    const updateTimer = () => {
+      const remaining = getTimeRemaining(sessionExpiration)
+
+      setSessionTimer(remaining)
 
       if (remaining.expired) {
-        clearInterval(interval)
-        // setHeldSlotId(null)
-        localStorage.removeItem('initialBooking') // clear expired hold
-        // requestAvailability(selectedDate)
+        localStorage.removeItem('sessionId')
       }
-    }, 1000)
+    }
+
+    updateTimer()
+
+    const interval = setInterval(updateTimer, 1000)
+
     return () => clearInterval(interval)
-  }, [heldSlotId, heldSlotExpiration])
+  }, [sessionExpiration])
 
   return (
-    <div className="flex items-end justify-center flex-col">
-      {' '}
-      <div className="bg-yellow-50  ">
-        {' '}
-        <p className="text-cnter text-pink-700 animate-">
-          {'Hold Time: '}
-          {timeLeft && !timeLeft.expired
-            ? `${timeLeft.minutes}m ${timeLeft.seconds}s`
-            : 'No active hold'}
-        </p>
-        {/* {extendButton && (
-          <button
-            className={` px-2 text-sm py-2 rounded justify-center items-center transition bg-fuchsia-700 text-white hover:bg-purple-700`}
-            onClick={async () => {
-              setHeldSlotExpiration(await extendHeldSlot(heldSlotId))
-            }}
-          >
-            {' '}
-            Extend{' '}
-          </button>
-        )} */}
-      </div>
+    <div className="flex items-center gap-3 rounded-md bg-red-100 p-4 text-md text-red-700">
+      <FaClock />
+
+      <span>
+        {sessionTimer.minutes}:{String(sessionTimer.seconds).padStart(2, '0')}{' '}
+        left to complete booking!
+      </span>
     </div>
   )
 }

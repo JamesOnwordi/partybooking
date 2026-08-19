@@ -21,9 +21,10 @@ import {
   getTimeRemaining,
   getHeldSlot,
   updateSlotHold
-} from '@/utils/bookingUtils'
+} from '@/utils/bookingUtils.js'
 
 import 'react-calendar/dist/Calendar.css'
+import Timer from '@/components/Timer'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -64,11 +65,6 @@ export default function LandingPage() {
 
   const [sessionId, setSessionId] = useState(null)
   const [sessionExpiration, setSessionExpiration] = useState(null)
-  const [sessionTimer, setSessionTimer] = useState({
-    minutes: 0,
-    seconds: 0,
-    expired: false
-  })
 
   // ------------------------------------------------------------
   // Pricing
@@ -170,35 +166,7 @@ export default function LandingPage() {
     }
 
     restoreSession()
-  }, [])
-
-  // ------------------------------------------------------------
-  // Hold expiration timer
-  // ------------------------------------------------------------
-
-  useEffect(() => {
-    if (!sessionExpiration) {
-      return
-    }
-
-    const updateTimer = () => {
-      const remaining = getTimeRemaining(sessionExpiration)
-
-      setSessionTimer(remaining)
-
-      if (remaining.expired) {
-        setSessionId(null)
-        setSessionExpiration(null)
-        localStorage.removeItem('sessionId')
-      }
-    }
-
-    updateTimer()
-
-    const interval = setInterval(updateTimer, 1000)
-
-    return () => clearInterval(interval)
-  }, [sessionExpiration])
+  }, [rooms])
 
   // ------------------------------------------------------------
   // Date selection
@@ -421,34 +389,6 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b bg-white px-6 py-4">
-        <h1 className="flex items-center gap-3 text-xl font-bold">
-          <FaBirthdayCake />
-          Party Booking System
-        </h1>
-      </header>
-
-      {/* Hold timer */}
-      {sessionExpiration && !sessionTimer.expired && (
-        <div className="flex items-center gap-3 rounded-md bg-red-100 p-4 text-md text-red-700">
-          <FaClock />
-
-          <span>
-            {sessionTimer.minutes}:
-            {String(sessionTimer.seconds).padStart(2, '0')} left to complete
-            booking!
-          </span>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="mx-auto mt-4 max-w-6xl rounded-md bg-red-100 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
       <div className="mx-auto flex max-w-7xl flex-wrap justify-center gap-8 p-6">
         {/* Calendar */}
         <section className="flex flex-col items-center">
