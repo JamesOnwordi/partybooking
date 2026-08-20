@@ -9,6 +9,7 @@ import {
   formatTime,
   TAX_RATE
 } from '@/utils/bookingUtils'
+import Timer from '@/components/Timer'
 
 export default function BookingReview() {
   const router = useRouter()
@@ -19,6 +20,8 @@ export default function BookingReview() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+
+  const [sessionExpiration, setSessionExpiration] = useState(null)
 
   useEffect(() => {
     async function loadBooking() {
@@ -81,7 +84,9 @@ export default function BookingReview() {
      *   time_slots: {...}
      * }
      */
-    console.log(heldSlot)
+    console.log(heldSlot.held_slot.expiresAt)
+
+    setSessionExpiration(heldSlot?.held_slot.expiresAt)
 
     const slot = heldSlot.held_slot
     const packageData = heldSlot.packages
@@ -285,19 +290,8 @@ export default function BookingReview() {
 
   return (
     <main className="min-h-screen bg-slate-100">
+      {sessionExpiration && <Timer sessionExpiration={sessionExpiration} />}
       <div className="mx-auto max-w-7xl px-6 py-10">
-        {/* Header */}
-
-        <header className="mb-10">
-          <h1 className="text-4xl font-bold text-slate-900">
-            Review Your Booking
-          </h1>
-
-          <p className="mt-2 text-slate-600">
-            Please review everything below before confirming your booking.
-          </p>
-        </header>
-
         {error && (
           <div className="mb-6 rounded-xl bg-red-100 p-4 text-red-700">
             {error}

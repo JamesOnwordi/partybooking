@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getTimeRemaining } from '@/utils/bookingUtils'
 import { FaClock } from 'react-icons/fa'
 
-export default function Timer({ sessionId, sessionExpiration }) {
+export default function Timer({ sessionExpiration }) {
   const [sessionTimer, setSessionTimer] = useState({
     minutes: 0,
     seconds: 0,

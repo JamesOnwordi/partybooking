@@ -407,3 +407,63 @@ export async function getFormOptions() {
     throw error
   }
 }
+
+export async function getBookingById(bookingId) {
+  const url = `${BASE_URL}/staff/booking/${bookingId}`
+
+  try {
+    const response = await fetch(url)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`)
+    }
+
+    console.log(data)
+
+    return data
+  } catch (error) {
+    console.error('Failed to fetch form options:', error)
+
+    throw error
+  }
+}
+
+export async function getBookings() {
+  const url = `${BASE_URL}/staff/bookings`
+
+  try {
+    const response = await fetch(url)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`)
+    }
+
+    console.log(data)
+
+    return data.allBookings
+  } catch (error) {
+    console.error('Failed to fetch form options:', error)
+
+    throw error
+  }
+}
+
+export async function updateBooking(bookingData) {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/staff/booking/update`,
+      bookingData
+    )
+
+    return response.data
+  } catch (error) {
+    console.error(
+      'Failed to submit booking:',
+      error.response?.data || error.message
+    )
+
+    throw error
+  }
+}

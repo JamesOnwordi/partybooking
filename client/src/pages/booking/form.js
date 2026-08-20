@@ -395,33 +395,20 @@ export default function Form() {
   // ------------------------------------------------------------
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-8">
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold text-pink-600">
-          🎉 Party Booking Form
-        </h1>
-
-        <p className="text-gray-600">
-          Please fill out the form below to complete your booking.
-        </p>
-      </header>
-
+    <main className="min-h-screen bg-gray-50 ">
       {/* Hold timer */}
       {sessionExpiration && (
         <Timer sessionId={sessionId} sessionExpiration={sessionExpiration} />
       )}
-
       {/* Error */}
-
       {error && (
         <div className="mb-6 rounded-md bg-red-100 p-4 text-sm text-red-700">
           {error}
         </div>
-      )}
-
+      )}{' '}
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-8 rounded-lg bg-white p-6 shadow-md"
+        className="space-y-8 rounded-lg bg-white p-6 shadow-md md:p-8"
       >
         {/* ================================================== */}
         {/* PARTY DETAILS */}

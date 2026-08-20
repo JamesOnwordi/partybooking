@@ -32,9 +32,9 @@ dayjs.extend(timezone)
 export default function LandingPage() {
   const router = useRouter()
 
-  // ------------------------------------------------------------
-  // Booking options
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Booking options
+  // // ------------------------------------------------------------
 
   const [timeSlots, setTimeSlots] = useState({})
   const [packages, setPackages] = useState({})
@@ -43,32 +43,32 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // ------------------------------------------------------------
-  // User selections
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // User selections
+  // // ------------------------------------------------------------
 
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedRoom, setSelectedRoom] = useState([])
 
-  // ------------------------------------------------------------
-  // Availability
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Availability
+  // // ------------------------------------------------------------
 
   const [timeSlotsAvailability, setTimeSlotsAvailability] = useState(null)
   const [availableRooms, setAvailableRooms] = useState([])
 
-  // ------------------------------------------------------------
-  // Hold session
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Hold session
+  // // ------------------------------------------------------------
 
   const [sessionId, setSessionId] = useState(null)
   const [sessionExpiration, setSessionExpiration] = useState(null)
 
-  // ------------------------------------------------------------
-  // Pricing
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Pricing
+  // // ------------------------------------------------------------
 
   const [price, setPrice] = useState({
     basePrice: 0,
@@ -77,9 +77,9 @@ export default function LandingPage() {
     tax: 0
   })
 
-  // ------------------------------------------------------------
-  // Load booking options
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Load booking options
+  // // ------------------------------------------------------------
 
   useEffect(() => {
     let mounted = true
@@ -116,9 +116,9 @@ export default function LandingPage() {
     }
   }, [])
 
-  // ------------------------------------------------------------
-  // Restore existing booking session
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Restore existing booking session
+  // // ------------------------------------------------------------
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -168,9 +168,9 @@ export default function LandingPage() {
     restoreSession()
   }, [rooms])
 
-  // ------------------------------------------------------------
-  // Date selection
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Date selection
+  // // ------------------------------------------------------------
 
   const handleDateChange = async (newDate) => {
     if (!newDate) return
@@ -204,9 +204,9 @@ export default function LandingPage() {
     }
   }
 
-  // ------------------------------------------------------------
-  // Timeslot selection
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Timeslot selection
+  // // ------------------------------------------------------------
 
   const handleTimeSlotChange = (slot) => {
     if (!timeSlotsAvailability) return
@@ -227,9 +227,9 @@ export default function LandingPage() {
     setSelectedRoom([])
   }
 
-  // ------------------------------------------------------------
-  // Package selection
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Package selection
+  // // ------------------------------------------------------------
 
   const handlePackageChange = (pkg) => {
     setSelectedPackage(pkg.id)
@@ -313,9 +313,9 @@ export default function LandingPage() {
     }
   }, [selectedDate, selectedPackage, selectedRoom.length])
 
-  // ------------------------------------------------------------
-  // Derived data
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Derived data
+  // // ------------------------------------------------------------
 
   const timeSlotList = useMemo(() => Object.values(timeSlots), [timeSlots])
 
@@ -329,13 +329,12 @@ export default function LandingPage() {
     Boolean(selectedPackage) &&
     selectedRoom.length > 0
 
-  // ------------------------------------------------------------
-  // Create/update hold and continue
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Create/update hold and continue
+  // // ------------------------------------------------------------
 
   const handleBookNow = async () => {
     if (!canProceed) return
-
     try {
       const bookingData = {
         bookingDate: selectedDate.format('YYYY-MM-DD'),
@@ -343,37 +342,31 @@ export default function LandingPage() {
         packageId: selectedPackage,
         roomId: selectedRoom
       }
-
       const heldSlotResponse = sessionId
         ? await updateSlotHold({
             sessionId,
             ...bookingData
           })
         : await createSlotHold(bookingData)
-
       if (!heldSlotResponse) {
         return
       }
-
       setSessionId(heldSlotResponse.sessionId)
       setSessionExpiration(heldSlotResponse.expiresAt)
-
       localStorage.setItem(
         'sessionId',
         JSON.stringify(heldSlotResponse.sessionId)
       )
-
       router.push('/booking/form')
     } catch (err) {
       console.error('Unable to hold slot:', err)
-
       setError('Unable to reserve the selected slot. Please try again.')
     }
   }
 
-  // ------------------------------------------------------------
-  // Loading state
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Loading state
+  // // ------------------------------------------------------------
 
   if (loading) {
     return (
@@ -383,12 +376,14 @@ export default function LandingPage() {
     )
   }
 
-  // ------------------------------------------------------------
-  // Render
-  // ------------------------------------------------------------
+  // // ------------------------------------------------------------
+  // // Render
+  // // ------------------------------------------------------------
 
   return (
     <main className="min-h-screen bg-gray-50">
+      {/* Hold timer */}
+      {sessionExpiration && <Timer sessionExpiration={sessionExpiration} />}
       <div className="mx-auto flex max-w-7xl flex-wrap justify-center gap-8 p-6">
         {/* Calendar */}
         <section className="flex flex-col items-center">
