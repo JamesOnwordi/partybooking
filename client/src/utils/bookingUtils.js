@@ -70,7 +70,7 @@ export const getDayType = (day) => {
 // Get Booking Options
 // --------------------------------------------------
 
-export async function getOptions() {
+export async function getBookingOptions() {
   const url = `${BASE_URL}/booking/options`
 
   try {
@@ -82,10 +82,9 @@ export async function getOptions() {
 
     const data = await response.json()
 
-    return data?.options ?? {}
+    return data?.bookingOptions ?? {}
   } catch (error) {
     console.error('Failed to fetch booking options:', error)
-
     throw error
   }
 }
@@ -94,7 +93,7 @@ export async function getOptions() {
 // Get Availability
 // --------------------------------------------------
 
-export async function getAvailability({ date, sessionId }) {
+export async function getRoomAvailabilityByTimeSlot({ date, sessionId }) {
   if (!date) {
     throw new Error('Booking date is required')
   }
@@ -118,13 +117,13 @@ export async function getAvailability({ date, sessionId }) {
 
     const data = await response.json()
 
-    return data?.timeSlotsAvailability ?? {}
+    return data?.roomAvailabilityByTimeSlot ?? {}
   } catch (error) {
-    console.error('Failed to fetch availability:', error)
-
+    console.error('Failed to fetch room availability:', error)
     throw error
   }
 }
+
 
 // --------------------------------------------------
 // Get Package Price

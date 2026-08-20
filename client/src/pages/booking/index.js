@@ -11,9 +11,9 @@ import { useRouter } from 'next/router'
 import {
   ZONE,
   MINDATE,
-  getOptions,
+  getBookingOptions,
   formatTime,
-  getAvailability,
+  getRoomAvailabilityByTimeSlot,
   getPackagePrice,
   calculateTotalPrice,
   TAX_RATE,
@@ -41,6 +41,7 @@ export default function LandingPage() {
   const [rooms, setRooms] = useState({})
 
   const [loading, setLoading] = useState(true)
+  const [optionsLoaded, setOptionsLoaded] = useState(false)
   const [error, setError] = useState(null)
 
   // // ------------------------------------------------------------
@@ -89,13 +90,14 @@ export default function LandingPage() {
         setLoading(true)
         setError(null)
 
-        const data = await getOptions()
+        const data = await getBookingOptions()
 
         if (!mounted) return
 
         setTimeSlots(data?.timeSlots ?? {})
         setPackages(data?.packages ?? {})
         setRooms(data?.rooms ?? {})
+        setOptionsLoaded(true)
       } catch (err) {
         console.error('Unable to load booking options:', err)
 
@@ -121,52 +123,60 @@ export default function LandingPage() {
   // // ------------------------------------------------------------
 
   useEffect(() => {
+    if (!optionsLoaded) return
+    let mounted = true
     const restoreSession = async () => {
       try {
         const storedSessionId = localStorage.getItem('sessionId')
 
         if (!storedSessionId) return
 
-        const storedId = JSON.parse(storedSessionId)
+        const heldSlot = await getHeldSlot(storedSessionId)
+        console.log('Restored held slots:', heldSlot)
+        
+        if (!mounted) return
 
-        if (!storedId) return
-
-        const heldSlots = await getHeldSlot(storedId)
-
-        if (!heldSlots?.length) {
+        if (!heldSlot?.expiresAt || new Date(heldSlot.expiresAt) < new Date()) {
           localStorage.removeItem('sessionId')
+          setSessionId(null)
+          setSessionExpiration(null)
           return
-        }
+        }    
 
-        const firstHeldSlot = heldSlots[0]
+        setSessionId(storedSessionId)
 
-        setSessionId(storedId)
+        setSelectedRoom(heldSlot.rooms ?? [])
 
-        setSelectedRoom(heldSlots.map((slot) => slot.roomId).filter(Boolean))
-
-        setSelectedPackage(firstHeldSlot.packageId)
-        setSelectedTimeSlot(firstHeldSlot.timeSlotId)
-        setSessionExpiration(firstHeldSlot.expiresAt)
+        setSelectedPackage(heldSlot.packageId)
+        setSelectedTimeSlot(heldSlot.timeSlotId)
+        setSessionExpiration(heldSlot.expiresAt)
 
         // The DB timestamp is UTC.
         // Convert it to Edmonton before extracting the calendar date.
         const bookingDate = dayjs
-          .utc(firstHeldSlot.startAt)
+          .utc(heldSlot.startAt)
           .tz(ZONE)
           .format('YYYY-MM-DD')
 
         setSelectedDate(dayjs.tz(bookingDate, ZONE))
-      } catch (err) {
-        console.error('Unable to restore booking session:', err)
+      }catch (err) {
+        if (err.status === 404) {
+          localStorage.removeItem('sessionId')
+          setSessionId(null)
+          setSessionExpiration(null)
+        } else {
+          console.error('Unable to restore booking session:', err)
 
-        localStorage.removeItem('sessionId')
-        setSessionId(null)
-        setSessionExpiration(null)
+          setError('Unable to restore your booking. Please try again.')
+        }
       }
+      
     }
-
     restoreSession()
-  }, [rooms])
+    return () => {
+       mounted = false
+      }
+  }, [optionsLoaded])
 
   // // ------------------------------------------------------------
   // // Date selection
@@ -190,10 +200,11 @@ export default function LandingPage() {
     try {
       setError(null)
 
-      const availability = await getAvailability({
+      const availability = await getRoomAvailabilityByTimeSlot({
         date: date.format('YYYY-MM-DD'),
         sessionId
-      })
+      }
+    )
 
       setTimeSlotsAvailability(availability ?? {})
     } catch (err) {
@@ -354,8 +365,7 @@ export default function LandingPage() {
       setSessionId(heldSlotResponse.sessionId)
       setSessionExpiration(heldSlotResponse.expiresAt)
       localStorage.setItem(
-        'sessionId',
-        JSON.stringify(heldSlotResponse.sessionId)
+        'sessionId',heldSlotResponse.sessionId
       )
       router.push('/booking/form')
     } catch (err) {

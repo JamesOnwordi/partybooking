@@ -136,7 +136,7 @@ export default function Form() {
           return
         }
 
-        const parsedSessionId = JSON.parse(storedSessionId)
+        const parsedSessionId = storedSessionId
 
         if (!parsedSessionId) {
           router.push('/booking')
