@@ -42,7 +42,7 @@ export default function BookingReview() {
 
         const parsedFormData = JSON.parse(savedFormData)
 
-        const parsedSessionId = JSON.parse(sessionId)
+        const parsedSessionId = JSON.sessionId
 
         const response = await getHeldSlotData(parsedSessionId)
 
